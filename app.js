@@ -1158,32 +1158,61 @@
       return c;
     };
 
-    // 방법 1: 버튼으로 지금 요청
-    const issueTitle = '[갱신 요청] 새 추천 만들어 주세요';
-    const issueBody = [
-      '원하는 내용이 있으면 자유롭게 적어 주세요. 없으면 그대로 "Submit new issue"를 누르면 돼요!',
-      '',
-      '- 예: 배당주 위주로 / 미국 주식만 / 반도체 종목 넣어서 / 안전한 것만',
-      '',
-      '요청사항: ',
-      '',
-      '---',
-      '이 요청은 자동으로 처리됩니다. 보통 1시간 안에 새 추천이 배포되고, 완료되면 여기에 답글이 달린 뒤 자동으로 닫혀요.',
-    ].join('\n');
-    const issueUrl = 'https://github.com/ho0workss/ceho0/issues/new?title=' +
-      encodeURIComponent(issueTitle) + '&body=' + encodeURIComponent(issueBody);
-    const goBtn = el('a', 'iconbtn', '🖱️ 갱신 요청 보내기 (GitHub 새 창)');
-    goBtn.href = issueUrl;
-    goBtn.target = '_blank';
-    goBtn.rel = 'noopener';
-    goBtn.style.display = 'inline-block';
-    goBtn.style.marginTop = '0.5rem';
-    goBtn.style.textDecoration = 'none';
-    m.appendChild(mkCard('🖱️ 지금 바로 요청하기', [
-      '아래 버튼을 누르면 요청서가 미리 채워진 채 열려요. 그대로 제출만 하면 끝!',
-      '원하는 조건(예: "배당주 위주로")을 적으면 반영해 드려요.',
-      '보통 1시간 안에 새 추천이 이 사이트에 배포되고, 요청 글에 완료 답글이 달려요. (GitHub 로그인 필요)',
-    ], goBtn));
+    // 방법 1: 버튼 한 번으로 바로 접수 (로그인 불필요)
+    const form = el('div');
+    form.style.marginTop = '0.55rem';
+    const ta = el('textarea');
+    ta.placeholder = '원하는 조건이 있으면 적어 주세요 (선택) — 예: 배당주 위주로, 미국 주식만, 안전한 것만';
+    ta.maxLength = 500;
+    ta.rows = 2;
+    ta.style.cssText = 'width:100%;font:inherit;font-size:0.86rem;padding:0.5rem 0.6rem;border:1px solid var(--border);border-radius:9px;background:var(--page);color:var(--text-primary);resize:vertical';
+    form.appendChild(ta);
+    const sendBtn = el('button', 'iconbtn', '🚀 지금 요청 보내기 (클릭 한 번이면 끝)');
+    sendBtn.type = 'button';
+    sendBtn.style.marginTop = '0.45rem';
+    const status = el('p');
+    status.style.cssText = 'margin-top:0.45rem;font-size:0.82rem;font-weight:600';
+    form.appendChild(sendBtn);
+    form.appendChild(status);
+    sendBtn.addEventListener('click', async () => {
+      sendBtn.disabled = true;
+      status.style.color = 'var(--text-secondary)';
+      status.textContent = '보내는 중…';
+      try {
+        const res = await fetch('https://ztjivtiuhxwazsajukto.supabase.co/rest/v1/rpc/request_refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: 'sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH',
+            Authorization: 'Bearer sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH',
+          },
+          body: JSON.stringify({ p_note: ta.value || '' }),
+        });
+        const r = await res.json();
+        if (r && r.ok) {
+          status.style.color = 'var(--delta-good)';
+          status.textContent = `✅ 접수 완료 (요청 #${r.id})! 매시 30분마다 자동 확인해서 처리해요 — 보통 1시간 안에 새 추천이 이 사이트에 반영돼요.`;
+          ta.value = '';
+        } else if (r && r.reason === 'too_many_recent') {
+          status.style.color = 'var(--status-critical)';
+          status.textContent = '⏳ 방금 요청이 몰렸어요. 10분 뒤에 다시 눌러 주세요.';
+          sendBtn.disabled = false;
+        } else if (r && r.reason === 'queue_full') {
+          status.style.color = 'var(--status-critical)';
+          status.textContent = '⏳ 대기 중인 요청이 이미 많아요. 다음 처리 후 다시 시도해 주세요.';
+          sendBtn.disabled = false;
+        } else {
+          throw new Error('unexpected');
+        }
+      } catch {
+        status.style.color = 'var(--status-critical)';
+        status.textContent = '⚠️ 전송에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
+        sendBtn.disabled = false;
+      }
+    });
+    m.appendChild(mkCard('🖱️ 버튼 한 번으로 바로 요청 (로그인 필요 없음)', [
+      '아래 버튼만 누르면 요청이 바로 접수돼요. 회원가입도 로그인도 필요 없어요.',
+    ], form));
 
     // 방법 2: 자동
     m.appendChild(mkCard('🤖 가만히 있어도 자동으로', [
