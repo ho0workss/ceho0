@@ -56,6 +56,11 @@ const PICKS = [
   { id: 'long-msft',  s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
   { id: 'long-ko',    s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
   { id: 'long-samsung', s0: 296000, target: 420000, stop: 240000,  annVol: 0.35, annDrift: 0.20, kind: 'long' },
+  // 확실성 등급 (표준 배치와 별도 — 뒤에 추가해 기존 seed 유지)
+  { id: 'sure-sgov',  s0: 100.55,  target: 104.2,   stop: 99.5,    annVol: 0.006, annDrift: 0.036, kind: 'long' },
+  { id: 'sure-kofr',  s0: 112000,  target: 114800,  stop: 111000,  annVol: 0.003, annDrift: 0.025, kind: 'long' },
+  { id: 'sure-voo',   s0: 692,     target: 740,     stop: 585,     annVol: 0.16,  annDrift: 0.07,  kind: 'long' },
+  { id: 'sure-k200',  s0: 103300,  target: 110000,  stop: 87000,   annVol: 0.20,  annDrift: 0.065, kind: 'long' },
 ];
 
 const KIND_STEPS = {
