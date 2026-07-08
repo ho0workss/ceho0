@@ -1068,6 +1068,76 @@
     wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 그 종목의 가격이 미리 채워진 계산기를 쓸 수 있어요. 세법은 바뀔 수 있어요 — 실제 신고는 어른(세무 전문가)과 함께!'));
   }
 
+  // ───────── 새 추천 받기 ─────────
+  function openRefreshModal() {
+    const m = back.querySelector('.modal');
+    m.textContent = '';
+    const head = el('div', 'mhead');
+    const hwrap = el('div');
+    hwrap.appendChild(el('h2', null, '🔄 새 추천 받기'));
+    hwrap.appendChild(el('div', 'sub', '최신 뉴스와 가격으로 추천 12종목을 다시 만들어 드려요. 이전 추천은 히스토리에 그대로 보관돼요.'));
+    head.appendChild(hwrap);
+    const closeBtn = el('button', 'close', '✕');
+    closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', '닫기');
+    closeBtn.addEventListener('click', closeModal);
+    head.appendChild(closeBtn);
+    m.appendChild(head);
+
+    const mkCard = (title, lines, action) => {
+      const c = el('div', 'easybox');
+      c.style.marginTop = '0.9rem';
+      c.appendChild(el('div', 'eb-t', title));
+      lines.forEach(t => c.appendChild(el('div', null, t)));
+      if (action) c.appendChild(action);
+      return c;
+    };
+
+    // 방법 1: 버튼으로 지금 요청
+    const issueTitle = '[갱신 요청] 새 추천 만들어 주세요';
+    const issueBody = [
+      '원하는 내용이 있으면 자유롭게 적어 주세요. 없으면 그대로 "Submit new issue"를 누르면 돼요!',
+      '',
+      '- 예: 배당주 위주로 / 미국 주식만 / 반도체 종목 넣어서 / 안전한 것만',
+      '',
+      '요청사항: ',
+      '',
+      '---',
+      '이 요청은 자동으로 처리됩니다. 보통 1시간 안에 새 추천이 배포되고, 완료되면 여기에 답글이 달린 뒤 자동으로 닫혀요.',
+    ].join('\n');
+    const issueUrl = 'https://github.com/ho0workss/ceho0/issues/new?title=' +
+      encodeURIComponent(issueTitle) + '&body=' + encodeURIComponent(issueBody);
+    const goBtn = el('a', 'iconbtn', '🖱️ 갱신 요청 보내기 (GitHub 새 창)');
+    goBtn.href = issueUrl;
+    goBtn.target = '_blank';
+    goBtn.rel = 'noopener';
+    goBtn.style.display = 'inline-block';
+    goBtn.style.marginTop = '0.5rem';
+    goBtn.style.textDecoration = 'none';
+    m.appendChild(mkCard('🖱️ 지금 바로 요청하기', [
+      '아래 버튼을 누르면 요청서가 미리 채워진 채 열려요. 그대로 제출만 하면 끝!',
+      '원하는 조건(예: "배당주 위주로")을 적으면 반영해 드려요.',
+      '보통 1시간 안에 새 추천이 이 사이트에 배포되고, 요청 글에 완료 답글이 달려요. (GitHub 로그인 필요)',
+    ], goBtn));
+
+    // 방법 2: 자동
+    m.appendChild(mkCard('🤖 가만히 있어도 자동으로', [
+      '평일 아침 8시(한국시간)마다 자동으로 새 추천이 만들어져요.',
+      '미국장이 끝나고 한국장이 열리기 전이라, 아침에 보면 항상 최신이에요.',
+    ]));
+
+    // 방법 3: 채팅
+    m.appendChild(mkCard('💬 가장 빠른 방법', [
+      '이 사이트를 만든 Claude 세션에 "추천 갱신해줘"라고 보내면 몇 분 안에 반영돼요.',
+    ]));
+
+    m.appendChild(el('p', 'summary', '⚠️ 어떤 방법이든 이전 추천은 지워지지 않고 히스토리에 남아요.'));
+
+    back.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    back.scrollTop = 0;
+  }
+  $('#refreshbtn').addEventListener('click', openRefreshModal);
+
   // ───────── 검색 ─────────
   const searchBack = $('#search-back');
   const searchInput = $('#searchinput');
@@ -1084,6 +1154,7 @@
   function searchIndex() {
     const idx = [];
     VIEWS.forEach(v => idx.push({ kind: '메뉴', label: MENU_LABEL[v], desc: MENU_DESC[v], go: () => { state.view = v; renderAll(); } }));
+    idx.push({ kind: '기능', label: '🔄 새 추천 받기', desc: '최신 데이터로 추천 다시 만들기 (갱신, 새로고침)', go: openRefreshModal });
     batchPicks().forEach(p => idx.push({
       kind: '종목', label: `${p.name} ${p.ticker}`, desc: (EASY[p.id] ? EASY[p.id].company : p.rationale.summary).slice(0, 40),
       go: () => openModal(p),
