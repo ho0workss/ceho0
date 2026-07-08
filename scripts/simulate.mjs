@@ -74,6 +74,19 @@ const PICKS = [
   { id: 'b2-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
   { id: 'b2-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
   { id: 'b2-long-samsung', s0: 281500, target: 420000,  stop: 228000,  annVol: 0.36, annDrift: 0.20, kind: 'long' },
+  // ── 배치 2026-07-09 (매일 아침 자동 갱신 1회차) — 뒤에 추가해 기존 seed 유지 ──
+  { id: 'b3-day-samsung', s0: 277500,  target: 285000,  stop: 265000,  annVol: 0.45, annDrift: 0.20, kind: 'day' },
+  { id: 'b3-day-hynix',   s0: 2076000, target: 2175000, stop: 1960000, annVol: 0.60, annDrift: 0.25, kind: 'day' },
+  { id: 'b3-day-nvda',    s0: 196.93,  target: 201.5,   stop: 190.0,   annVol: 0.46, annDrift: 0.22, kind: 'day' },
+  { id: 'b3-week-tsm',    s0: 434.16,  target: 458.0,   stop: 415.0,   annVol: 0.44, annDrift: 0.22, kind: 'week' },
+  { id: 'b3-week-xom',    s0: 138.20,  target: 146.0,   stop: 134.0,   annVol: 0.30, annDrift: 0.22, kind: 'week' },
+  { id: 'b3-week-ko',     s0: 82.04,   target: 85.5,    stop: 79.0,    annVol: 0.15, annDrift: 0.15, kind: 'week' },
+  { id: 'b3-month-msft',  s0: 386.74,  target: 412.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month' },
+  { id: 'b3-month-samsung', s0: 277500, target: 315000, stop: 255000,  annVol: 0.40, annDrift: 0.22, kind: 'month' },
+  { id: 'b3-month-nvda',  s0: 196.93,  target: 215.0,   stop: 178.0,   annVol: 0.46, annDrift: 0.25, kind: 'month' },
+  { id: 'b3-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
+  { id: 'b3-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
+  { id: 'b3-long-samsung', s0: 277500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long' },
 ];
 
 const KIND_STEPS = {
