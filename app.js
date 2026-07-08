@@ -1,30 +1,53 @@
-/* 종목 추천 대시보드 — vanilla JS, 외부 의존성 없음 */
+/* 주식 배움터 — vanilla JS, 외부 의존성 없음 */
 (function () {
   'use strict';
   const RECO = window.RECO;
   const SIM = window.SIM_RESULTS || {};
+  const EASY = window.EASY || {};
+  const GLOSSARY = window.GLOSSARY || [];
+  const LESSONS = window.LESSONS || [];
+  const CHECKLIST = window.CHECKLIST || [];
+  const FAQ = window.FAQ || [];
 
   const HORIZONS = {
-    day:   { label: '당일',   color: 'var(--series-1)' },
-    week:  { label: '1주일',  color: 'var(--series-2)' },
-    month: { label: '1개월',  color: 'var(--series-5)' },
-    long:  { label: '장기',   color: 'var(--series-4)' },
+    day:   { label: '당일',   color: 'var(--series-1)', easy: '하루 안에 사고팔기' },
+    week:  { label: '1주일',  color: 'var(--series-2)', easy: '일주일쯤 갖고 있기' },
+    month: { label: '1개월',  color: 'var(--series-5)', easy: '한 달쯤 갖고 있기' },
+    long:  { label: '장기',   color: 'var(--series-4)', easy: '1년 이상 푹 기다리기' },
+  };
+  const LEVELS = {
+    ok:  { label: '🟢 초보 OK',  cls: 'lvl-ok' },
+    mid: { label: '🟡 조심조심', cls: 'lvl-mid' },
+    pro: { label: '🔴 전문가용', cls: 'lvl-pro' },
   };
   const RISKS = {
-    low:      { label: '리스크 낮음',    color: 'var(--status-good)' },
-    mid:      { label: '리스크 중간',    color: 'var(--status-warning)' },
-    high:     { label: '리스크 높음',    color: 'var(--status-serious)' },
+    low: { label: '리스크 낮음', color: 'var(--status-good)' },
+    mid: { label: '리스크 중간', color: 'var(--status-warning)' },
+    high: { label: '리스크 높음', color: 'var(--status-serious)' },
     veryhigh: { label: '리스크 매우높음', color: 'var(--status-critical)' },
   };
-  const MARKETS = { US: '미국', KR: '한국' };
+  const MARKETS = { US: '🇺🇸 미국', KR: '🇰🇷 한국' };
   const KIND_X = {
-    day:   { unit: '30분', axis: ['개장', '장중', '마감'], tip: i => `개장 후 ${i * 30}분` },
-    week:  { unit: '거래일', axis: ['D0', 'D+2', 'D+5'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
-    month: { unit: '거래일', axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
-    long:  { unit: '개월', axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
+    day:   { axis: ['개장', '장중', '마감'], tip: i => `개장 후 ${i * 30}분`, stepLabel: s => `+${s * 30}분` },
+    week:  { axis: ['D0', 'D+2', 'D+5'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
+    month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
+    long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
   };
+  const VIEWS = ['home', 'reco', 'practice', 'learn', 'history', 'tax'];
+  const MENU_DESC = {
+    home: '오늘의 요약과 시작 가이드',
+    reco: '기간별 추천 종목과 매매 계획',
+    practice: '가상 돈으로 계획 세우기 연습',
+    learn: '주식 기초 · 체크리스트 · 용어사전 · FAQ',
+    history: '지난 추천 기록 보관함',
+    tax: '세금 규칙과 실수령 계산',
+  };
+  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', practice: '🎮 연습하기', learn: '📚 배우기', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
 
-  const state = { view: 'reco', horizon: 'all', market: 'all', risk: 'all', divOnly: false, batch: 0 };
+  const state = {
+    view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
+    easy: localStorage.getItem('easymode') !== '0',
+  };
 
   // ───────── 유틸 ─────────
   const $ = sel => document.querySelector(sel);
@@ -39,34 +62,98 @@
     return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   function krw(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
-  function pct(v, signed = true) {
-    const s = signed && v > 0 ? '+' : '';
-    return s + v.toFixed(1) + '%';
-  }
+  function pct(v, signed = true) { return (signed && v > 0 ? '+' : '') + v.toFixed(1) + '%'; }
   function pctCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
   function batchPicks() { return RECO.batches[state.batch].picks; }
+  function pickLevel(p) { return (EASY[p.id] && EASY[p.id].level) || 'mid'; }
   function svgEl(tag, attrs) {
     const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (const k in attrs) n.setAttribute(k, attrs[k]);
     return n;
   }
 
+  // ───────── 용어 팝오버 ─────────
+  const TERMS = GLOSSARY.slice().sort((a, b) => b.term.length - a.term.length);
+  const popover = $('#popover');
+  function showPopover(anchor, term, easyText) {
+    popover.textContent = '';
+    popover.appendChild(el('div', 'pt', '📖 ' + term));
+    popover.appendChild(el('div', null, easyText));
+    popover.style.display = 'block';
+    const r = anchor.getBoundingClientRect();
+    const top = r.bottom + window.scrollY + 6;
+    let left = r.left + window.scrollX;
+    popover.style.top = top + 'px';
+    popover.style.left = '0px';
+    const pw = popover.offsetWidth;
+    if (left + pw > window.scrollX + document.documentElement.clientWidth - 8)
+      left = window.scrollX + document.documentElement.clientWidth - pw - 8;
+    popover.style.left = Math.max(8, left) + 'px';
+  }
+  function hidePopover() { popover.style.display = 'none'; }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('.term');
+    if (t) { showPopover(t, t.dataset.term, t.dataset.easy); e.stopPropagation(); return; }
+    if (!e.target.closest('.popover')) hidePopover();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hidePopover();
+    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('term')) {
+      e.preventDefault();
+      const t = document.activeElement;
+      showPopover(t, t.dataset.term, t.dataset.easy);
+    }
+  });
+
+  // 텍스트에 용어 밑줄 달기 (쉬운말 모드) — 블록당 용어별 1회
+  function linkTerms(text) {
+    if (!state.easy) return document.createTextNode(text);
+    const frag = document.createDocumentFragment();
+    const used = new Set();
+    let rest = text;
+    while (rest.length) {
+      let bestIdx = -1, bestTerm = null;
+      for (const g of TERMS) {
+        if (used.has(g.term)) continue;
+        const idx = rest.indexOf(g.term);
+        if (idx !== -1 && (bestIdx === -1 || idx < bestIdx || (idx === bestIdx && g.term.length > bestTerm.term.length))) {
+          bestIdx = idx; bestTerm = g;
+        }
+      }
+      if (bestIdx === -1) { frag.appendChild(document.createTextNode(rest)); break; }
+      if (bestIdx > 0) frag.appendChild(document.createTextNode(rest.slice(0, bestIdx)));
+      const span = el('span', 'term', bestTerm.term);
+      span.tabIndex = 0;
+      span.setAttribute('role', 'button');
+      span.dataset.term = bestTerm.term;
+      span.dataset.easy = bestTerm.easy;
+      frag.appendChild(span);
+      used.add(bestTerm.term);
+      rest = rest.slice(bestIdx + bestTerm.term.length);
+    }
+    return frag;
+  }
+  function liTerms(text) { const li = el('li'); li.appendChild(linkTerms(text)); return li; }
+
   // ───────── 카드 목록 ─────────
   function filteredPicks() {
     return batchPicks().filter(p =>
       (state.horizon === 'all' || p.horizon === state.horizon) &&
       (state.market === 'all' || p.market === state.market) &&
-      (state.risk === 'all' || p.risk === state.risk) &&
+      (state.level === 'all' || pickLevel(p) === state.level) &&
       (!state.divOnly || (p.dividend && p.dividend.yieldPct >= 0.3))
     );
   }
-
   function chipDot(color) { const d = el('span', 'dot'); d.style.background = color; return d; }
   function chip(text, color) {
     const c = el('span', 'chip');
     if (color) c.appendChild(chipDot(color));
     c.appendChild(document.createTextNode(text));
     return c;
+  }
+  function levelBadge(p) {
+    const lv = LEVELS[pickLevel(p)];
+    return el('span', 'lvl ' + lv.cls, lv.label);
   }
 
   function sparkline(sim) {
@@ -84,67 +171,133 @@
     return svg;
   }
 
+  function pickCard(p) {
+    const sim = SIM[p.simId];
+    const easy = EASY[p.id];
+    const card = el('article', 'card');
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${p.name} 상세 보기`);
+
+    const chips = el('div', 'chiprow');
+    chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
+    chips.appendChild(chip(MARKETS[p.market]));
+    chips.appendChild(levelBadge(p));
+    card.appendChild(chips);
+
+    const tl = el('div', 'titleline');
+    tl.appendChild(el('span', 'tk', p.ticker));
+    tl.appendChild(el('span', 'nm', p.name));
+    tl.appendChild(el('span', 'price', money(p.refPrice, p.currency)));
+    card.appendChild(tl);
+
+    if (state.easy && easy) card.appendChild(el('div', 'easyline', '💡 ' + easy.company));
+
+    const plan = el('div', 'plan');
+    const b = el('div'); b.appendChild(el('b', null, '사기 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
+    const s = el('div'); s.appendChild(el('b', null, '팔기 ')); s.appendChild(document.createTextNode(`${money(p.sell.low, p.currency)}–${money(p.sell.high, p.currency)} · ${p.sell.windowKst}`));
+    plan.appendChild(b); plan.appendChild(s);
+    card.appendChild(plan);
+
+    const stats = el('div', 'statrow');
+    const s1 = el('div', 'stat');
+    s1.appendChild(el('span', 'lb', '잘 되면'));
+    s1.appendChild(el('span', 'vl ' + pctCls(p.expectedReturn.base), pct(p.expectedReturn.base)));
+    stats.appendChild(s1);
+    if (sim) {
+      const s2 = el('div', 'stat');
+      s2.appendChild(el('span', 'lb', '이익 확률'));
+      s2.appendChild(el('span', 'vl', sim.final.pProfit.toFixed(0) + '%'));
+      stats.appendChild(s2);
+    }
+    stats.appendChild(sparkline(sim));
+    card.appendChild(stats);
+    card.appendChild(el('div', 'more', '왜 추천? · 시뮬레이션 · 세금 →'));
+
+    card.addEventListener('click', () => openModal(p));
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } });
+    return card;
+  }
+
   function renderCards() {
     const grid = $('#cards');
     grid.textContent = '';
     const picks = filteredPicks();
     $('#count').textContent = `${picks.length}개 종목`;
-    for (const p of picks) {
-      const sim = SIM[p.simId];
-      const card = el('article', 'card');
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', `${p.name} 상세 보기`);
-
-      const chips = el('div', 'chiprow');
-      chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
-      chips.appendChild(chip(MARKETS[p.market]));
-      chips.appendChild(chip(RISKS[p.risk].label, RISKS[p.risk].color));
-      card.appendChild(chips);
-
-      const tl = el('div', 'titleline');
-      tl.appendChild(el('span', 'tk', p.ticker));
-      tl.appendChild(el('span', 'nm', p.name));
-      tl.appendChild(el('span', 'price', money(p.refPrice, p.currency)));
-      card.appendChild(tl);
-
-      const plan = el('div', 'plan');
-      const b = el('div'); b.appendChild(el('b', null, '매수 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
-      const s = el('div'); s.appendChild(el('b', null, '매도 ')); s.appendChild(document.createTextNode(`${money(p.sell.low, p.currency)}–${money(p.sell.high, p.currency)} · ${p.sell.windowKst}`));
-      plan.appendChild(b); plan.appendChild(s);
-      card.appendChild(plan);
-
-      const stats = el('div', 'statrow');
-      const s1 = el('div', 'stat');
-      s1.appendChild(el('span', 'lb', '기본 시나리오'));
-      s1.appendChild(el('span', 'vl ' + pctCls(p.expectedReturn.base), pct(p.expectedReturn.base)));
-      stats.appendChild(s1);
-      if (sim) {
-        const s2 = el('div', 'stat');
-        s2.appendChild(el('span', 'lb', '시뮬레이션 이익확률'));
-        s2.appendChild(el('span', 'vl', sim.final.pProfit.toFixed(0) + '%'));
-        stats.appendChild(s2);
-      }
-      stats.appendChild(sparkline(sim));
-      card.appendChild(stats);
-      card.appendChild(el('div', 'more', '상세 · 시뮬레이션 · 세금 →'));
-
-      card.addEventListener('click', () => openModal(p));
-      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } });
-      grid.appendChild(card);
-    }
-    if (!picks.length) {
-      const empty = el('p', 'hist-note', '조건에 맞는 종목이 없습니다. 필터를 조정해 보세요.');
-      grid.appendChild(empty);
-    }
+    picks.forEach(p => grid.appendChild(pickCard(p)));
+    if (!picks.length) grid.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없어요. 필터를 바꿔 보세요.'));
   }
 
-  // ───────── 팬 차트 (시뮬레이션 백분위 밴드) ─────────
+  // ───────── 홈 ─────────
+  function renderHome() {
+    const wrap = $('#view-home');
+    wrap.textContent = '';
+    const batch = RECO.batches[0];
+
+    const hero = el('div', 'hero');
+    const stormy = /급락|쇼크|하락/.test(batch.title + batch.marketSnapshot);
+    hero.appendChild(el('div', 'weather', stormy ? '오늘의 시장 날씨: 🌧️ → 🌤️ 소나기 뒤 갬을 기다려요' : '오늘의 시장 날씨: ☀️ 대체로 맑음'));
+    const wd = el('p', 'wdesc');
+    wd.appendChild(linkTerms(state.easy
+      ? '어제 반도체 회사들(삼성전자 등)의 주가가 비를 맞은 것처럼 뚝 떨어졌어요. 이럴 때는 "너무 많이 떨어진 좋은 회사"를 싸게 살 기회가 생기기도 해요. 아래 추천들이 바로 그 기회를 노려요.'
+      : batch.marketSnapshot));
+    hero.appendChild(wd);
+    wrap.appendChild(hero);
+
+    wrap.appendChild(el('h2', 'homesec', '🚀 처음이라면 이 순서대로!'));
+    const steps = el('div', 'steps');
+    const stepDefs = [
+      ['1단계', '📚 배우기', '주식이 뭔지 5분 만에 알아봐요', 'learn'],
+      ['2단계', '📋 추천 보기', '🟢 초보 OK 종목부터 살펴봐요', 'reco'],
+      ['3단계', '🎮 연습하기', '가상 돈으로 계획을 세워 봐요', 'practice'],
+    ];
+    for (const [sn, st, sd, view] of stepDefs) {
+      const c = el('div', 'step-card');
+      c.tabIndex = 0; c.setAttribute('role', 'button');
+      c.appendChild(el('div', 'sn', sn));
+      c.appendChild(el('div', 'st', st));
+      c.appendChild(el('div', 'sd', sd));
+      const go = () => { if (view === 'reco') state.level = view === 'reco' && state.easy ? 'ok' : state.level; state.view = view; renderAll(); window.scrollTo({ top: 0 }); };
+      c.addEventListener('click', go);
+      c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      steps.appendChild(c);
+    }
+    wrap.appendChild(steps);
+
+    wrap.appendChild(el('h2', 'homesec', '⭐ 오늘의 추천 TOP 3 (초보 눈높이 순)'));
+    const order = { ok: 0, mid: 1, pro: 2 };
+    const top3 = batchPicks().slice().sort((a, b) => {
+      const d = order[pickLevel(a)] - order[pickLevel(b)];
+      if (d) return d;
+      return (SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0);
+    }).slice(0, 3);
+    const grid = el('div', 'grid');
+    top3.forEach(p => grid.appendChild(pickCard(p)));
+    wrap.appendChild(grid);
+
+    const all = el('button', 'iconbtn', '추천 12개 전부 보기 →');
+    all.type = 'button';
+    all.style.marginTop = '0.9rem';
+    all.addEventListener('click', () => { state.view = 'reco'; state.level = 'all'; renderAll(); window.scrollTo({ top: 0 }); });
+    wrap.appendChild(all);
+
+    wrap.appendChild(el('h2', 'homesec', '✅ 사기 전 체크리스트'));
+    const ul = el('ul', 'pts');
+    CHECKLIST.slice(0, 4).forEach(t => ul.appendChild(liTerms(t)));
+    wrap.appendChild(ul);
+    const moreChk = el('button', 'iconbtn', '전체 체크리스트 보기 →');
+    moreChk.type = 'button';
+    moreChk.style.marginTop = '0.6rem';
+    moreChk.addEventListener('click', () => { state.view = 'learn'; renderAll(); window.scrollTo({ top: 0 }); });
+    wrap.appendChild(moreChk);
+  }
+
+  // ───────── 팬 차트 ─────────
   function fanChart(sim, pick) {
     const box = el('div', 'chartbox');
     const head = el('div', 'chead');
-    head.appendChild(el('span', 'ctitle', '시뮬레이션 수익률 경로 (20,000회)'));
-    head.appendChild(el('span', 'csub', 'GBM 몬테카를로 · 백분위 밴드'));
+    head.appendChild(el('span', 'ctitle', '미래 2만 번 실험 결과 (수익률 경로)'));
+    head.appendChild(el('span', 'csub', '몬테카를로 · 백분위 밴드'));
     const tgl = el('button', 'tglbtn', '표로 보기');
     tgl.type = 'button';
     head.appendChild(tgl);
@@ -160,8 +313,6 @@
     const yAt = v => T + ph * (1 - (v - y0) / (y1 - y0));
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0', 'aria-label': '시뮬레이션 수익률 백분위 밴드 차트. 화살표 키로 시점 이동.' });
-
-    // y 그리드 + 눈금 (solid hairline)
     const step = niceStep((y1 - y0) / 5);
     for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) {
       const yy = yAt(v);
@@ -170,10 +321,8 @@
       t.textContent = (v > 0 ? '+' : '') + v.toFixed(0) + '%';
       svg.appendChild(t);
     }
-    // 0% 기준선
     if (y0 < 0 && y1 > 0) svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: yAt(0), y2: yAt(0), stroke: 'var(--baseline)', 'stroke-width': 1 }));
 
-    // 밴드
     const area = (loArr, hiArr) => {
       let d = '';
       for (let i = 0; i < n; i++) d += (i ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(hiArr[i]).toFixed(1);
@@ -184,14 +333,12 @@
     svg.appendChild(svgEl('path', { d: area(bands.p25, bands.p75), fill: 'var(--series-1)', 'fill-opacity': 0.16 }));
     const med = bands.p50.map((v, i) => (i ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1)).join(' ');
     svg.appendChild(svgEl('path', { d: med, fill: 'none', stroke: 'var(--series-1)', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-    // 끝점 마커 + 선택적 직접 라벨(중앙값 종점)
     const li = n - 1;
     svg.appendChild(svgEl('circle', { cx: xAt(li), cy: yAt(bands.p50[li]), r: 4, fill: 'var(--series-1)', stroke: 'var(--surface-1)', 'stroke-width': 2 }));
     const endLb = svgEl('text', { x: xAt(li) - 6, y: yAt(bands.p50[li]) - 8, 'text-anchor': 'end', fill: 'var(--text-primary)', 'font-size': 11, 'font-weight': 650 });
     endLb.textContent = '중앙값 ' + pct(bands.p50[li]);
     svg.appendChild(endLb);
 
-    // x축 라벨
     const kx = KIND_X[pick.horizon];
     const axisPts = [0, Math.floor((n - 1) / 2), n - 1];
     kx.axis.forEach((lab, i) => {
@@ -200,7 +347,6 @@
       svg.appendChild(t);
     });
 
-    // 크로스헤어 + 툴팁
     const cross = svgEl('line', { y1: T, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1, visibility: 'hidden' });
     svg.appendChild(cross);
     const overlay = svgEl('rect', { x: L, y: T, width: pw, height: ph, fill: 'transparent' });
@@ -208,15 +354,14 @@
     const tip = el('div', 'viztip');
     box.appendChild(tip);
 
-    const ROWS = [
-      ['95백분위', 'p95'], ['75백분위', 'p75'], ['중앙값', 'p50'], ['25백분위', 'p25'], ['5백분위', 'p5'],
-    ];
+    const ROWS = [['95백분위', 'p95'], ['75백분위', 'p75'], ['중앙값', 'p50'], ['25백분위', 'p25'], ['5백분위', 'p5']];
+    let curIdx = n - 1;
     function showIdx(i) {
       i = Math.max(0, Math.min(n - 1, i));
       cross.setAttribute('x1', xAt(i)); cross.setAttribute('x2', xAt(i));
       cross.setAttribute('visibility', 'visible');
       tip.textContent = '';
-      tip.appendChild(el('div', 'tx', KIND_X[pick.horizon].tip(bands.steps[i])));
+      tip.appendChild(el('div', 'tx', kx.tip(bands.steps[i])));
       for (const [label, key] of ROWS) {
         const row = el('div', 'row');
         const k = el('span', 'k'); k.style.borderTopColor = 'var(--series-1)';
@@ -234,7 +379,6 @@
       curIdx = i;
     }
     function hide() { cross.setAttribute('visibility', 'hidden'); tip.style.display = 'none'; }
-    let curIdx = n - 1;
     overlay.addEventListener('pointermove', e => {
       const r = svg.getBoundingClientRect();
       const fx = (e.clientX - r.left) * (W / r.width);
@@ -250,21 +394,19 @@
       if (e.key === 'ArrowRight') { e.preventDefault(); showIdx(curIdx + 1); }
     });
 
-    // 범례 (3계열 — 항상 표시)
     const legend = el('div', 'legend');
     const mkLi = (kind, color, opacity, text) => {
-      const li = el('span', 'li');
+      const liEl = el('span', 'li');
       const key = el('span', kind === 'line' ? 'keyline' : 'keyrect');
       if (kind === 'line') key.style.borderTopColor = color;
       else { key.style.background = color; key.style.opacity = opacity; }
-      li.appendChild(key); li.appendChild(document.createTextNode(text));
-      return li;
+      liEl.appendChild(key); liEl.appendChild(document.createTextNode(text));
+      return liEl;
     };
-    legend.appendChild(mkLi('line', 'var(--series-1)', 1, '중앙값'));
-    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.35, '25–75 백분위'));
-    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.15, '5–95 백분위'));
+    legend.appendChild(mkLi('line', 'var(--series-1)', 1, '중앙값 (가운데 결과)'));
+    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.35, '25–75 백분위 (절반이 이 안)'));
+    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.15, '5–95 백분위 (거의 다 이 안)'));
 
-    // 표 전환 (테이블 뷰 트윈)
     const tbl = el('table', 'plain');
     tbl.style.display = 'none';
     const thead = el('thead'); const hr = el('tr');
@@ -273,7 +415,7 @@
     const tb = el('tbody');
     for (let i = 0; i < n; i++) {
       const tr = el('tr');
-      tr.appendChild(el('td', null, kx.stepLabel ? kx.stepLabel(bands.steps[i]) : kx.tip(bands.steps[i])));
+      tr.appendChild(el('td', null, kx.stepLabel(bands.steps[i])));
       ['p5', 'p25', 'p50', 'p75', 'p95'].forEach(k => tr.appendChild(el('td', 'num', pct(bands[k][i]))));
       tb.appendChild(tr);
     }
@@ -296,12 +438,12 @@
     return 10 * mag;
   }
 
-  // ───────── 히스토그램 (최종 수익률 분포) ─────────
+  // ───────── 히스토그램 ─────────
   function histChart(sim) {
     const box = el('div', 'chartbox');
     const head = el('div', 'chead');
-    head.appendChild(el('span', 'ctitle', '보유기간 종료 시 수익률 분포'));
-    head.appendChild(el('span', 'csub', '이익/손실 구간'));
+    head.appendChild(el('span', 'ctitle', '끝났을 때 결과 분포'));
+    head.appendChild(el('span', 'csub', '파랑=이익 · 빨강=손실'));
     const tgl = el('button', 'tglbtn', '표로 보기'); tgl.type = 'button';
     head.appendChild(tgl);
     box.appendChild(head);
@@ -316,7 +458,6 @@
     const yAt = c => T + ph * (1 - c / maxC);
 
     const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '최종 수익률 히스토그램' });
-    // y 그리드 (확률 %)
     const stepP = niceStep((maxC / total * 100) / 3);
     for (let p = stepP; p <= maxC / total * 100; p += stepP) {
       const yy = yAt(p / 100 * total);
@@ -325,20 +466,18 @@
       t.textContent = p.toFixed(0) + '%';
       svg.appendChild(t);
     }
-    // 막대 (다이버징: 손실 red / 이익 blue / 0 포함 빈 neutral)
     const tip = el('div', 'viztip');
     box.appendChild(tip);
-    let peakIdx = counts.indexOf(maxC);
+    const peakIdx = counts.indexOf(maxC);
     for (let i = 0; i < nB; i++) {
       const b0 = lo + i * binW, b1 = b0 + binW, c = counts[i];
-      const x = xAt(b0) + 1, w = Math.max(1, xAt(b1) - xAt(b0) - 2); // 2px surface gap
+      const x = xAt(b0) + 1, w = Math.max(1, xAt(b1) - xAt(b0) - 2);
       const y = yAt(c), h = T + ph - y;
       const fill = (b0 < 0 && b1 > 0) ? 'var(--div-neutral)' : (b1 <= 0 ? 'var(--series-6)' : 'var(--series-1)');
       const r = Math.min(3, w / 2, h);
       const d = h <= 0.5 ? '' :
         `M${x} ${T + ph} V${y + r} Q${x} ${y} ${x + r} ${y} H${x + w - r} Q${x + w} ${y} ${x + w} ${y + r} V${T + ph} Z`;
       if (d) svg.appendChild(svgEl('path', { d, fill, 'data-bar': i }));
-      // 히트 타깃: 전체 높이 투명 rect
       const hit = svgEl('rect', { x: xAt(b0), y: T, width: xAt(b1) - xAt(b0), height: ph, fill: 'transparent', tabindex: '0', role: 'img', 'aria-label': `${b0.toFixed(1)}%부터 ${b1.toFixed(1)}% 구간, 확률 ${(c / total * 100).toFixed(1)}%` });
       const show = () => {
         const bar = svg.querySelector(`[data-bar="${i}"]`);
@@ -365,14 +504,12 @@
       hit.addEventListener('focus', show);
       hit.addEventListener('blur', hideT);
       svg.appendChild(hit);
-      // 선택적 직접 라벨: 최빈 구간만
       if (i === peakIdx) {
         const t = svgEl('text', { x: xAt(b0) + (xAt(b1) - xAt(b0)) / 2, y: y - 5, 'text-anchor': 'middle', fill: 'var(--text-secondary)', 'font-size': 10, 'font-weight': 650 });
         t.textContent = (c / total * 100).toFixed(1) + '%';
         svg.appendChild(t);
       }
     }
-    // 0% 세로 기준선 + 축
     if (lo < 0 && hi > 0) svg.appendChild(svgEl('line', { x1: xAt(0), x2: xAt(0), y1: T, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1 }));
     svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: T + ph, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1 }));
     [lo, 0, hi].forEach((v, i) => {
@@ -384,15 +521,14 @@
 
     const legend = el('div', 'legend');
     const mkLi = (color, text) => {
-      const li = el('span', 'li');
+      const liEl = el('span', 'li');
       const key = el('span', 'keyrect'); key.style.background = color;
-      li.appendChild(key); li.appendChild(document.createTextNode(text));
-      return li;
+      liEl.appendChild(key); liEl.appendChild(document.createTextNode(text));
+      return liEl;
     };
     legend.appendChild(mkLi('var(--series-1)', '이익 구간'));
     legend.appendChild(mkLi('var(--series-6)', '손실 구간'));
 
-    // 표 트윈
     const tbl = el('table', 'plain'); tbl.style.display = 'none';
     const thead = el('thead'); const hr = el('tr');
     ['수익률 구간', '확률'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
@@ -421,7 +557,7 @@
   // ───────── 세금 계산 ─────────
   function taxCompute({ market, amountKrw, fx, buyP, sellP, divPerShareYr }) {
     const unitKrw = market === 'US' ? buyP * fx : buyP;
-    const shares = Math.floor(amountKrw / unitKrw);
+    const shares = unitKrw > 0 ? Math.floor(amountKrw / unitKrw) : 0;
     const investedKrw = shares * unitKrw;
     const sellKrw = market === 'US' ? shares * sellP * fx : shares * sellP;
     const gainKrw = sellKrw - investedKrw;
@@ -439,6 +575,11 @@
     return { shares, investedKrw, sellKrw, gainKrw, tax, taxLabel, divGrossKrw, divNetKrw, netKrw,
       netRet: investedKrw ? (netKrw - investedKrw) / investedKrw * 100 : 0 };
   }
+  function annualDividend(pick) {
+    if (!pick.dividend) return 0;
+    const d = pick.dividend;
+    return d.frequency === '분기' && d.perShare * 4 / pick.refPrice < 0.2 ? d.perShare * 4 : d.perShare;
+  }
 
   function taxCalcBlock(pick) {
     const box = el('div', 'calc');
@@ -450,7 +591,7 @@
       lab.appendChild(inp); inrow.appendChild(lab);
       return inp;
     };
-    const amountIn = mk('투자금액 (원)', 10000000, 100000);
+    const amountIn = mk('투자금액 (원)', 1000000, 100000);
     const buyIn = mk(`매수가 (${pick.currency === 'KRW' ? '원' : '$'})`, (pick.buy.low + pick.buy.high) / 2, pick.currency === 'KRW' ? 1000 : 0.01);
     const sellIn = mk(`매도가 (${pick.currency === 'KRW' ? '원' : '$'})`, (pick.sell.low + pick.sell.high) / 2, pick.currency === 'KRW' ? 1000 : 0.01);
     let fxIn = null;
@@ -465,7 +606,7 @@
       const tr = el('tr');
       tr.appendChild(el('td', null, k));
       const td = el('td', 'num');
-      if (cls) { const sp = el('span', cls, v); td.appendChild(sp); } else td.textContent = v;
+      if (cls) td.appendChild(el('span', cls, v)); else td.textContent = v;
       tr.appendChild(td);
       tb.appendChild(tr);
     }
@@ -476,19 +617,19 @@
         fx: fxIn ? (+fxIn.value || RECO.meta.fxUsdKrw) : 1,
         buyP: +buyIn.value || 0,
         sellP: +sellIn.value || 0,
-        divPerShareYr: pick.dividend ? (pick.dividend.frequency === '분기' && pick.dividend.perShare < pick.refPrice * 0.01 ? pick.dividend.perShare * 4 : pick.dividend.perShare * (pick.dividend.frequency === '분기' ? 4 : 1)) : 0,
+        divPerShareYr: annualDividend(pick),
       });
       out.textContent = '';
       const tb = el('tbody');
-      row(tb, '매수 가능 주수', r.shares.toLocaleString('ko-KR') + '주');
-      row(tb, '실제 투입금액', krw(r.investedKrw));
-      row(tb, '매도금액 (목표가 기준)', krw(r.sellKrw));
-      row(tb, '매매차익 (세전)', krw(r.gainKrw), pctCls(r.gainKrw));
+      row(tb, '살 수 있는 주식 수', r.shares.toLocaleString('ko-KR') + '주');
+      row(tb, '실제 쓰는 돈', krw(r.investedKrw));
+      row(tb, '팔았을 때 받는 돈 (목표가 기준)', krw(r.sellKrw));
+      row(tb, '번 돈 (세금 떼기 전)', krw(r.gainKrw), pctCls(r.gainKrw));
       row(tb, r.taxLabel, '-' + krw(r.tax));
-      row(tb, '연간 배당 (세전)', r.divGrossKrw > 0 ? krw(r.divGrossKrw) : '해당 없음');
-      if (r.divGrossKrw > 0) row(tb, '연간 배당 실수령 (세후)', krw(r.divNetKrw), 'pos');
-      row(tb, '매도 실수령액 (세후)', krw(r.netKrw));
-      row(tb, '세후 수익률 (배당 제외)', pct(r.netRet), pctCls(r.netRet));
+      row(tb, '1년 배당 (세금 떼기 전)', r.divGrossKrw > 0 ? krw(r.divGrossKrw) : '배당 없음');
+      if (r.divGrossKrw > 0) row(tb, '1년 배당 실제 수령 (세금 뗀 후)', krw(r.divNetKrw), 'pos');
+      row(tb, '팔고 실제 받는 돈 (세금 뗀 후)', krw(r.netKrw));
+      row(tb, '진짜 수익률 (배당 제외)', pct(r.netRet), pctCls(r.netRet));
       out.appendChild(tb);
     }
     [amountIn, buyIn, sellIn, fxIn].forEach(i => i && i.addEventListener('input', recalc));
@@ -508,12 +649,14 @@
     const m = back.querySelector('.modal');
     m.textContent = '';
     const sim = SIM[p.simId];
+    const easy = EASY[p.id];
 
     const head = el('div', 'mhead');
     const hwrap = el('div');
     const chips = el('div', 'chiprow');
-    chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
+    chips.appendChild(chip(HORIZONS[p.horizon].label + ' · ' + HORIZONS[p.horizon].easy, HORIZONS[p.horizon].color));
     chips.appendChild(chip(MARKETS[p.market] + ' · ' + p.exchange));
+    chips.appendChild(levelBadge(p));
     chips.appendChild(chip(RISKS[p.risk].label, RISKS[p.risk].color));
     hwrap.appendChild(chips);
     const h2 = el('h2', null, `${p.name} `);
@@ -527,9 +670,28 @@
     head.appendChild(closeBtn);
     m.appendChild(head);
 
-    m.appendChild(el('p', 'summary', p.rationale.summary));
+    if (state.easy && easy) {
+      const eb = el('div', 'easybox');
+      eb.style.marginTop = '0.8rem';
+      eb.appendChild(el('div', 'eb-t', '💡 어떤 회사예요?'));
+      eb.appendChild(el('div', null, easy.company));
+      eb.appendChild(el('div', 'eb-t', '🤔 왜 추천해요? (3줄 요약)'));
+      const olw = el('ol');
+      easy.why.forEach(w => olw.appendChild(el('li', null, w)));
+      eb.appendChild(olw);
+      eb.appendChild(el('div', 'eb-t', '🗓️ 작전은요?'));
+      eb.appendChild(el('div', null, easy.plan));
+      eb.appendChild(el('div', 'eb-t', LEVELS[pickLevel(p)].label + ' — 왜냐면'));
+      eb.appendChild(el('div', null, easy.levelWhy));
+      const tts = ['eb-t'];
+      m.appendChild(eb);
+      void tts;
+    }
 
-    // 스탯 타일
+    const sm = el('p', 'summary');
+    sm.appendChild(linkTerms(p.rationale.summary));
+    m.appendChild(sm);
+
     const tiles = el('div', 'tiles');
     const tile = (lb, vl, cls, note) => {
       const t = el('div', 'tile');
@@ -538,16 +700,15 @@
       if (note) t.appendChild(el('div', 'note', note));
       return t;
     };
-    tiles.appendChild(tile('기본 시나리오 수익률', pct(p.expectedReturn.base), pctCls(p.expectedReturn.base), '목표가 도달 시'));
+    tiles.appendChild(tile('잘 되면 (기본 시나리오)', pct(p.expectedReturn.base), pctCls(p.expectedReturn.base), '목표가 도달 시'));
     if (sim) {
-      tiles.appendChild(tile('시뮬레이션 이익확률', sim.final.pProfit.toFixed(0) + '%', '', '보유기간 종료 기준'));
+      tiles.appendChild(tile('이익 볼 확률', sim.final.pProfit.toFixed(0) + '%', '', '2만 번 실험 기준'));
       tiles.appendChild(tile('목표가 도달확률', sim.final.pHitTarget.toFixed(0) + '%', '', '기간 내 1회 이상'));
       tiles.appendChild(tile('손절가 도달확률', sim.final.pHitStop.toFixed(0) + '%', '', '기간 내 1회 이상'));
     }
     m.appendChild(tiles);
 
-    // 매매 계획
-    section(m, '매매 계획 (시기 · 가격)');
+    section(m, '🗓️ 매매 계획 (언제 · 얼마에)');
     const plan = el('table', 'plain');
     {
       const thead = el('thead'); const hr = el('tr');
@@ -555,39 +716,38 @@
       thead.appendChild(hr); plan.appendChild(thead);
       const tb = el('tbody');
       const tr1 = el('tr');
-      tr1.appendChild(el('td', null, '매수'));
+      tr1.appendChild(el('td', null, '매수 (사기)'));
       tr1.appendChild(el('td', null, p.buy.window));
       tr1.appendChild(el('td', null, p.buy.windowKst));
       tr1.appendChild(el('td', 'num', `${money(p.buy.low, p.currency)} ~ ${money(p.buy.high, p.currency)}`));
       tb.appendChild(tr1);
       const tr2 = el('tr');
-      tr2.appendChild(el('td', null, '매도 (목표)'));
+      tr2.appendChild(el('td', null, '매도 (팔기)'));
       tr2.appendChild(el('td', null, p.sell.window));
       tr2.appendChild(el('td', null, p.sell.windowKst));
       tr2.appendChild(el('td', 'num', `${money(p.sell.low, p.currency)} ~ ${money(p.sell.high, p.currency)}`));
       tb.appendChild(tr2);
       const tr3 = el('tr');
-      tr3.appendChild(el('td', null, '손절'));
-      const sc = el('td', null, '도달 즉시 (자동 주문 권장)');
-      sc.colSpan = 2;
-      tr3.appendChild(sc);
+      tr3.appendChild(el('td', null, '손절 (안전벨트)'));
+      const scd = el('td', null, '이 가격에 닿으면 바로 (자동 주문 권장)');
+      scd.colSpan = 2;
+      tr3.appendChild(scd);
       tr3.appendChild(el('td', 'num', money(p.sell.stop, p.currency)));
       tb.appendChild(tr3);
       plan.appendChild(tb);
     }
     m.appendChild(plan);
     const planNotes = el('ul', 'pts');
-    planNotes.appendChild(el('li', null, '매수: ' + p.buy.note));
-    planNotes.appendChild(el('li', null, '매도: ' + p.sell.note));
+    planNotes.appendChild(liTerms('매수: ' + p.buy.note));
+    planNotes.appendChild(liTerms('매도: ' + p.sell.note));
     planNotes.style.marginTop = '0.5rem';
     m.appendChild(planNotes);
 
-    // 시나리오 (예측 변수 반영)
-    section(m, '시나리오별 전망 (예측 변수 반영)');
+    section(m, '🔮 시나리오별 전망 (이렇게 될 수도, 저렇게 될 수도)');
     const sc = el('table', 'plain');
     {
       const thead = el('thead'); const hr = el('tr');
-      ['시나리오', '확률', '예상가', '수익률', '설명'].forEach((h, i) => hr.appendChild(el('th', i === 1 || i === 2 || i === 3 ? 'num' : null, h)));
+      ['시나리오', '확률', '예상가', '수익률', '설명'].forEach((h, i) => hr.appendChild(el('th', i >= 1 && i <= 3 ? 'num' : null, h)));
       thead.appendChild(hr); sc.appendChild(thead);
       const tb = el('tbody');
       for (const s of p.scenarios) {
@@ -603,30 +763,31 @@
     }
     m.appendChild(sc);
 
-    // 시뮬레이션 차트
     if (sim) {
-      section(m, '몬테카를로 시뮬레이션');
+      section(m, '🎲 미래를 2만 번 실험해 봤어요 (몬테카를로 시뮬레이션)');
+      if (state.easy) {
+        const ep = el('p', 'summary');
+        ep.appendChild(linkTerms('컴퓨터로 이 주식의 미래를 2만 번 미리 살아 봤어요. 아래 차트의 파란 띠가 넓을수록 결과가 들쑥날쑥하다는 뜻이에요. 이익확률이 51%라면 100번 중 49번은 잃는다는 뜻 — 절대 "확실히 번다"가 아니에요!'));
+        m.appendChild(ep);
+      }
       m.appendChild(fanChart(sim, p));
       const spacer = el('div'); spacer.style.height = '0.6rem'; m.appendChild(spacer);
       m.appendChild(histChart(sim));
-      const simNote = el('p', 'summary', `경로 ${sim.paths.toLocaleString()}개 · 중앙값 ${pct(sim.final.median)} · 90% 신뢰구간 ${pct(sim.final.p5)} ~ ${pct(sim.final.p95)}. 과거 변동성 기반 확률 모형이며 미래 수익 보장이 아닙니다.`);
+      const simNote = el('p', 'summary', `경로 ${sim.paths.toLocaleString()}개 · 중앙값 ${pct(sim.final.median)} · 90% 신뢰구간 ${pct(sim.final.p5)} ~ ${pct(sim.final.p95)}.`);
       m.appendChild(simNote);
     }
 
-    // 판단 근거
-    section(m, '판단 근거 — 뉴스');
-    const ulN = el('ul', 'pts'); p.rationale.news.forEach(t => ulN.appendChild(el('li', null, t))); m.appendChild(ulN);
-    section(m, '판단 근거 — 차트(기술적)');
-    const ulT = el('ul', 'pts'); p.rationale.technical.forEach(t => ulT.appendChild(el('li', null, t))); m.appendChild(ulT);
-    section(m, '판단 근거 — 펀더멘털');
-    const ulF = el('ul', 'pts'); p.rationale.fundamental.forEach(t => ulF.appendChild(el('li', null, t))); m.appendChild(ulF);
+    section(m, '📰 왜 추천해요? — 뉴스');
+    const ulN = el('ul', 'pts'); p.rationale.news.forEach(t => ulN.appendChild(liTerms(t))); m.appendChild(ulN);
+    section(m, '📉 왜 추천해요? — 차트(가격 움직임)');
+    const ulT = el('ul', 'pts'); p.rationale.technical.forEach(t => ulT.appendChild(liTerms(t))); m.appendChild(ulT);
+    section(m, '🏢 왜 추천해요? — 회사 실력(펀더멘털)');
+    const ulF = el('ul', 'pts'); p.rationale.fundamental.forEach(t => ulF.appendChild(liTerms(t))); m.appendChild(ulF);
 
-    // 예측 변수(리스크)
-    section(m, '예측 변수 · 리스크 요인');
-    const ulR = el('ul', 'pts'); p.riskFactors.forEach(t => ulR.appendChild(el('li', null, t))); m.appendChild(ulR);
+    section(m, '⚠️ 조심할 것들 (예측 변수)');
+    const ulR = el('ul', 'pts'); p.riskFactors.forEach(t => ulR.appendChild(liTerms(t))); m.appendChild(ulR);
 
-    // 배당
-    section(m, '배당 정보');
+    section(m, '🎁 배당 (회사가 주는 용돈)');
     if (p.dividend) {
       const d = p.dividend;
       const dt = el('table', 'plain');
@@ -638,13 +799,14 @@
       row('다음 배당', d.next);
       dt.appendChild(tb);
       m.appendChild(dt);
-      m.appendChild(el('p', 'summary', d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
+      const dn = el('p', 'summary');
+      dn.appendChild(linkTerms(d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
+      m.appendChild(dn);
     } else {
-      m.appendChild(el('p', 'summary', '무배당 종목입니다.'));
+      m.appendChild(el('p', 'summary', '이 회사는 배당을 주지 않아요. 주가가 오르는 것으로만 돈을 벌 수 있어요.'));
     }
 
-    // 세금 계산기
-    section(m, '세후 실수령 계산기 (한국 기준)');
+    section(m, '🧾 실제로 얼마 받아요? (세후 계산기)');
     m.appendChild(taxCalcBlock(p));
 
     m.appendChild(el('p', 'summary', '⚠️ ' + RECO.meta.disclaimer));
@@ -654,26 +816,222 @@
     back.scrollTop = 0;
   }
 
+  // ───────── 연습하기 (가상 계획) ─────────
+  function loadBasket() {
+    try { return JSON.parse(localStorage.getItem('basket-v1')) || { budget: 3000000, items: [] }; }
+    catch { return { budget: 3000000, items: [] }; }
+  }
+  function saveBasket(b) { localStorage.setItem('basket-v1', JSON.stringify(b)); }
+
+  function renderPractice() {
+    const wrap = $('#view-practice');
+    wrap.textContent = '';
+    wrap.appendChild(el('p', 'viewdesc', '진짜 돈 없이 계획을 세워 보는 연습장이에요. 예산을 정하고 종목을 담으면, 계획대로 됐을 때와 잘 안 됐을 때 결과를 미리 보여 줘요. (내 브라우저에만 저장돼요)'));
+    const basket = loadBasket();
+    const fx = RECO.meta.fxUsdKrw;
+    const picks = batchPicks();
+
+    const grid = el('div', 'pgrid');
+
+    // 왼쪽: 장바구니
+    const left = el('div', 'basket');
+    left.appendChild(el('h3', null, '🧺 내 연습 장바구니'));
+    const budRow = el('div', 'brow');
+    budRow.appendChild(el('span', 'bnm', '가상 예산'));
+    const budIn = el('input'); budIn.type = 'number'; budIn.value = basket.budget; budIn.min = 10000; budIn.step = 100000;
+    budRow.appendChild(budIn);
+    budRow.appendChild(el('span', null, '원'));
+    left.appendChild(budRow);
+
+    const itemsBox = el('div');
+    left.appendChild(itemsBox);
+
+    const addRow = el('div', 'addrow');
+    const sel = el('select');
+    picks.forEach(p => {
+      const o = el('option', null, `${LEVELS[pickLevel(p)].label.slice(0, 2)} ${p.name} (${p.ticker})`);
+      o.value = p.id;
+      sel.appendChild(o);
+    });
+    const addBtn = el('button', null, '+ 담기');
+    addBtn.type = 'button';
+    addRow.appendChild(sel); addRow.appendChild(addBtn);
+    left.appendChild(addRow);
+
+    // 오른쪽: 결과
+    const right = el('div', 'basket');
+    right.appendChild(el('h3', null, '🔭 계획대로 되면 이렇게 돼요'));
+    const outBox = el('div');
+    right.appendChild(outBox);
+
+    function findPick(id) { return picks.find(p => p.id === id); }
+
+    function computeRow(item) {
+      const p = findPick(item.pickId);
+      if (!p) return null;
+      const buyP = (p.buy.low + p.buy.high) / 2;
+      const unit = p.currency === 'USD' ? buyP * fx : buyP;
+      // 미국주식은 소수점(0.01주) 매매 기준, 한국주식은 1주 단위
+      const shares = unit > 0
+        ? (p.currency === 'USD' ? Math.floor(item.amount / unit * 100) / 100 : Math.floor(item.amount / unit))
+        : 0;
+      const invested = shares * unit;
+      const val = ret => invested * (1 + ret / 100);
+      const bull = p.scenarios[0], base = p.scenarios[1], bear = p.scenarios[2];
+      return { p, unit, shares, invested, bull: val(bull.ret), base: val(base.ret), bear: val(bear.ret) };
+    }
+
+    function renderItems() {
+      itemsBox.textContent = '';
+      basket.items.forEach((item, idx) => {
+        const p = findPick(item.pickId);
+        if (!p) return;
+        const row = el('div', 'brow');
+        row.appendChild(el('span', 'bnm', `${p.name}`));
+        const amt = el('input'); amt.type = 'number'; amt.value = item.amount; amt.min = 0; amt.step = 50000;
+        amt.addEventListener('input', () => { item.amount = +amt.value || 0; saveBasket(basket); renderOut(); });
+        row.appendChild(amt);
+        row.appendChild(el('span', null, '원'));
+        const rm = el('button', 'brm', '빼기');
+        rm.type = 'button';
+        rm.addEventListener('click', () => { basket.items.splice(idx, 1); saveBasket(basket); renderItems(); renderOut(); });
+        row.appendChild(rm);
+        itemsBox.appendChild(row);
+      });
+      if (!basket.items.length) itemsBox.appendChild(el('p', 'viewdesc', '아직 비어 있어요. 아래에서 종목을 담아 보세요!'));
+    }
+
+    function renderOut() {
+      outBox.textContent = '';
+      const rows = basket.items.map(computeRow).filter(Boolean);
+      const totalAmt = basket.items.reduce((s, i) => s + (+i.amount || 0), 0);
+      const over = totalAmt > (+budIn.value || 0);
+      if (over) {
+        const warn = el('p', 'viewdesc', `⚠️ 예산(${krw(+budIn.value || 0)})보다 ${krw(totalAmt - (+budIn.value || 0))} 더 담았어요! 금액을 줄여 보세요.`);
+        warn.style.color = 'var(--status-critical)';
+        outBox.appendChild(warn);
+      }
+      if (!rows.length) { outBox.appendChild(el('p', 'viewdesc', '종목을 담으면 결과가 여기 나타나요.')); return; }
+      const tbl = el('table', 'plain');
+      const thead = el('thead'); const hr = el('tr');
+      ['종목', '살 수 있는 수', '😊 잘 되면', '🙂 보통', '😰 잘 안 되면'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
+      thead.appendChild(hr); tbl.appendChild(thead);
+      const tb = el('tbody');
+      let tInv = 0, tBull = 0, tBase = 0, tBear = 0;
+      for (const r of rows) {
+        tInv += r.invested; tBull += r.bull; tBase += r.base; tBear += r.bear;
+        const tr = el('tr');
+        if (r.shares === 0) {
+          tr.appendChild(el('td', null, r.p.name));
+          const td = el('td', null, `이 돈으론 1주를 못 사요 (1주 ≈ ${krw(r.unit)}) — 금액을 올려 보세요`);
+          td.colSpan = 4;
+          td.style.color = 'var(--text-muted)';
+          tr.appendChild(td);
+          tb.appendChild(tr);
+          continue;
+        }
+        tr.appendChild(el('td', 'num', r.shares.toLocaleString('ko-KR') + '주'));
+        tr.insertBefore(el('td', null, r.p.name), tr.firstChild);
+        [['bull', r.bull], ['base', r.base], ['bear', r.bear]].forEach(([, v]) => {
+          const td = el('td', 'num');
+          td.appendChild(el('span', pctCls(v - r.invested), krw(v)));
+          tr.appendChild(td);
+        });
+        tb.appendChild(tr);
+      }
+      const trT = el('tr');
+      trT.appendChild(el('td', null, '합계 (넣은 돈 ' + krw(tInv) + ')'));
+      trT.appendChild(el('td', 'num', ''));
+      [tBull, tBase, tBear].forEach(v => {
+        const td = el('td', 'num');
+        const diff = v - tInv;
+        td.appendChild(el('span', pctCls(diff), krw(v) + ' (' + (diff >= 0 ? '+' : '') + krw(diff).replace('원', '') + '원)'));
+        trT.appendChild(td);
+      });
+      tb.appendChild(trT);
+      tbl.appendChild(tb);
+      outBox.appendChild(tbl);
+      outBox.appendChild(el('p', 'note', '시나리오 수익률(낙관/기본/비관)을 그대로 적용한 단순 계산이에요. 미국주식은 소수점(0.01주) 매매 기준. 세금·수수료·환율 변화는 뺐어요. 진짜 미래는 아무도 몰라요!'));
+    }
+
+    budIn.addEventListener('input', () => { basket.budget = +budIn.value || 0; saveBasket(basket); renderOut(); });
+    addBtn.addEventListener('click', () => {
+      basket.items.push({ pickId: sel.value, amount: 500000 });
+      saveBasket(basket);
+      renderItems(); renderOut();
+    });
+
+    renderItems(); renderOut();
+    grid.appendChild(left); grid.appendChild(right);
+    wrap.appendChild(grid);
+  }
+
+  // ───────── 배우기 ─────────
+  function renderLearn() {
+    const wrap = $('#view-learn');
+    wrap.textContent = '';
+    wrap.appendChild(el('p', 'viewdesc', '5분이면 충분해요. 위에서부터 차례로 읽어 보세요!'));
+
+    wrap.appendChild(el('h2', 'homesec', '📖 주식 기초 8강'));
+    LESSONS.forEach((ls, i) => {
+      const d = el('details', 'lesson');
+      d.id = 'lesson-' + i;
+      const s = el('summary', null, `${ls.icon} ${i + 1}강. ${ls.title}`);
+      d.appendChild(s);
+      const body = el('div', 'lb');
+      body.appendChild(linkTerms(ls.body));
+      d.appendChild(body);
+      wrap.appendChild(d);
+    });
+
+    wrap.appendChild(el('h2', 'homesec', '✅ 사기 전 체크리스트 (7가지)'));
+    const ol = el('ol', 'pts');
+    ol.style.paddingLeft = '1.3rem';
+    CHECKLIST.forEach(t => ol.appendChild(liTerms(t)));
+    wrap.appendChild(ol);
+
+    wrap.appendChild(el('h2', 'homesec', '❓ 자주 묻는 질문'));
+    FAQ.forEach((f, i) => {
+      const d = el('details', 'lesson');
+      d.id = 'faq-' + i;
+      d.appendChild(el('summary', null, 'Q. ' + f.q));
+      const body = el('div', 'lb');
+      body.appendChild(linkTerms('A. ' + f.a));
+      d.appendChild(body);
+      wrap.appendChild(d);
+    });
+
+    wrap.appendChild(el('h2', 'homesec', '📚 용어사전 (누르지 않아도 다 보여요)'));
+    const gg = el('div', 'gloss-grid');
+    GLOSSARY.forEach((g, i) => {
+      const c = el('div', 'gloss');
+      c.id = 'gloss-' + i;
+      c.appendChild(el('b', null, g.term));
+      c.appendChild(el('span', null, g.easy));
+      gg.appendChild(c);
+    });
+    wrap.appendChild(gg);
+  }
+
   // ───────── 히스토리 ─────────
   function renderHistory() {
-    const wrap = $('#history');
+    const wrap = $('#view-history');
     wrap.textContent = '';
     wrap.appendChild(el('p', 'hist-note',
-      '추천이 생성될 때마다 배치 단위로 이 저장소(data.js)에 자동 기록되어 보존됩니다. 과거 배치는 수정되지 않으며, 아래에서 언제든 다시 열람할 수 있습니다.'));
+      '추천이 새로 만들어질 때마다 여기에 자동으로 기록돼요. 과거 기록은 바뀌지 않아서, 나중에 "그때 추천이 맞았나?" 하고 확인해 볼 수 있어요.'));
     RECO.batches.forEach((b, i) => {
       const box = el('div', 'batch');
       box.appendChild(el('div', 'bt', b.title));
       box.appendChild(el('div', 'bd', `생성 시각 ${b.generatedAt} · ${b.picks.length}개 종목`));
       box.appendChild(el('div', 'bs', b.marketSnapshot));
       const summary = el('div', 'bs');
-      const names = b.picks.map(p => `${p.name}(${p.ticker})`).join(', ');
-      summary.textContent = '종목: ' + names;
+      summary.textContent = '종목: ' + b.picks.map(p => `${p.name}(${p.ticker})`).join(', ');
       box.appendChild(summary);
       const openBtn = el('button', 'bopen', '이 배치의 추천 보기 →');
       openBtn.type = 'button';
       openBtn.addEventListener('click', () => {
         state.batch = i; state.view = 'reco';
-        state.horizon = 'all'; state.market = 'all'; state.risk = 'all'; state.divOnly = false;
+        state.horizon = 'all'; state.market = 'all'; state.level = 'all'; state.divOnly = false;
         renderAll();
         window.scrollTo({ top: 0 });
       });
@@ -684,39 +1042,114 @@
 
   // ───────── 세금 가이드 ─────────
   function renderTax() {
-    const wrap = $('#tax');
+    const wrap = $('#view-tax');
     wrap.textContent = '';
+    wrap.appendChild(el('p', 'viewdesc', '주식으로 번 돈에는 세금이 붙어요. 규칙을 알면 실제로 받는 돈을 정확히 알 수 있어요.'));
     const rules = [
-      ['미국주식 양도소득세', '연간 해외주식 양도차익 합산 250만원 공제 후 22% (지방소득세 포함). 다음 해 5월 자진 신고·납부.'],
-      ['미국주식 배당', '미국에서 15% 원천징수. 국내 추가 원천징수 없음(금융소득 2,000만원 이하 기준).'],
-      ['국내 상장주식 양도 (소액주주 장내)', '양도소득세 없음. 매도 시 증권거래세 0.15% (2026년 코스피 기준).'],
-      ['국내 배당', '15.4% (소득세 14% + 지방소득세 1.4%) 원천징수.'],
-      ['금융소득 종합과세', '이자+배당 연 2,000만원 초과분은 종합소득에 합산 과세 — 고배당 대량 보유 시 유의.'],
+      ['미국주식 양도소득세', '1년 동안 번 돈에서 250만원을 뺀 나머지의 22%. 다음 해 5월에 신고해요.'],
+      ['미국주식 배당', '미국에서 15%를 미리 떼고 줘요. 보통 한국에서 추가로 내지 않아요.'],
+      ['한국주식 팔 때', '번 돈에 세금 없음(소액주주 기준)! 대신 팔 때 금액의 0.15%를 증권거래세로 내요.'],
+      ['한국주식 배당', '15.4%를 미리 떼고 줘요.'],
+      ['주의', '이자+배당이 1년에 2,000만원을 넘으면 세금 계산이 복잡해져요(종합과세). 그 정도가 되면 세무사와 상담!'],
     ];
     const tbl = el('table', 'plain');
     const thead = el('thead'); const hr = el('tr');
     ['구분', '내용'].forEach(h => hr.appendChild(el('th', null, h)));
     thead.appendChild(hr); tbl.appendChild(thead);
     const tb = el('tbody');
-    rules.forEach(([k, v]) => { const tr = el('tr'); tr.appendChild(el('td', null, k)); tr.appendChild(el('td', null, v)); tb.appendChild(tr); });
+    rules.forEach(([k, v]) => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, k));
+      const td = el('td'); td.appendChild(linkTerms(v)); tr.appendChild(td);
+      tb.appendChild(tr);
+    });
     tbl.appendChild(tb);
     wrap.appendChild(tbl);
-    wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 해당 종목의 매수·목표가가 채워진 세후 실수령 계산기를 바로 사용할 수 있습니다. 세법은 변경될 수 있으며, 실제 신고 시 세무 전문가와 상담하세요.'));
+    wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 그 종목의 가격이 미리 채워진 계산기를 쓸 수 있어요. 세법은 바뀔 수 있어요 — 실제 신고는 어른(세무 전문가)과 함께!'));
   }
 
-  // ───────── 뷰/필터 이벤트 ─────────
+  // ───────── 검색 ─────────
+  const searchBack = $('#search-back');
+  const searchInput = $('#searchinput');
+  const searchResults = $('#searchresults');
+  function openSearch() { searchBack.classList.add('open'); searchInput.value = ''; runSearch(''); searchInput.focus(); document.body.style.overflow = 'hidden'; }
+  function closeSearch() { searchBack.classList.remove('open'); document.body.style.overflow = ''; }
+  $('#searchbtn').addEventListener('click', openSearch);
+  searchBack.addEventListener('click', e => { if (e.target === searchBack) closeSearch(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && searchBack.classList.contains('open')) closeSearch();
+    if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch(); }
+  });
+
+  function searchIndex() {
+    const idx = [];
+    VIEWS.forEach(v => idx.push({ kind: '메뉴', label: MENU_LABEL[v], desc: MENU_DESC[v], go: () => { state.view = v; renderAll(); } }));
+    batchPicks().forEach(p => idx.push({
+      kind: '종목', label: `${p.name} ${p.ticker}`, desc: (EASY[p.id] ? EASY[p.id].company : p.rationale.summary).slice(0, 40),
+      go: () => openModal(p),
+    }));
+    GLOSSARY.forEach((g, i) => idx.push({
+      kind: '용어', label: g.term, desc: g.easy.slice(0, 40),
+      go: () => {
+        state.view = 'learn'; renderAll();
+        const t = document.getElementById('gloss-' + i);
+        if (t) { t.scrollIntoView({ block: 'center' }); t.style.outline = '2px solid var(--accent)'; setTimeout(() => { t.style.outline = ''; }, 1600); }
+      },
+    }));
+    LESSONS.forEach((ls, i) => idx.push({
+      kind: '배우기', label: `${ls.icon} ${ls.title}`, desc: ls.body.slice(0, 40),
+      go: () => {
+        state.view = 'learn'; renderAll();
+        const d = document.getElementById('lesson-' + i);
+        if (d) { d.open = true; d.scrollIntoView({ block: 'center' }); }
+      },
+    }));
+    FAQ.forEach((f, i) => idx.push({
+      kind: 'FAQ', label: f.q, desc: f.a.slice(0, 40),
+      go: () => {
+        state.view = 'learn'; renderAll();
+        const d = document.getElementById('faq-' + i);
+        if (d) { d.open = true; d.scrollIntoView({ block: 'center' }); }
+      },
+    }));
+    return idx;
+  }
+  function runSearch(q) {
+    searchResults.textContent = '';
+    const idx = searchIndex();
+    const qq = q.trim().toLowerCase();
+    const hits = qq
+      ? idx.filter(e => (e.label + ' ' + e.desc + ' ' + e.kind).toLowerCase().includes(qq))
+      : idx.filter(e => e.kind === '메뉴');
+    hits.slice(0, 20).forEach(e => {
+      const btn = el('button', 'sres');
+      btn.type = 'button';
+      btn.appendChild(el('span', 'sk', e.kind));
+      btn.appendChild(el('span', null, e.label));
+      btn.appendChild(el('span', 'sd', e.desc));
+      btn.addEventListener('click', () => { closeSearch(); e.go(); window.scrollTo({ top: 0 }); });
+      searchResults.appendChild(btn);
+    });
+    if (!hits.length) searchResults.appendChild(el('p', 'viewdesc', '검색 결과가 없어요. 다른 말로 찾아보세요!'));
+  }
+  searchInput.addEventListener('input', () => runSearch(searchInput.value));
+
+  // ───────── 뷰 전환 ─────────
   function renderAll() {
     document.querySelectorAll('.viewtabs button').forEach(b =>
       b.setAttribute('aria-selected', String(b.dataset.view === state.view)));
-    $('#view-reco').style.display = state.view === 'reco' ? '' : 'none';
-    $('#history').style.display = state.view === 'history' ? '' : 'none';
-    $('#tax').style.display = state.view === 'tax' ? '' : 'none';
+    VIEWS.forEach(v => { $('#view-' + v).style.display = state.view === v ? '' : 'none'; });
+    if (state.view === 'home') renderHome();
     if (state.view === 'reco') {
       document.querySelectorAll('#hseg button').forEach(b =>
         b.setAttribute('aria-pressed', String(b.dataset.h === state.horizon)));
+      $('#market').value = state.market;
+      $('#level').value = state.level;
       $('#batchchip').textContent = RECO.batches[state.batch].title;
       renderCards();
     }
+    if (state.view === 'practice') renderPractice();
+    if (state.view === 'learn') renderLearn();
     if (state.view === 'history') renderHistory();
     if (state.view === 'tax') renderTax();
   }
@@ -726,12 +1159,19 @@
   document.querySelectorAll('#hseg button').forEach(b =>
     b.addEventListener('click', () => { state.horizon = b.dataset.h; renderAll(); }));
   $('#market').addEventListener('change', e => { state.market = e.target.value; renderAll(); });
-  $('#risk').addEventListener('change', e => { state.risk = e.target.value; renderAll(); });
+  $('#level').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
   $('#divonly').addEventListener('change', e => { state.divOnly = e.target.checked; renderAll(); });
 
-  // 헤더 메타
-  $('#asof').textContent = `최신 배치: ${RECO.batches[0].generatedAt} 생성 · 기준가는 2026-07-06~07 종가`;
-  $('#disclaimer').textContent = '⚠️ ' + RECO.meta.disclaimer;
+  const easyChk = $('#easymode');
+  easyChk.checked = state.easy;
+  easyChk.addEventListener('change', () => {
+    state.easy = easyChk.checked;
+    localStorage.setItem('easymode', state.easy ? '1' : '0');
+    renderAll();
+  });
+
+  $('#asof').textContent = `최신 추천: ${RECO.batches[0].generatedAt} · 기준가는 2026-07-06~07 종가`;
+  $('#disclaimer').textContent = '⚠️ ' + RECO.meta.disclaimer + ' 미성년자는 보호자와 함께 계좌를 만들 수 있으며, 실제 투자 전 "연습하기"로 충분히 연습하는 것을 권장합니다.';
 
   renderAll();
 })();
