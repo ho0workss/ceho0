@@ -3,132 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ceho0 — 자동 배포 파이프라인</title>
-  <style>
-    :root {
-      --bg: #f6f7f9;
-      --surface: #ffffff;
-      --text: #1a1d21;
-      --text-muted: #5c6470;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
-      --ok: #16a34a;
-      --ok-soft: #dcfce7;
-      --border: #e4e7eb;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0f1115;
-        --surface: #181b21;
-        --text: #e8eaed;
-        --text-muted: #9aa3af;
-        --accent: #60a5fa;
-        --accent-soft: #1e3a5f;
-        --ok: #4ade80;
-        --ok-soft: #14351f;
-        --border: #2a2e36;
-      }
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem 1.25rem;
-      line-height: 1.6;
-    }
-    main { max-width: 640px; width: 100%; }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: var(--ok-soft);
-      color: var(--ok);
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      margin-bottom: 1.5rem;
-    }
-    .badge::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--ok);
-    }
-    h1 {
-      font-size: clamp(1.8rem, 5vw, 2.6rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.75rem;
-    }
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 1.05rem;
-      margin-bottom: 2.5rem;
-    }
-    .pipeline {
-      display: flex;
-      align-items: stretch;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-    .step {
-      flex: 1 1 160px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.25rem 1rem;
-      text-align: center;
-    }
-    .step .icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
-    .step .name { font-weight: 600; font-size: 0.95rem; }
-    .step .desc { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem; }
-    footer {
-      margin-top: 2.5rem;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      text-align: center;
-    }
-    footer code {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.1rem 0.4rem;
-      font-size: 0.78rem;
-    }
-  </style>
+  <meta name="color-scheme" content="light dark">
+  <title>ceho0 — 종목 추천 대시보드</title>
+  <meta name="description" content="뉴스·차트·펀더멘털 지표와 몬테카를로 시뮬레이션 기반 종목 추천 대시보드. 당일·1주·1개월·장기 전략별 매수/매도 계획, 배당·세후 실수령 계산, 추천 히스토리 자동 기록.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <main>
-    <span class="badge">배포 파이프라인 가동 중</span>
-    <h1>ceho0</h1>
-    <p class="subtitle">요청 → GitHub 커밋 → Vercel 배포까지 자동으로 이어지는 웹 배포 파이프라인이 준비되었습니다.</p>
-    <div class="pipeline">
-      <div class="step">
-        <div class="icon">💬</div>
-        <div class="name">요청</div>
-        <div class="desc">만들고 싶은 것을 말하면</div>
+<body class="viz-root">
+  <div class="wrap">
+    <header class="site">
+      <h1>📈 종목 추천 대시보드</h1>
+      <p class="sub">뉴스 · 차트 · 펀더멘털 지표와 몬테카를로 시뮬레이션(20,000 경로)을 결합한 기간별 매매 전략</p>
+      <span class="asof" id="asof"></span>
+      <p class="disclaimer" id="disclaimer"></p>
+    </header>
+
+    <nav class="viewtabs" aria-label="보기 선택">
+      <button type="button" data-view="reco" aria-selected="true">추천 종목</button>
+      <button type="button" data-view="history" aria-selected="false">히스토리</button>
+      <button type="button" data-view="tax" aria-selected="false">세금 가이드</button>
+    </nav>
+
+    <section id="view-reco">
+      <div class="filters" role="group" aria-label="필터">
+        <div class="seg" id="hseg" role="group" aria-label="투자 기간">
+          <button type="button" data-h="all" aria-pressed="true">전체</button>
+          <button type="button" data-h="day" aria-pressed="false">당일</button>
+          <button type="button" data-h="week" aria-pressed="false">1주일</button>
+          <button type="button" data-h="month" aria-pressed="false">1개월</button>
+          <button type="button" data-h="long" aria-pressed="false">장기</button>
+        </div>
+        <select id="market" aria-label="시장">
+          <option value="all">시장 전체</option>
+          <option value="US">미국</option>
+          <option value="KR">한국</option>
+        </select>
+        <select id="risk" aria-label="리스크">
+          <option value="all">리스크 전체</option>
+          <option value="low">낮음</option>
+          <option value="mid">중간</option>
+          <option value="high">높음</option>
+          <option value="veryhigh">매우 높음</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="divonly"> 배당주만</label>
+        <span class="count" id="count"></span>
       </div>
-      <div class="step">
-        <div class="icon">📦</div>
-        <div class="name">GitHub</div>
-        <div class="desc">코드로 구현해 커밋·푸시</div>
-      </div>
-      <div class="step">
-        <div class="icon">🚀</div>
-        <div class="name">Vercel</div>
-        <div class="desc">웹페이지로 즉시 배포</div>
-      </div>
-    </div>
-    <footer>
-      <code>ho0workss/ceho0</code> 저장소에서 자동 배포됩니다.
+      <p class="hist-note" style="margin-bottom:0.9rem">배치: <strong id="batchchip"></strong> — 카드를 클릭하면 매매 계획 · 시뮬레이션 · 판단 근거 · 배당 · 세후 계산기를 볼 수 있습니다.</p>
+      <div class="grid" id="cards"></div>
+    </section>
+
+    <section id="history" style="display:none"></section>
+    <section id="tax" style="display:none"></section>
+
+    <footer class="site">
+      <p>ho0workss/ceho0 · GitHub 푸시 시 Vercel 자동 배포 · 데이터 출처: CNBC, TheStreet, MacroTrends, TradingKey, Investing.com, stockanalysis.com 외 (2026-07-06~08 수집)</p>
     </footer>
-  </main>
+  </div>
+
+  <div class="modal-back" id="modal-back" role="dialog" aria-modal="true">
+    <div class="modal"></div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="data/sim.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,159 @@
+// Monte Carlo simulation for stock recommendation scenarios.
+// GBM (geometric Brownian motion) with per-ticker annualized drift/volatility.
+// Deterministic seed so committed results are reproducible: node scripts/simulate.mjs > data/sim.json
+//
+// Output per pick:
+//   bands: percentile bands (p5/p25/p50/p75/p95) of cumulative return (%) per step — fan chart용
+//   final: { pProfit, pHitTarget, pHitStop, median, mean, p5, p25, p75, p95 } (%)
+//   hist:  histogram of final returns (30 bins)
+
+const TRADING_DAYS = 252;
+const N_PATHS = 20000;
+
+// ---- seeded RNG (mulberry32) + Box-Muller normal ----
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function makeNormal(rand) {
+  let spare = null;
+  return function () {
+    if (spare !== null) { const v = spare; spare = null; return v; }
+    let u = 0, v = 0, s = 0;
+    do {
+      u = rand() * 2 - 1;
+      v = rand() * 2 - 1;
+      s = u * u + v * v;
+    } while (s >= 1 || s === 0);
+    const m = Math.sqrt(-2 * Math.log(s) / s);
+    spare = v * m;
+    return u * m;
+  };
+}
+
+// ---- pick configs (prices as of 2026-07-07/08 close, see data.js sources) ----
+// horizon: steps = number of simulation steps; dt = years per step
+// day picks: 13 intraday half-hour steps across one 6.5h session
+const PICKS = [
+  // 당일
+  { id: 'day-nvda',   s0: 195.55,  target: 198.0,   stop: 188.0,   annVol: 0.45, annDrift: 0.25, kind: 'day' },
+  { id: 'day-samsung',s0: 296000,  target: 302000,  stop: 283000,  annVol: 0.35, annDrift: 0.20, kind: 'day' },
+  { id: 'day-tsla',   s0: 402.90,  target: 412.0,   stop: 389.0,   annVol: 0.62, annDrift: 0.15, kind: 'day' },
+  // 1주
+  { id: 'week-tsm',   s0: 434.16,  target: 455.0,   stop: 415.0,   annVol: 0.40, annDrift: 0.22, kind: 'week' },
+  { id: 'week-hynix', s0: 2870000, target: 2980000, stop: 2650000, annVol: 0.48, annDrift: 0.25, kind: 'week' },
+  { id: 'week-tsla',  s0: 402.90,  target: 425.0,   stop: 382.0,   annVol: 0.62, annDrift: 0.15, kind: 'week' },
+  // 1개월
+  { id: 'month-msft', s0: 386.74,  target: 412.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month' },
+  { id: 'month-samsung', s0: 296000, target: 325000, stop: 272000, annVol: 0.35, annDrift: 0.20, kind: 'month' },
+  { id: 'month-nvda', s0: 195.55,  target: 214.0,   stop: 178.0,   annVol: 0.45, annDrift: 0.25, kind: 'month' },
+  // 장기 (12개월)
+  { id: 'long-msft',  s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
+  { id: 'long-ko',    s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
+  { id: 'long-samsung', s0: 296000, target: 420000, stop: 240000,  annVol: 0.35, annDrift: 0.20, kind: 'long' },
+];
+
+const KIND_STEPS = {
+  day:   { steps: 13,  dtYears: (1 / TRADING_DAYS) / 13, sampleEvery: 1 },
+  week:  { steps: 5,   dtYears: 1 / TRADING_DAYS,        sampleEvery: 1 },
+  month: { steps: 21,  dtYears: 1 / TRADING_DAYS,        sampleEvery: 3 },
+  long:  { steps: 252, dtYears: 1 / TRADING_DAYS,        sampleEvery: 21 },
+};
+
+function percentile(sorted, p) {
+  const idx = (sorted.length - 1) * p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function simulate(pick, seed) {
+  const { steps, dtYears, sampleEvery } = KIND_STEPS[pick.kind];
+  const rand = mulberry32(seed);
+  const normal = makeNormal(rand);
+  const drift = (pick.annDrift - 0.5 * pick.annVol * pick.annVol) * dtYears;
+  const diffusion = pick.annVol * Math.sqrt(dtYears);
+
+  // sampled step indices for fan-chart bands (always include step 0 and last)
+  const sampleIdx = [0];
+  for (let s = sampleEvery; s < steps; s += sampleEvery) sampleIdx.push(s);
+  if (sampleIdx[sampleIdx.length - 1] !== steps) sampleIdx.push(steps);
+
+  const perStepReturns = sampleIdx.map(() => new Float64Array(N_PATHS));
+  const finals = new Float64Array(N_PATHS);
+  let hitTarget = 0, hitStop = 0, profit = 0;
+
+  for (let p = 0; p < N_PATHS; p++) {
+    let logS = Math.log(pick.s0);
+    let hitT = false, hitS = false;
+    let si = 1; // sampleIdx[0] is step 0 (return 0)
+    perStepReturns[0][p] = 0;
+    for (let step = 1; step <= steps; step++) {
+      logS += drift + diffusion * normal();
+      const price = Math.exp(logS);
+      if (!hitT && !hitS) {
+        if (price >= pick.target) hitT = true;
+        else if (price <= pick.stop) hitS = true;
+      }
+      if (si < sampleIdx.length && sampleIdx[si] === step) {
+        perStepReturns[si][p] = (price / pick.s0 - 1) * 100;
+        si++;
+      }
+    }
+    const fin = (Math.exp(logS) / pick.s0 - 1) * 100;
+    finals[p] = fin;
+    if (fin > 0) profit++;
+    if (hitT) hitTarget++;
+    if (hitS) hitStop++;
+  }
+
+  const bands = { steps: sampleIdx, p5: [], p25: [], p50: [], p75: [], p95: [] };
+  for (let i = 0; i < sampleIdx.length; i++) {
+    const arr = Array.from(perStepReturns[i]).sort((a, b) => a - b);
+    bands.p5.push(+percentile(arr, 0.05).toFixed(2));
+    bands.p25.push(+percentile(arr, 0.25).toFixed(2));
+    bands.p50.push(+percentile(arr, 0.50).toFixed(2));
+    bands.p75.push(+percentile(arr, 0.75).toFixed(2));
+    bands.p95.push(+percentile(arr, 0.95).toFixed(2));
+  }
+
+  const sortedFinals = Array.from(finals).sort((a, b) => a - b);
+  const mean = sortedFinals.reduce((s, v) => s + v, 0) / N_PATHS;
+
+  // histogram: 30 bins across p1..p99
+  const lo = percentile(sortedFinals, 0.01), hi = percentile(sortedFinals, 0.99);
+  const nBins = 30, w = (hi - lo) / nBins;
+  const hist = { lo: +lo.toFixed(2), hi: +hi.toFixed(2), counts: new Array(nBins).fill(0) };
+  for (const v of sortedFinals) {
+    if (v < lo || v > hi) continue;
+    const b = Math.min(nBins - 1, Math.floor((v - lo) / w));
+    hist.counts[b]++;
+  }
+
+  return {
+    id: pick.id,
+    paths: N_PATHS,
+    bands,
+    final: {
+      pProfit: +(profit / N_PATHS * 100).toFixed(1),
+      pHitTarget: +(hitTarget / N_PATHS * 100).toFixed(1),
+      pHitStop: +(hitStop / N_PATHS * 100).toFixed(1),
+      mean: +mean.toFixed(2),
+      median: +percentile(sortedFinals, 0.5).toFixed(2),
+      p5: +percentile(sortedFinals, 0.05).toFixed(2),
+      p25: +percentile(sortedFinals, 0.25).toFixed(2),
+      p75: +percentile(sortedFinals, 0.75).toFixed(2),
+      p95: +percentile(sortedFinals, 0.95).toFixed(2),
+    },
+    hist,
+  };
+}
+
+const results = {};
+PICKS.forEach((pick, i) => { results[pick.id] = simulate(pick, 42 + i * 1000); });
+console.log(JSON.stringify(results, null, 1));
