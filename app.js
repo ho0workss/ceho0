@@ -1337,7 +1337,8 @@
     renderAll();
   });
 
-  $('#asof').textContent = `최신 추천: ${RECO.batches[0].generatedAt} · 기준가는 2026-07-06~07 종가`;
+  $('#asof').textContent = `최신 추천: ${RECO.batches[0].generatedAt}` +
+    (RECO.batches[0].pricesAsOf ? ` · ${RECO.batches[0].pricesAsOf}` : '');
   $('#disclaimer').textContent = '⚠️ ' + RECO.meta.disclaimer + ' 미성년자는 보호자와 함께 계좌를 만들 수 있으며, 실제 투자 전 "연습하기"로 충분히 연습하는 것을 권장합니다.';
 
   renderAll();
