@@ -61,6 +61,19 @@ const PICKS = [
   { id: 'sure-kofr',  s0: 112000,  target: 114800,  stop: 111000,  annVol: 0.003, annDrift: 0.025, kind: 'long' },
   { id: 'sure-voo',   s0: 692,     target: 740,     stop: 585,     annVol: 0.16,  annDrift: 0.07,  kind: 'long' },
   { id: 'sure-k200',  s0: 103300,  target: 110000,  stop: 87000,   annVol: 0.20,  annDrift: 0.065, kind: 'long' },
+  // ── 배치 2026-07-08-2 (사이트 갱신 요청 #3, 중동 리스크·3일 급락 반영) — 뒤에 추가해 기존 seed 유지 ──
+  { id: 'b2-day-samsung', s0: 281500,  target: 287500,  stop: 268000,  annVol: 0.42, annDrift: 0.15, kind: 'day' },
+  { id: 'b2-day-nvda',    s0: 196.93,  target: 200.5,   stop: 185.0,   annVol: 0.48, annDrift: 0.20, kind: 'day' },
+  { id: 'b2-day-xom',     s0: 138.20,  target: 141.5,   stop: 135.0,   annVol: 0.28, annDrift: 0.20, kind: 'day' },
+  { id: 'b2-week-tsm',    s0: 434.16,  target: 455.0,   stop: 405.0,   annVol: 0.45, annDrift: 0.20, kind: 'week' },
+  { id: 'b2-week-ko',     s0: 82.04,   target: 85.5,    stop: 79.0,    annVol: 0.15, annDrift: 0.15, kind: 'week' },
+  { id: 'b2-week-msft',   s0: 386.74,  target: 400.0,   stop: 370.0,   annVol: 0.28, annDrift: 0.15, kind: 'week' },
+  { id: 'b2-month-samsung', s0: 281500, target: 315000, stop: 258000,  annVol: 0.38, annDrift: 0.20, kind: 'month' },
+  { id: 'b2-month-nvda',  s0: 196.93,  target: 214.0,   stop: 176.0,   annVol: 0.46, annDrift: 0.25, kind: 'month' },
+  { id: 'b2-month-hynix', s0: 2201000, target: 2450000, stop: 1950000, annVol: 0.55, annDrift: 0.25, kind: 'month' },
+  { id: 'b2-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
+  { id: 'b2-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
+  { id: 'b2-long-samsung', s0: 281500, target: 420000,  stop: 228000,  annVol: 0.36, annDrift: 0.20, kind: 'long' },
 ];
 
 const KIND_STEPS = {
