@@ -233,7 +233,122 @@ ul.pts li::marker { color: var(--text-muted); }
 footer.site { margin-top: 3rem; font-size: 0.75rem; color: var(--text-muted); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ───── 상단바 · 쉬운말 토글 · 검색 ───── */
+.topbar { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+.topctrl { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.iconbtn {
+  font: inherit; font-size: 0.84rem; font-weight: 600;
+  background: var(--surface-1); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.35rem 0.85rem; cursor: pointer;
+}
+.iconbtn:hover { color: var(--text-primary); border-color: var(--accent); }
+.easytgl {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.84rem; font-weight: 600; color: var(--text-secondary);
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 999px; padding: 0.35rem 0.85rem; cursor: pointer;
+}
+.easytgl:has(input:checked) { color: var(--accent); border-color: var(--accent); }
+.easytgl input { accent-color: var(--accent); }
+.viewdesc { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.8rem; }
+
+/* ───── 신호등 난이도 배지 ───── */
+.lvl { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; font-weight: 700; border-radius: 999px; padding: 0.14rem 0.6rem; border: 1px solid var(--border); }
+.lvl-ok { color: var(--delta-good); }
+.lvl-mid { color: #8a6100; }
+.lvl-pro { color: var(--status-critical); }
+@media (prefers-color-scheme: dark) { .lvl-mid { color: var(--status-warning); } }
+
+/* ───── 쉬운 설명 블록 ───── */
+.easybox {
+  background: color-mix(in srgb, var(--series-1) 7%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--series-1) 25%, var(--border));
+  border-radius: 12px; padding: 0.75rem 0.9rem; font-size: 0.88rem;
+}
+.easybox .eb-t { font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+.easybox ol { padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+.card .easyline { font-size: 0.84rem; color: var(--text-secondary); background: color-mix(in srgb, var(--series-1) 7%, var(--surface-1)); border-radius: 9px; padding: 0.45rem 0.6rem; }
+
+/* ───── 용어 밑줄 + 팝오버 ───── */
+.term { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 3px; cursor: help; border-radius: 3px; }
+.term:hover, .term:focus-visible { background: color-mix(in srgb, var(--series-1) 12%, transparent); outline: none; }
+.popover {
+  position: absolute; z-index: 90; max-width: 300px;
+  background: var(--surface-1); color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.65rem 0.8rem; font-size: 0.82rem; line-height: 1.5;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+}
+.popover .pt { font-weight: 700; margin-bottom: 0.2rem; }
+
+/* ───── 홈 ───── */
+.hero {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 16px; padding: 1.2rem 1.3rem; margin-bottom: 1rem;
+}
+.hero .weather { font-size: 1.05rem; font-weight: 700; }
+.hero .wdesc { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.35rem; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.7rem; margin: 1rem 0; }
+.step-card {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+  padding: 0.9rem 1rem; cursor: pointer; transition: border-color 0.15s;
+}
+.step-card:hover, .step-card:focus-visible { border-color: var(--accent); outline: none; }
+.step-card .sn { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+.step-card .st { font-weight: 700; margin-top: 0.15rem; }
+.step-card .sd { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
+.homesec { margin: 1.4rem 0 0.6rem; font-size: 1rem; font-weight: 700; }
+
+/* ───── 연습하기 ───── */
+.pgrid { display: grid; grid-template-columns: 1fr; gap: 0.9rem; }
+@media (min-width: 860px) { .pgrid { grid-template-columns: 1.1fr 0.9fr; align-items: start; } }
+.basket { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.1rem; }
+.basket h3 { margin: 0 0 0.6rem !important; }
+.brow { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0; border-bottom: 1px solid var(--grid); font-size: 0.86rem; flex-wrap: wrap; }
+.brow:last-child { border-bottom: none; }
+.brow .bnm { font-weight: 650; }
+.brow input { font: inherit; width: 110px; padding: 0.25rem 0.4rem; border: 1px solid var(--border); border-radius: 7px; background: var(--page); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.brow .brm { margin-left: auto; font: inherit; background: none; border: none; color: var(--status-critical); cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+.addrow select { font: inherit; font-size: 0.84rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); max-width: 100%; }
+.addrow { display: flex; gap: 0.5rem; margin-top: 0.7rem; flex-wrap: wrap; }
+.addrow button { font: inherit; font-size: 0.84rem; font-weight: 600; padding: 0.3rem 0.8rem; border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 8px; cursor: pointer; }
+
+/* ───── 배우기 ───── */
+.lesson { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.6rem; overflow: hidden; }
+.lesson summary { list-style: none; display: flex; align-items: center; gap: 0.6rem; padding: 0.8rem 1rem; cursor: pointer; font-weight: 650; font-size: 0.95rem; }
+.lesson summary::-webkit-details-marker { display: none; }
+.lesson summary::after { content: '▾'; margin-left: auto; color: var(--text-muted); transition: transform 0.15s; }
+.lesson[open] summary::after { transform: rotate(180deg); }
+.lesson .lb { padding: 0 1rem 0.9rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+.gloss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem; }
+.gloss { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.84rem; }
+.gloss b { display: block; margin-bottom: 0.15rem; }
+.gloss span { color: var(--text-secondary); }
+
+/* ───── 검색 ───── */
+.searchbox { max-width: 560px; padding: 1rem; }
+.searchbox input {
+  width: 100%; font: inherit; font-size: 1rem; padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-1); color: var(--text-primary);
+}
+.searchbox input:focus { outline: 2px solid var(--accent); }
+#searchresults { margin-top: 0.6rem; display: grid; gap: 0.3rem; max-height: 55vh; overflow-y: auto; }
+.sres {
+  display: flex; align-items: baseline; gap: 0.5rem; text-align: left;
+  font: inherit; font-size: 0.88rem; padding: 0.55rem 0.7rem;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 10px; cursor: pointer; color: var(--text-primary); width: 100%;
+}
+.sres:hover, .sres:focus-visible { border-color: var(--accent); outline: none; }
+.sres .sk { font-size: 0.7rem; font-weight: 700; color: var(--accent); flex: none; width: 3.4rem; }
+.sres .sd { color: var(--text-muted); font-size: 0.78rem; margin-left: auto; padding-left: 0.5rem; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media (max-width: 560px) {
   .grid { grid-template-columns: 1fr; }
   .filters .count { display: none; }
+  .viewtabs { gap: 0.25rem; }
+  .viewtabs button { padding: 0.3rem 0.7rem; font-size: 0.84rem; }
+  .topctrl { margin-left: 0; }
 }

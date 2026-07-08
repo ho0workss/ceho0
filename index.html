@@ -4,27 +4,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>ceho0 — 종목 추천 대시보드</title>
-  <meta name="description" content="뉴스·차트·펀더멘털 지표와 몬테카를로 시뮬레이션 기반 종목 추천 대시보드. 당일·1주·1개월·장기 전략별 매수/매도 계획, 배당·세후 실수령 계산, 추천 히스토리 자동 기록.">
+  <title>ceho0 — 누구나 이해하는 주식 추천</title>
+  <meta name="description" content="초등학생도 이해할 수 있는 주식 추천 대시보드. 쉬운 말 설명, 신호등 난이도, 몬테카를로 시뮬레이션, 연습 모드, 용어사전, 세후 계산기까지.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="viz-root">
   <div class="wrap">
     <header class="site">
-      <h1>📈 종목 추천 대시보드</h1>
-      <p class="sub">뉴스 · 차트 · 펀더멘털 지표와 몬테카를로 시뮬레이션(20,000 경로)을 결합한 기간별 매매 전략</p>
+      <div class="topbar">
+        <h1>📈 주식 배움터</h1>
+        <div class="topctrl">
+          <button type="button" id="searchbtn" class="iconbtn" aria-label="검색">🔍 검색</button>
+          <label class="easytgl" title="어려운 용어에 쉬운 설명을 달아 줘요">
+            <input type="checkbox" id="easymode" checked>
+            <span>쉬운 말</span>
+          </label>
+        </div>
+      </div>
+      <p class="sub">뉴스 · 차트 · 회사 실력을 살펴보고, 컴퓨터로 미래를 2만 번 실험해서 고른 종목들이에요</p>
       <span class="asof" id="asof"></span>
-      <p class="disclaimer" id="disclaimer"></p>
     </header>
 
-    <nav class="viewtabs" aria-label="보기 선택">
-      <button type="button" data-view="reco" aria-selected="true">추천 종목</button>
-      <button type="button" data-view="history" aria-selected="false">히스토리</button>
-      <button type="button" data-view="tax" aria-selected="false">세금 가이드</button>
+    <nav class="viewtabs" aria-label="메뉴">
+      <button type="button" data-view="home" aria-selected="true">🏠 홈</button>
+      <button type="button" data-view="reco" aria-selected="false">📋 추천 종목</button>
+      <button type="button" data-view="practice" aria-selected="false">🎮 연습하기</button>
+      <button type="button" data-view="learn" aria-selected="false">📚 배우기</button>
+      <button type="button" data-view="history" aria-selected="false">🗂️ 히스토리</button>
+      <button type="button" data-view="tax" aria-selected="false">🧾 세금 계산</button>
     </nav>
 
-    <section id="view-reco">
+    <section id="view-home"></section>
+
+    <section id="view-reco" style="display:none">
+      <p class="viewdesc">기간(얼마나 갖고 있을지)별 추천이에요. 카드를 누르면 이유 · 시뮬레이션 · 세금까지 다 볼 수 있어요.</p>
       <div class="filters" role="group" aria-label="필터">
         <div class="seg" id="hseg" role="group" aria-label="투자 기간">
           <button type="button" data-h="all" aria-pressed="true">전체</button>
@@ -35,28 +49,30 @@
         </div>
         <select id="market" aria-label="시장">
           <option value="all">시장 전체</option>
-          <option value="US">미국</option>
-          <option value="KR">한국</option>
+          <option value="US">🇺🇸 미국</option>
+          <option value="KR">🇰🇷 한국</option>
         </select>
-        <select id="risk" aria-label="리스크">
-          <option value="all">리스크 전체</option>
-          <option value="low">낮음</option>
-          <option value="mid">중간</option>
-          <option value="high">높음</option>
-          <option value="veryhigh">매우 높음</option>
+        <select id="level" aria-label="난이도">
+          <option value="all">난이도 전체</option>
+          <option value="ok">🟢 초보 OK</option>
+          <option value="mid">🟡 조심조심</option>
+          <option value="pro">🔴 전문가용</option>
         </select>
-        <label class="chk"><input type="checkbox" id="divonly"> 배당주만</label>
+        <label class="chk"><input type="checkbox" id="divonly"> 🎁 배당주만</label>
         <span class="count" id="count"></span>
       </div>
-      <p class="hist-note" style="margin-bottom:0.9rem">배치: <strong id="batchchip"></strong> — 카드를 클릭하면 매매 계획 · 시뮬레이션 · 판단 근거 · 배당 · 세후 계산기를 볼 수 있습니다.</p>
+      <p class="hist-note" style="margin-bottom:0.9rem">배치: <strong id="batchchip"></strong></p>
       <div class="grid" id="cards"></div>
     </section>
 
-    <section id="history" style="display:none"></section>
-    <section id="tax" style="display:none"></section>
+    <section id="view-practice" style="display:none"></section>
+    <section id="view-learn" style="display:none"></section>
+    <section id="view-history" style="display:none"></section>
+    <section id="view-tax" style="display:none"></section>
 
     <footer class="site">
-      <p>ho0workss/ceho0 · GitHub 푸시 시 Vercel 자동 배포 · 데이터 출처: CNBC, TheStreet, MacroTrends, TradingKey, Investing.com, stockanalysis.com 외 (2026-07-06~08 수집)</p>
+      <p class="disclaimer" id="disclaimer"></p>
+      <p style="margin-top:0.6rem">ho0workss/ceho0 · GitHub 푸시 시 Vercel 자동 배포 · 데이터 출처: CNBC, TheStreet, MacroTrends, TradingKey, Investing.com, stockanalysis.com 외 (2026-07-06~08 수집)</p>
     </footer>
   </div>
 
@@ -64,8 +80,18 @@
     <div class="modal"></div>
   </div>
 
+  <div class="modal-back" id="search-back" role="dialog" aria-modal="true" aria-label="검색">
+    <div class="modal searchbox">
+      <input type="search" id="searchinput" placeholder="종목, 메뉴, 용어를 검색해 보세요 (예: 삼성, 배당, 손절)" autocomplete="off">
+      <div id="searchresults"></div>
+    </div>
+  </div>
+
+  <div id="popover" class="popover" role="tooltip" style="display:none"></div>
+
   <script src="data.js"></script>
   <script src="data/sim.js"></script>
+  <script src="content.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
