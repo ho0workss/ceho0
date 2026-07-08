@@ -33,16 +33,17 @@
     month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
     long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
   };
-  const VIEWS = ['home', 'reco', 'practice', 'learn', 'history', 'tax'];
+  const VIEWS = ['home', 'reco', 'sure', 'practice', 'learn', 'history', 'tax'];
   const MENU_DESC = {
     home: '오늘의 요약과 시작 가이드',
     reco: '기간별 추천 종목과 매매 계획',
+    sure: '확실함 최우선 — 무위험 금리 자산과 장기 지수 적립 (확실, 안전, 보장)',
     practice: '가상 돈으로 계획 세우기 연습',
     learn: '주식 기초 · 체크리스트 · 용어사전 · FAQ',
     history: '지난 추천 기록 보관함',
     tax: '세금 규칙과 실수령 계산',
   };
-  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', practice: '🎮 연습하기', learn: '📚 배우기', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
+  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', sure: '🔒 확실 수익', practice: '🎮 연습하기', learn: '📚 배우기', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
 
   const state = {
     view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
@@ -275,11 +276,17 @@
     top3.forEach(p => grid.appendChild(pickCard(p)));
     wrap.appendChild(grid);
 
+    const btnRow = el('div');
+    btnRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.9rem';
     const all = el('button', 'iconbtn', '추천 12개 전부 보기 →');
     all.type = 'button';
-    all.style.marginTop = '0.9rem';
     all.addEventListener('click', () => { state.view = 'reco'; state.level = 'all'; renderAll(); window.scrollTo({ top: 0 }); });
-    wrap.appendChild(all);
+    btnRow.appendChild(all);
+    const sureBtn = el('button', 'iconbtn', '🔒 잃기 싫다면? 확실 수익부터 →');
+    sureBtn.type = 'button';
+    sureBtn.addEventListener('click', () => { state.view = 'sure'; renderAll(); window.scrollTo({ top: 0 }); });
+    btnRow.appendChild(sureBtn);
+    wrap.appendChild(btnRow);
 
     wrap.appendChild(el('h2', 'homesec', '✅ 사기 전 체크리스트'));
     const ul = el('ul', 'pts');
@@ -816,6 +823,65 @@
     back.scrollTop = 0;
   }
 
+  // ───────── 확실 수익 ─────────
+  function renderSure() {
+    const wrap = $('#view-sure');
+    wrap.textContent = '';
+
+    const hero = el('div', 'hero');
+    hero.appendChild(el('div', 'weather', '🔒 "확실한 이익"의 진실부터 알려 드릴게요'));
+    const wd = el('p', 'wdesc');
+    wd.appendChild(linkTerms('세상의 철칙: 확실할수록 수익은 낮고, 수익이 높을수록 위험해요. 이 시소를 깨고 "확실한 고수익"을 준다는 사람은 100% 사기꾼이에요. 이 페이지는 그 철칙 안에서 진짜로 확실한 것부터 순서대로 보여 줘요.'));
+    hero.appendChild(wd);
+    wrap.appendChild(hero);
+
+    const tierNote = {
+      1: '시뮬레이션 2만 번 중 2만 번 모두 이익 — 미국/한국 정부 신용에 기대는, 진짜 "확실"에 가장 가까운 자산이에요. 대신 수익률은 은행이자 수준(연 2~4%)이에요.',
+      2: '1년만 보면 이길 확률이 60~80%지만, 역사상 15~20년 이상 갖고 있으면 진 적이 없어요. "시간"이 확실함을 만들어요. 매달 같은 금액 적립이 정석!',
+    };
+    [1, 2].forEach(tier => {
+      wrap.appendChild(el('h2', 'homesec', tier === 1 ? '1단계 🔒 사실상 확정 (P(이익) 100%)' : '2단계 ⏳ 시간이 만드는 확실함 (장기 적립)'));
+      const note = el('p', 'viewdesc');
+      note.appendChild(linkTerms(tierNote[tier]));
+      wrap.appendChild(note);
+      const grid = el('div', 'grid');
+      RECO.sureItems.filter(s => s.tier === tier).forEach(s => grid.appendChild(pickCard(s)));
+      wrap.appendChild(grid);
+    });
+
+    // S&P 500 역사 승률 표
+    wrap.appendChild(el('h2', 'homesec', '📜 증거: S&P 500을 N년 갖고 있으면? (1928년~ 역사 통계)'));
+    const tbl = el('table', 'plain');
+    const thead = el('thead'); const hr = el('tr');
+    ['보유 기간', '이익 본 비율', '최악의 경우', '한 줄 설명'].forEach(h => hr.appendChild(el('th', null, h)));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tb = el('tbody');
+    RECO.sureStats.forEach(s => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, s.period));
+      const wr = el('td', 'num');
+      wr.appendChild(el('span', s.winRate === '100%' ? 'pos' : '', s.winRate));
+      tr.appendChild(wr);
+      tr.appendChild(el('td', 'num', s.worst));
+      tr.appendChild(el('td', null, s.note));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    wrap.appendChild(tbl);
+
+    const warn = el('div', 'easybox');
+    warn.style.marginTop = '1rem';
+    warn.appendChild(el('div', 'eb-t', '🚨 꼭 기억하세요'));
+    warn.appendChild(el('div', null, '"과거에 항상 그랬다"는 것이지 "미래를 보장한다"는 뜻은 아니에요. 그리고 개별 주식(삼성전자, 엔비디아 등)에는 이 표가 적용되지 않아요 — 개별 회사는 망할 수도 있으니까요. 더 높은 수익을 노리는 확률 기반 추천은 📋 추천 종목 탭에 있어요.'));
+    wrap.appendChild(warn);
+
+    const cta = el('button', 'iconbtn', '📋 확률 기반 추천 보러 가기 →');
+    cta.type = 'button';
+    cta.style.marginTop = '0.8rem';
+    cta.addEventListener('click', () => { state.view = 'reco'; renderAll(); window.scrollTo({ top: 0 }); });
+    wrap.appendChild(cta);
+  }
+
   // ───────── 연습하기 (가상 계획) ─────────
   function loadBasket() {
     try { return JSON.parse(localStorage.getItem('basket-v1')) || { budget: 3000000, items: [] }; }
@@ -829,7 +895,7 @@
     wrap.appendChild(el('p', 'viewdesc', '진짜 돈 없이 계획을 세워 보는 연습장이에요. 예산을 정하고 종목을 담으면, 계획대로 됐을 때와 잘 안 됐을 때 결과를 미리 보여 줘요. (내 브라우저에만 저장돼요)'));
     const basket = loadBasket();
     const fx = RECO.meta.fxUsdKrw;
-    const picks = batchPicks();
+    const picks = RECO.sureItems.concat(batchPicks());
 
     const grid = el('div', 'pgrid');
 
@@ -1155,7 +1221,7 @@
     const idx = [];
     VIEWS.forEach(v => idx.push({ kind: '메뉴', label: MENU_LABEL[v], desc: MENU_DESC[v], go: () => { state.view = v; renderAll(); } }));
     idx.push({ kind: '기능', label: '🔄 새 추천 받기', desc: '최신 데이터로 추천 다시 만들기 (갱신, 새로고침)', go: openRefreshModal });
-    batchPicks().forEach(p => idx.push({
+    batchPicks().concat(RECO.sureItems).forEach(p => idx.push({
       kind: '종목', label: `${p.name} ${p.ticker}`, desc: (EASY[p.id] ? EASY[p.id].company : p.rationale.summary).slice(0, 40),
       go: () => openModal(p),
     }));
@@ -1211,6 +1277,7 @@
       b.setAttribute('aria-selected', String(b.dataset.view === state.view)));
     VIEWS.forEach(v => { $('#view-' + v).style.display = state.view === v ? '' : 'none'; });
     if (state.view === 'home') renderHome();
+    if (state.view === 'sure') renderSure();
     if (state.view === 'reco') {
       document.querySelectorAll('#hseg button').forEach(b =>
         b.setAttribute('aria-pressed', String(b.dataset.h === state.horizon)));
