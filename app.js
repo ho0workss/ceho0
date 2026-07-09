@@ -10,15 +10,15 @@
   const FAQ = window.FAQ || [];
 
   const HORIZONS = {
-    day:   { label: '당일',   color: 'var(--series-1)', easy: '하루 안에 사고팔기' },
-    week:  { label: '1주일',  color: 'var(--series-2)', easy: '일주일쯤 갖고 있기' },
-    month: { label: '1개월',  color: 'var(--series-5)', easy: '한 달쯤 갖고 있기' },
-    long:  { label: '장기',   color: 'var(--series-4)', easy: '1년 이상 푹 기다리기' },
+    day:   { label: '당일',   color: 'var(--series-1)', easy: '데이 트레이딩' },
+    week:  { label: '1주일',  color: 'var(--series-2)', easy: '스윙 (단기 보유)' },
+    month: { label: '1개월',  color: 'var(--series-5)', easy: '포지션 (중기 보유)' },
+    long:  { label: '장기',   color: 'var(--series-4)', easy: '장기 투자 (1년 이상)' },
   };
   const LEVELS = {
-    ok:  { label: '🟢 초보 OK',  cls: 'lvl-ok' },
-    mid: { label: '🟡 조심조심', cls: 'lvl-mid' },
-    pro: { label: '🔴 전문가용', cls: 'lvl-pro' },
+    ok:  { label: '🟢 안정형',  cls: 'lvl-ok' },
+    mid: { label: '🟡 중립형', cls: 'lvl-mid' },
+    pro: { label: '🔴 공격형', cls: 'lvl-pro' },
   };
   const RISKS = {
     low: { label: '리스크 낮음', color: 'var(--status-good)' },
@@ -33,18 +33,19 @@
     month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
     long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
   };
-  const VIEWS = ['home', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax'];
+  const VIEWS = ['home', 'plan', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax'];
   const MENU_DESC = {
-    home: '오늘의 요약과 시작 가이드',
+    home: '오늘의 시장 브리핑과 핵심 추천',
     reco: '기간별 추천 종목과 매매 계획',
-    sure: '확실함 최우선 — 무위험 금리 자산과 장기 지수 적립 (확실, 안전, 보장)',
-    practice: '가상 돈으로 계획 세우기 연습',
-    learn: '주식 기초 · 체크리스트 · 용어사전 · FAQ',
+    plan: '예산과 투자 성향만 정하면 주문서까지 자동 완성 (따라하기, 포트폴리오)',
+    sure: '원금 보전형 금리 자산과 장기 분산 적립 (확실, 안전, 보장, 안정)',
+    practice: '가상 예산으로 포트폴리오 결과 미리보기',
+    learn: '투자 기초 · 체크리스트 · 용어사전 · FAQ',
     perf: '예측 vs 실제 — 적중/실패 전부 공개하는 채점표 (성과, 검증, 결과)',
     history: '지난 추천 기록 보관함',
     tax: '세금 규칙과 실수령 계산',
   };
-  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', sure: '🔒 확실 수익', practice: '🎮 연습하기', learn: '📚 배우기', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
+  const MENU_LABEL = { home: '🏠 홈', plan: '🧭 실행 플랜', reco: '📋 추천 종목', sure: '🛡️ 안정 수익', practice: '🧮 시뮬레이터', learn: '📚 투자 가이드', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 세금·수익 계산' };
   const OUTCOME_META = {
     success: { icon: '✅', label: '성공',   color: 'var(--status-good)' },
     partial: { icon: '🟡', label: '부분 성공', color: 'var(--status-warning)' },
@@ -55,7 +56,7 @@
 
   const state = {
     view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
-    easy: localStorage.getItem('easymode') !== '0',
+    easy: localStorage.getItem('easymode') === '1',
   };
 
   // ───────── 유틸 ─────────
@@ -212,25 +213,25 @@
     }
 
     const plan = el('div', 'plan');
-    const b = el('div'); b.appendChild(el('b', null, '사기 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
-    const s = el('div'); s.appendChild(el('b', null, '팔기 ')); s.appendChild(document.createTextNode(`${money(p.sell.low, p.currency)}–${money(p.sell.high, p.currency)} · ${p.sell.windowKst}`));
+    const b = el('div'); b.appendChild(el('b', null, '매수 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
+    const s = el('div'); s.appendChild(el('b', null, '매도 ')); s.appendChild(document.createTextNode(`${money(p.sell.low, p.currency)}–${money(p.sell.high, p.currency)} · ${p.sell.windowKst}`));
     plan.appendChild(b); plan.appendChild(s);
     card.appendChild(plan);
 
     const stats = el('div', 'statrow');
     const s1 = el('div', 'stat');
-    s1.appendChild(el('span', 'lb', '잘 되면'));
+    s1.appendChild(el('span', 'lb', '기대수익률'));
     s1.appendChild(el('span', 'vl ' + pctCls(p.expectedReturn.base), pct(p.expectedReturn.base)));
     stats.appendChild(s1);
     if (sim) {
       const s2 = el('div', 'stat');
-      s2.appendChild(el('span', 'lb', '이익 확률'));
+      s2.appendChild(el('span', 'lb', '이익 확률(시뮬)'));
       s2.appendChild(el('span', 'vl', sim.final.pProfit.toFixed(0) + '%'));
       stats.appendChild(s2);
     }
     stats.appendChild(sparkline(sim));
     card.appendChild(stats);
-    card.appendChild(el('div', 'more', '왜 추천? · 시뮬레이션 · 세금 →'));
+    card.appendChild(el('div', 'more', '투자 근거 · 시뮬레이션 · 세후 계산 →'));
 
     card.addEventListener('click', () => openModal(p));
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } });
@@ -243,7 +244,7 @@
     const picks = filteredPicks();
     $('#count').textContent = `${picks.length}개 종목`;
     picks.forEach(p => grid.appendChild(pickCard(p)));
-    if (!picks.length) grid.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없어요. 필터를 바꿔 보세요.'));
+    if (!picks.length) grid.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없습니다. 필터를 조정해 보세요.'));
   }
 
   // ───────── 홈 ─────────
@@ -254,7 +255,7 @@
 
     const hero = el('div', 'hero');
     const stormy = /급락|쇼크|하락/.test(batch.title + batch.marketSnapshot);
-    hero.appendChild(el('div', 'weather', stormy ? '오늘의 시장 날씨: 🌧️ → 🌤️ 소나기 뒤 갬을 기다려요' : '오늘의 시장 날씨: ☀️ 대체로 맑음'));
+    hero.appendChild(el('div', 'weather', stormy ? '시장 브리핑 · 리스크오프 국면 🌧️ — 변동성 확대 구간' : '시장 브리핑 · 리스크온 국면 ☀️'));
     const wd = el('p', 'wdesc');
     wd.appendChild(linkTerms(state.easy
       ? '어제 반도체 회사들(삼성전자 등)의 주가가 비를 맞은 것처럼 뚝 떨어졌어요. 이럴 때는 "너무 많이 떨어진 좋은 회사"를 싸게 살 기회가 생기기도 해요. 아래 추천들이 바로 그 기회를 노려요.'
@@ -262,12 +263,12 @@
     hero.appendChild(wd);
     wrap.appendChild(hero);
 
-    wrap.appendChild(el('h2', 'homesec', '🚀 처음이라면 이 순서대로!'));
+    wrap.appendChild(el('h2', 'homesec', '🚀 시작 가이드'));
     const steps = el('div', 'steps');
     const stepDefs = [
-      ['1단계', '📚 배우기', '주식이 뭔지 5분 만에 알아봐요', 'learn'],
-      ['2단계', '📋 추천 보기', '🟢 초보 OK 종목부터 살펴봐요', 'reco'],
-      ['3단계', '🎮 연습하기', '가상 돈으로 계획을 세워 봐요', 'practice'],
+      ['STEP 1', '📚 투자 가이드', '기초 개념을 5분 안에 정리합니다', 'learn'],
+      ['STEP 2', '🧭 실행 플랜', '예산만 입력하면 주문서까지 자동 완성', 'plan'],
+      ['STEP 3', '🧮 시뮬레이터', '가상 예산으로 결과를 미리 확인합니다', 'practice'],
     ];
     for (const [sn, st, sd, view] of stepDefs) {
       const c = el('div', 'step-card');
@@ -282,7 +283,7 @@
     }
     wrap.appendChild(steps);
 
-    wrap.appendChild(el('h2', 'homesec', '⭐ 오늘의 추천 TOP 3 (초보 눈높이 순)'));
+    wrap.appendChild(el('h2', 'homesec', '⭐ 오늘의 핵심 추천 TOP 3 (안정형 우선)'));
     const order = { ok: 0, mid: 1, pro: 2 };
     const top3 = batchPicks().slice().sort((a, b) => {
       const d = order[pickLevel(a)] - order[pickLevel(b)];
@@ -295,17 +296,17 @@
 
     const btnRow = el('div');
     btnRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.9rem';
-    const all = el('button', 'iconbtn', '추천 12개 전부 보기 →');
+    const all = el('button', 'iconbtn', '추천 12종목 전체 보기 →');
     all.type = 'button';
     all.addEventListener('click', () => { state.view = 'reco'; state.level = 'all'; renderAll(); window.scrollTo({ top: 0 }); });
     btnRow.appendChild(all);
-    const sureBtn = el('button', 'iconbtn', '🔒 잃기 싫다면? 확실 수익부터 →');
+    const sureBtn = el('button', 'iconbtn', '🛡️ 원금 보전이 우선이라면 →');
     sureBtn.type = 'button';
     sureBtn.addEventListener('click', () => { state.view = 'sure'; renderAll(); window.scrollTo({ top: 0 }); });
     btnRow.appendChild(sureBtn);
     wrap.appendChild(btnRow);
 
-    wrap.appendChild(el('h2', 'homesec', '✅ 사기 전 체크리스트'));
+    wrap.appendChild(el('h2', 'homesec', '✅ 매수 전 체크리스트'));
     const ul = el('ul', 'pts');
     CHECKLIST.slice(0, 4).forEach(t => ul.appendChild(liTerms(t)));
     wrap.appendChild(ul);
@@ -645,15 +646,15 @@
       });
       out.textContent = '';
       const tb = el('tbody');
-      row(tb, '살 수 있는 주식 수', r.shares.toLocaleString('ko-KR') + '주');
-      row(tb, '실제 쓰는 돈', krw(r.investedKrw));
-      row(tb, '팔았을 때 받는 돈 (목표가 기준)', krw(r.sellKrw));
-      row(tb, '번 돈 (세금 떼기 전)', krw(r.gainKrw), pctCls(r.gainKrw));
+      row(tb, '매수 가능 수량', r.shares.toLocaleString('ko-KR') + '주');
+      row(tb, '실제 투입금액', krw(r.investedKrw));
+      row(tb, '매도금액 (목표가 기준)', krw(r.sellKrw));
+      row(tb, '매매차익 (세전)', krw(r.gainKrw), pctCls(r.gainKrw));
       row(tb, r.taxLabel, '-' + krw(r.tax));
-      row(tb, '1년 배당 (세금 떼기 전)', r.divGrossKrw > 0 ? krw(r.divGrossKrw) : '배당 없음');
-      if (r.divGrossKrw > 0) row(tb, '1년 배당 실제 수령 (세금 뗀 후)', krw(r.divNetKrw), 'pos');
-      row(tb, '팔고 실제 받는 돈 (세금 뗀 후)', krw(r.netKrw));
-      row(tb, '진짜 수익률 (배당 제외)', pct(r.netRet), pctCls(r.netRet));
+      row(tb, '연간 배당 (세전)', r.divGrossKrw > 0 ? krw(r.divGrossKrw) : '해당 없음');
+      if (r.divGrossKrw > 0) row(tb, '연간 배당 실수령 (세후)', krw(r.divNetKrw), 'pos');
+      row(tb, '매도 실수령액 (세후)', krw(r.netKrw));
+      row(tb, '세후 수익률 (배당 제외)', pct(r.netRet), pctCls(r.netRet));
       out.appendChild(tb);
     }
     [amountIn, buyIn, sellIn, fxIn].forEach(i => i && i.addEventListener('input', recalc));
@@ -697,15 +698,15 @@
     if (state.easy && easy) {
       const eb = el('div', 'easybox');
       eb.style.marginTop = '0.8rem';
-      eb.appendChild(el('div', 'eb-t', '💡 어떤 회사예요?'));
+      eb.appendChild(el('div', 'eb-t', '💡 기업 개요'));
       eb.appendChild(el('div', null, easy.company));
-      eb.appendChild(el('div', 'eb-t', '🤔 왜 추천해요? (3줄 요약)'));
+      eb.appendChild(el('div', 'eb-t', '🎯 핵심 투자 포인트'));
       const olw = el('ol');
       easy.why.forEach(w => olw.appendChild(el('li', null, w)));
       eb.appendChild(olw);
-      eb.appendChild(el('div', 'eb-t', '🗓️ 작전은요?'));
+      eb.appendChild(el('div', 'eb-t', '🗓️ 실행 전략'));
       eb.appendChild(el('div', null, easy.plan));
-      eb.appendChild(el('div', 'eb-t', LEVELS[pickLevel(p)].label + ' — 왜냐면'));
+      eb.appendChild(el('div', 'eb-t', LEVELS[pickLevel(p)].label + ' — 적합성 판단'));
       eb.appendChild(el('div', null, easy.levelWhy));
       const tts = ['eb-t'];
       m.appendChild(eb);
@@ -724,15 +725,15 @@
       if (note) t.appendChild(el('div', 'note', note));
       return t;
     };
-    tiles.appendChild(tile('잘 되면 (기본 시나리오)', pct(p.expectedReturn.base), pctCls(p.expectedReturn.base), '목표가 도달 시'));
+    tiles.appendChild(tile('기대수익률 (기본 시나리오)', pct(p.expectedReturn.base), pctCls(p.expectedReturn.base), '목표가 도달 시'));
     if (sim) {
-      tiles.appendChild(tile('이익 볼 확률', sim.final.pProfit.toFixed(0) + '%', '', '2만 번 실험 기준'));
+      tiles.appendChild(tile('이익 확률', sim.final.pProfit.toFixed(0) + '%', '', '시뮬레이션 2만 경로'));
       tiles.appendChild(tile('목표가 도달확률', sim.final.pHitTarget.toFixed(0) + '%', '', '기간 내 1회 이상'));
       tiles.appendChild(tile('손절가 도달확률', sim.final.pHitStop.toFixed(0) + '%', '', '기간 내 1회 이상'));
     }
     m.appendChild(tiles);
 
-    section(m, '🗓️ 매매 계획 (언제 · 얼마에)');
+    section(m, '🗓️ 매매 계획 (시점 · 가격)');
     const plan = el('table', 'plain');
     {
       const thead = el('thead'); const hr = el('tr');
@@ -740,20 +741,20 @@
       thead.appendChild(hr); plan.appendChild(thead);
       const tb = el('tbody');
       const tr1 = el('tr');
-      tr1.appendChild(el('td', null, '매수 (사기)'));
+      tr1.appendChild(el('td', null, '매수'));
       tr1.appendChild(el('td', null, p.buy.window));
       tr1.appendChild(el('td', null, p.buy.windowKst));
       tr1.appendChild(el('td', 'num', `${money(p.buy.low, p.currency)} ~ ${money(p.buy.high, p.currency)}`));
       tb.appendChild(tr1);
       const tr2 = el('tr');
-      tr2.appendChild(el('td', null, '매도 (팔기)'));
+      tr2.appendChild(el('td', null, '매도 (목표)'));
       tr2.appendChild(el('td', null, p.sell.window));
       tr2.appendChild(el('td', null, p.sell.windowKst));
       tr2.appendChild(el('td', 'num', `${money(p.sell.low, p.currency)} ~ ${money(p.sell.high, p.currency)}`));
       tb.appendChild(tr2);
       const tr3 = el('tr');
-      tr3.appendChild(el('td', null, '손절 (안전벨트)'));
-      const scd = el('td', null, '이 가격에 닿으면 바로 (자동 주문 권장)');
+      tr3.appendChild(el('td', null, '손절'));
+      const scd = el('td', null, '도달 즉시 (자동 주문 권장)');
       scd.colSpan = 2;
       tr3.appendChild(scd);
       tr3.appendChild(el('td', 'num', money(p.sell.stop, p.currency)));
@@ -767,7 +768,7 @@
     planNotes.style.marginTop = '0.5rem';
     m.appendChild(planNotes);
 
-    section(m, '🔮 시나리오별 전망 (이렇게 될 수도, 저렇게 될 수도)');
+    section(m, '🔮 시나리오 분석');
     const sc = el('table', 'plain');
     {
       const thead = el('thead'); const hr = el('tr');
@@ -788,7 +789,7 @@
     m.appendChild(sc);
 
     if (sim) {
-      section(m, '🎲 미래를 2만 번 실험해 봤어요 (몬테카를로 시뮬레이션)');
+      section(m, '🎲 몬테카를로 시뮬레이션 (20,000 경로)');
       if (state.easy) {
         const ep = el('p', 'summary');
         ep.appendChild(linkTerms('컴퓨터로 이 주식의 미래를 2만 번 미리 살아 봤어요. 아래 차트의 파란 띠가 넓을수록 결과가 들쑥날쑥하다는 뜻이에요. 이익확률이 51%라면 100번 중 49번은 잃는다는 뜻 — 절대 "확실히 번다"가 아니에요!'));
@@ -801,17 +802,17 @@
       m.appendChild(simNote);
     }
 
-    section(m, '📰 왜 추천해요? — 뉴스');
+    section(m, '📰 투자 근거 — 뉴스·이벤트');
     const ulN = el('ul', 'pts'); p.rationale.news.forEach(t => ulN.appendChild(liTerms(t))); m.appendChild(ulN);
-    section(m, '📉 왜 추천해요? — 차트(가격 움직임)');
+    section(m, '📉 투자 근거 — 기술적 분석');
     const ulT = el('ul', 'pts'); p.rationale.technical.forEach(t => ulT.appendChild(liTerms(t))); m.appendChild(ulT);
-    section(m, '🏢 왜 추천해요? — 회사 실력(펀더멘털)');
+    section(m, '🏢 투자 근거 — 펀더멘털');
     const ulF = el('ul', 'pts'); p.rationale.fundamental.forEach(t => ulF.appendChild(liTerms(t))); m.appendChild(ulF);
 
-    section(m, '⚠️ 조심할 것들 (예측 변수)');
+    section(m, '⚠️ 리스크 요인 (예측 변수)');
     const ulR = el('ul', 'pts'); p.riskFactors.forEach(t => ulR.appendChild(liTerms(t))); m.appendChild(ulR);
 
-    section(m, '🎁 배당 (회사가 주는 용돈)');
+    section(m, '💰 배당 정보');
     if (p.dividend) {
       const d = p.dividend;
       const dt = el('table', 'plain');
@@ -827,10 +828,10 @@
       dn.appendChild(linkTerms(d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
       m.appendChild(dn);
     } else {
-      m.appendChild(el('p', 'summary', '이 회사는 배당을 주지 않아요. 주가가 오르는 것으로만 돈을 벌 수 있어요.'));
+      m.appendChild(el('p', 'summary', '무배당 종목입니다 — 수익은 시세차익으로만 발생합니다.'));
     }
 
-    section(m, '🧾 실제로 얼마 받아요? (세후 계산기)');
+    section(m, '🧾 세후 실수령 계산기 (한국 세법 기준)');
     m.appendChild(taxCalcBlock(p));
 
     m.appendChild(el('p', 'summary', '⚠️ ' + RECO.meta.disclaimer));
@@ -840,24 +841,194 @@
     back.scrollTop = 0;
   }
 
+  // ───────── 실행 플랜 (따라하기 마법사) ─────────
+  const PLAN_STYLES = {
+    safe:     { label: '🟢 안정 우선', desc: '원금 보전이 최우선 — 대부분을 무위험 금리 자산에', alloc: { kofr: 0.5, sgov: 0.2, voo: 0.2, k200: 0.1, picks: 0 } },
+    balanced: { label: '🟡 균형', desc: '안정 자산을 바탕에 깔고 성장 자산을 절반 가까이', alloc: { kofr: 0.3, sgov: 0.1, voo: 0.25, k200: 0.15, picks: 0.2 } },
+    growth:   { label: '🔴 성장 추구', desc: '변동을 감수하고 기대수익을 높게 — 장기 전제', alloc: { kofr: 0.1, sgov: 0, voo: 0.3, k200: 0.2, picks: 0.4 } },
+  };
+  function loadPlan() {
+    try { return JSON.parse(localStorage.getItem('plan-v1')) || { budget: 3000000, style: 'safe', checks: {} }; }
+    catch { return { budget: 3000000, style: 'safe', checks: {} }; }
+  }
+  function savePlan(p) { localStorage.setItem('plan-v1', JSON.stringify(p)); }
+  function sureById(id) { return RECO.sureItems.find(s => s.id === id); }
+
+  function renderPlan() {
+    const wrap = $('#view-plan');
+    wrap.textContent = '';
+    const plan = loadPlan();
+    const fx = RECO.meta.fxUsdKrw;
+
+    const hero = el('div', 'hero');
+    hero.appendChild(el('div', 'weather', '🧭 실행 플랜 — 예산과 성향만 정하면 주문서까지 완성됩니다'));
+    const wd = el('p', 'wdesc');
+    wd.appendChild(linkTerms('절차: ① 투자 가능 금액 입력 → ② 투자 성향 선택 → ③ 자동 생성된 주문서를 증권사 앱에 그대로 입력. 무위험 금리 자산 비중은 사실상 확정 수익이며, 주식 비중은 확률적 수익입니다 — 구성비로 그 균형을 조절합니다.'));
+    hero.appendChild(wd);
+    wrap.appendChild(hero);
+
+    // ① 예산
+    wrap.appendChild(el('h2', 'homesec', '① 투자 가능 금액'));
+    const budBox = el('div', 'calc');
+    const inrow = el('div', 'inrow');
+    const lab = el('label');
+    lab.appendChild(el('span', null, '금액 (원) — 잃어도 생활에 지장 없는 돈만'));
+    const budIn = el('input');
+    budIn.type = 'number'; budIn.value = plan.budget; budIn.min = 100000; budIn.step = 100000;
+    lab.appendChild(budIn);
+    inrow.appendChild(lab);
+    budBox.appendChild(inrow);
+    wrap.appendChild(budBox);
+
+    // ② 성향
+    wrap.appendChild(el('h2', 'homesec', '② 투자 성향'));
+    const styleRow = el('div', 'steps');
+    Object.entries(PLAN_STYLES).forEach(([key, s]) => {
+      const c = el('div', 'step-card');
+      c.tabIndex = 0; c.setAttribute('role', 'button');
+      if (plan.style === key) { c.style.borderColor = 'var(--accent)'; c.style.borderWidth = '2px'; }
+      c.appendChild(el('div', 'sn', plan.style === key ? '✓ 선택됨' : '선택'));
+      c.appendChild(el('div', 'st', s.label));
+      c.appendChild(el('div', 'sd', s.desc));
+      const go = () => { plan.style = key; savePlan(plan); renderPlan(); };
+      c.addEventListener('click', go);
+      c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      styleRow.appendChild(c);
+    });
+    wrap.appendChild(styleRow);
+
+    // ③ 주문서 생성
+    wrap.appendChild(el('h2', 'homesec', '③ 주문서 (증권사 앱에 이대로 입력)'));
+    const budget = Math.max(0, +budIn.value || plan.budget);
+    const alloc = PLAN_STYLES[plan.style].alloc;
+
+    const rows = [];
+    const addSure = (id, weight, note) => {
+      if (!weight) return;
+      const s = sureById(id);
+      if (!s) return;
+      const amt = budget * weight;
+      const unit = s.currency === 'USD' ? s.refPrice * fx : s.refPrice;
+      const qty = s.currency === 'USD' ? Math.floor(amt / unit * 100) / 100 : Math.floor(amt / unit);
+      rows.push({
+        key: id, name: s.name, ticker: s.ticker, weight, amt, qty,
+        how: `지정가 ${money(s.buy.low, s.currency)}~${money(s.buy.high, s.currency)}`,
+        when: note || s.buy.windowKst,
+        expect: SIM[s.simId] ? `연 ${pct(SIM[s.simId].final.median)} (중앙값)` : '-',
+        sure: s.tier === 1,
+        obj: s,
+      });
+    };
+    addSure('sure-kofr', alloc.kofr, '아무 때나 (한국 장중)');
+    addSure('sure-sgov', alloc.sgov, '아무 때나 (미국 장중)');
+    addSure('sure-voo', alloc.voo, '매달 같은 날 정액 적립 권장');
+    addSure('sure-k200', alloc.k200, '매달 같은 날 정액 적립 권장');
+
+    if (alloc.picks > 0) {
+      const order = { ok: 0, mid: 1, pro: 2 };
+      const cands = batchPicks()
+        .filter(p => (p.horizon === 'long' || p.horizon === 'month') && pickLevel(p) !== 'pro')
+        .sort((a, b) => (order[pickLevel(a)] - order[pickLevel(b)]) || ((SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0)))
+        .slice(0, 2);
+      const each = alloc.picks / Math.max(1, cands.length);
+      cands.forEach(p => {
+        const amt = budget * each;
+        const buyP = (p.buy.low + p.buy.high) / 2;
+        const unit = p.currency === 'USD' ? buyP * fx : buyP;
+        const qty = p.currency === 'USD' ? Math.floor(amt / unit * 100) / 100 : Math.floor(amt / unit);
+        rows.push({
+          key: p.id, name: p.name, ticker: p.ticker, weight: each, amt, qty,
+          how: `지정가 ${money(p.buy.low, p.currency)}~${money(p.buy.high, p.currency)} 분할 매수`,
+          when: p.buy.windowKst,
+          expect: SIM[p.simId] ? `이익 확률 ${SIM[p.simId].final.pProfit.toFixed(0)}% · 기대 ${pct(p.expectedReturn.base)}` : '-',
+          sure: false,
+          obj: p,
+        });
+      });
+    }
+
+    const tbl = el('table', 'plain');
+    const thead = el('thead'); const hr2 = el('tr');
+    ['완료', '자산', '배분', '금액', '수량', '주문 방법 · 시점', '예상'].forEach((h, i) => hr2.appendChild(el('th', i >= 2 && i <= 4 ? 'num' : null, h)));
+    thead.appendChild(hr2); tbl.appendChild(thead);
+    const tb = el('tbody');
+    rows.forEach(r => {
+      const tr = el('tr');
+      const tdC = el('td');
+      const chk = el('input');
+      chk.type = 'checkbox';
+      chk.checked = !!plan.checks[plan.style + ':' + r.key];
+      chk.setAttribute('aria-label', r.name + ' 주문 완료');
+      chk.addEventListener('change', () => { plan.checks[plan.style + ':' + r.key] = chk.checked; savePlan(plan); });
+      tdC.appendChild(chk);
+      tr.appendChild(tdC);
+      const tdN = el('td');
+      const nameBtn = el('button', 'bopen', r.name);
+      nameBtn.type = 'button';
+      nameBtn.style.fontSize = '0.86rem';
+      nameBtn.addEventListener('click', () => openModal(r.obj));
+      tdN.appendChild(nameBtn);
+      tdN.appendChild(el('div', 'bd', r.ticker + (r.sure ? ' · 🛡️ 원금 보전형' : ' · 확률형')));
+      tr.appendChild(tdN);
+      tr.appendChild(el('td', 'num', Math.round(r.weight * 100) + '%'));
+      tr.appendChild(el('td', 'num', krw(r.amt)));
+      tr.appendChild(el('td', 'num', r.qty.toLocaleString('ko-KR') + '주'));
+      const tdH = el('td');
+      tdH.appendChild(el('div', null, r.how));
+      tdH.appendChild(el('div', 'bd', r.when));
+      tr.appendChild(tdH);
+      tr.appendChild(el('td', null, r.expect));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    wrap.appendChild(tbl);
+
+    // 요약: 확정 vs 확률
+    const surePart = rows.filter(r => r.sure).reduce((s, r) => s + r.weight, 0);
+    const summ = el('div', 'easybox');
+    summ.style.marginTop = '0.9rem';
+    summ.appendChild(el('div', 'eb-t', '이 플랜의 정직한 요약'));
+    summ.appendChild(el('div', null, `전체의 ${Math.round(surePart * 100)}%는 원금 보전형 금리 자산(사실상 확정, 연 2~4%)이고, 나머지 ${Math.round((1 - surePart) * 100)}%는 확률적 수익 자산입니다. 확정 비중이 높을수록 잃을 가능성은 낮아지고 기대수익도 낮아집니다 — 이 균형은 위의 투자 성향으로 조절하세요.`));
+    wrap.appendChild(summ);
+
+    // 실행 체크리스트
+    wrap.appendChild(el('h2', 'homesec', '④ 실행 순서 (증권사 앱)'));
+    const steps = [
+      '증권사 앱을 열고 로그인합니다 (미성년자는 보호자 동반 계좌).',
+      '위 표의 티커(예: 423160)를 검색합니다.',
+      '"지정가" 주문을 선택하고, 표의 가격 범위 안의 값과 수량을 입력합니다.',
+      '주문 후 위 표의 완료 체크박스에 표시합니다 (이 브라우저에 저장됩니다).',
+      '적립 권장 자산(VOO·KODEX 200)은 매달 같은 날 같은 금액으로 반복합니다 — 자동 적립 설정이 있으면 활용하세요.',
+      '📊 성과 검증 탭에서 추천의 실제 결과가 매일 채점되는 것을 확인하세요.',
+    ];
+    const ol = el('ol', 'pts');
+    ol.style.paddingLeft = '1.3rem';
+    steps.forEach(s => ol.appendChild(liTerms(s)));
+    wrap.appendChild(ol);
+
+    wrap.appendChild(el('p', 'hist-note', '⚠️ 이 플랜은 손실 가능성을 구조적으로 낮춘 구성이지 수익 보장이 아닙니다. 주식 비중은 단기적으로 마이너스가 될 수 있으며, "따라만 하면 반드시 번다"고 말하는 서비스는 신뢰하지 마세요. 확정에 가까운 것은 금리 자산뿐이고, 그 수익률은 연 2~4%입니다.'));
+
+    budIn.addEventListener('change', () => { plan.budget = +budIn.value || 0; savePlan(plan); renderPlan(); });
+  }
+
   // ───────── 확실 수익 ─────────
   function renderSure() {
     const wrap = $('#view-sure');
     wrap.textContent = '';
 
     const hero = el('div', 'hero');
-    hero.appendChild(el('div', 'weather', '🔒 "확실한 이익"의 진실부터 알려 드릴게요'));
+    hero.appendChild(el('div', 'weather', '🛡️ 안정 수익 — "확실함"의 실제 시세부터'));
     const wd = el('p', 'wdesc');
-    wd.appendChild(linkTerms('세상의 철칙: 확실할수록 수익은 낮고, 수익이 높을수록 위험해요. 이 시소를 깨고 "확실한 고수익"을 준다는 사람은 100% 사기꾼이에요. 이 페이지는 그 철칙 안에서 진짜로 확실한 것부터 순서대로 보여 줘요.'));
+    wd.appendChild(linkTerms('금융의 기본 원리: 확실성과 수익률은 반비례합니다. 이 원리를 깨는 "확실한 고수익"은 존재하지 않으며, 그렇게 광고하는 상품은 예외 없이 사기입니다. 이 페이지는 확실성이 높은 순서로 자산을 정리합니다.'));
     hero.appendChild(wd);
     wrap.appendChild(hero);
 
     const tierNote = {
-      1: '시뮬레이션 2만 번 중 2만 번 모두 이익 — 미국/한국 정부 신용에 기대는, 진짜 "확실"에 가장 가까운 자산이에요. 대신 수익률은 은행이자 수준(연 2~4%)이에요.',
-      2: '1년만 보면 이길 확률이 60~80%지만, 역사상 15~20년 이상 갖고 있으면 진 적이 없어요. "시간"이 확실함을 만들어요. 매달 같은 금액 적립이 정석!',
+      1: '시뮬레이션 20,000 경로 전부 이익 — 미국·한국 정부 신용에 기반한, 확실성이 가장 높은 자산군입니다. 기대수익률은 연 2~4% 수준입니다.',
+      2: '1년 단위 승률은 60~80%지만, 역사상 15~20년 이상 보유 시 손실 사례가 없습니다. 보유 기간이 확실성을 만듭니다 — 매월 정액 적립(DCA)이 표준 전략입니다.',
     };
     [1, 2].forEach(tier => {
-      wrap.appendChild(el('h2', 'homesec', tier === 1 ? '1단계 🔒 사실상 확정 (P(이익) 100%)' : '2단계 ⏳ 시간이 만드는 확실함 (장기 적립)'));
+      wrap.appendChild(el('h2', 'homesec', tier === 1 ? 'Tier 1 · 원금 보전형 (시뮬 이익 확률 100%)' : 'Tier 2 · 장기 분산 적립 (시간 분산)'));
       const note = el('p', 'viewdesc');
       note.appendChild(linkTerms(tierNote[tier]));
       wrap.appendChild(note);
@@ -867,10 +1038,10 @@
     });
 
     // S&P 500 역사 승률 표
-    wrap.appendChild(el('h2', 'homesec', '📜 증거: S&P 500을 N년 갖고 있으면? (1928년~ 역사 통계)'));
+    wrap.appendChild(el('h2', 'homesec', '📜 근거: S&P 500 보유 기간별 역사 통계 (1928년~)'));
     const tbl = el('table', 'plain');
     const thead = el('thead'); const hr = el('tr');
-    ['보유 기간', '이익 본 비율', '최악의 경우', '한 줄 설명'].forEach(h => hr.appendChild(el('th', null, h)));
+    ['보유 기간', '플러스 비율', '최악의 사례', '해석'].forEach(h => hr.appendChild(el('th', null, h)));
     thead.appendChild(hr); tbl.appendChild(thead);
     const tb = el('tbody');
     RECO.sureStats.forEach(s => {
@@ -888,11 +1059,11 @@
 
     const warn = el('div', 'easybox');
     warn.style.marginTop = '1rem';
-    warn.appendChild(el('div', 'eb-t', '🚨 꼭 기억하세요'));
-    warn.appendChild(el('div', null, '"과거에 항상 그랬다"는 것이지 "미래를 보장한다"는 뜻은 아니에요. 그리고 개별 주식(삼성전자, 엔비디아 등)에는 이 표가 적용되지 않아요 — 개별 회사는 망할 수도 있으니까요. 더 높은 수익을 노리는 확률 기반 추천은 📋 추천 종목 탭에 있어요.'));
+    warn.appendChild(el('div', 'eb-t', '🚨 유의사항'));
+    warn.appendChild(el('div', null, '과거 통계이지 미래 보장이 아닙니다. 또한 이 표는 지수(분산 포트폴리오)에만 해당하며, 개별 종목에는 적용되지 않습니다 — 개별 기업은 파산할 수 있습니다. 더 높은 기대수익을 추구하는 확률 기반 전략은 📋 추천 종목 탭을 참고하세요.'));
     wrap.appendChild(warn);
 
-    const cta = el('button', 'iconbtn', '📋 확률 기반 추천 보러 가기 →');
+    const cta = el('button', 'iconbtn', '📋 확률 기반 추천 보기 →');
     cta.type = 'button';
     cta.style.marginTop = '0.8rem';
     cta.addEventListener('click', () => { state.view = 'reco'; renderAll(); window.scrollTo({ top: 0 }); });
@@ -909,7 +1080,7 @@
   function renderPractice() {
     const wrap = $('#view-practice');
     wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '진짜 돈 없이 계획을 세워 보는 연습장이에요. 예산을 정하고 종목을 담으면, 계획대로 됐을 때와 잘 안 됐을 때 결과를 미리 보여 줘요. (내 브라우저에만 저장돼요)'));
+    wrap.appendChild(el('p', 'viewdesc', '가상 예산으로 포트폴리오를 구성하면 시나리오별(낙관·기본·보수) 평가금액을 미리 확인할 수 있습니다. 데이터는 이 브라우저에만 저장됩니다.'));
     const basket = loadBasket();
     const fx = RECO.meta.fxUsdKrw;
     const picks = RECO.sureItems.concat(batchPicks());
@@ -918,7 +1089,7 @@
 
     // 왼쪽: 장바구니
     const left = el('div', 'basket');
-    left.appendChild(el('h3', null, '🧺 내 연습 장바구니'));
+    left.appendChild(el('h3', null, '🧺 포트폴리오 구성'));
     const budRow = el('div', 'brow');
     budRow.appendChild(el('span', 'bnm', '가상 예산'));
     const budIn = el('input'); budIn.type = 'number'; budIn.value = basket.budget; budIn.min = 10000; budIn.step = 100000;
@@ -936,14 +1107,14 @@
       o.value = p.id;
       sel.appendChild(o);
     });
-    const addBtn = el('button', null, '+ 담기');
+    const addBtn = el('button', null, '+ 추가');
     addBtn.type = 'button';
     addRow.appendChild(sel); addRow.appendChild(addBtn);
     left.appendChild(addRow);
 
     // 오른쪽: 결과
     const right = el('div', 'basket');
-    right.appendChild(el('h3', null, '🔭 계획대로 되면 이렇게 돼요'));
+    right.appendChild(el('h3', null, '🔭 시나리오별 예상 평가금액'));
     const outBox = el('div');
     right.appendChild(outBox);
 
@@ -975,13 +1146,13 @@
         amt.addEventListener('input', () => { item.amount = +amt.value || 0; saveBasket(basket); renderOut(); });
         row.appendChild(amt);
         row.appendChild(el('span', null, '원'));
-        const rm = el('button', 'brm', '빼기');
+        const rm = el('button', 'brm', '제거');
         rm.type = 'button';
         rm.addEventListener('click', () => { basket.items.splice(idx, 1); saveBasket(basket); renderItems(); renderOut(); });
         row.appendChild(rm);
         itemsBox.appendChild(row);
       });
-      if (!basket.items.length) itemsBox.appendChild(el('p', 'viewdesc', '아직 비어 있어요. 아래에서 종목을 담아 보세요!'));
+      if (!basket.items.length) itemsBox.appendChild(el('p', 'viewdesc', '아직 비어 있습니다. 아래에서 종목을 추가해 보세요.'));
     }
 
     function renderOut() {
@@ -994,10 +1165,10 @@
         warn.style.color = 'var(--status-critical)';
         outBox.appendChild(warn);
       }
-      if (!rows.length) { outBox.appendChild(el('p', 'viewdesc', '종목을 담으면 결과가 여기 나타나요.')); return; }
+      if (!rows.length) { outBox.appendChild(el('p', 'viewdesc', '종목을 추가하면 결과가 표시됩니다.')); return; }
       const tbl = el('table', 'plain');
       const thead = el('thead'); const hr = el('tr');
-      ['종목', '살 수 있는 수', '😊 잘 되면', '🙂 보통', '😰 잘 안 되면'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
+      ['종목', '수량', '낙관', '기본', '보수'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
       thead.appendChild(hr); tbl.appendChild(thead);
       const tb = el('tbody');
       let tInv = 0, tBull = 0, tBase = 0, tBear = 0;
@@ -1218,7 +1389,7 @@
     const wrap = $('#view-history');
     wrap.textContent = '';
     wrap.appendChild(el('p', 'hist-note',
-      '추천이 새로 만들어질 때마다 여기에 자동으로 기록돼요. 과거 기록은 바뀌지 않아서, 나중에 "그때 추천이 맞았나?" 하고 확인해 볼 수 있어요.'));
+      '추천이 생성될 때마다 배치 단위로 자동 기록됩니다. 과거 기록은 수정되지 않으며, 📊 성과 검증 탭에서 실제 결과와 대조됩니다.'));
     RECO.batches.forEach((b, i) => {
       const box = el('div', 'batch');
       box.appendChild(el('div', 'bt', b.title));
@@ -1227,7 +1398,7 @@
       const summary = el('div', 'bs');
       summary.textContent = '종목: ' + b.picks.map(p => `${p.name}(${p.ticker})`).join(', ');
       box.appendChild(summary);
-      const openBtn = el('button', 'bopen', '이 배치의 추천 보기 →');
+      const openBtn = el('button', 'bopen', '이 배치의 추천 열람 →');
       openBtn.type = 'button';
       openBtn.addEventListener('click', () => {
         state.batch = i; state.view = 'reco';
@@ -1244,13 +1415,13 @@
   function renderTax() {
     const wrap = $('#view-tax');
     wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '주식으로 번 돈에는 세금이 붙어요. 규칙을 알면 실제로 받는 돈을 정확히 알 수 있어요.'));
+    wrap.appendChild(el('p', 'viewdesc', '한국 거주 개인투자자 기준 과세 규칙입니다. 규칙을 알면 실수령액을 정확히 계산할 수 있습니다.'));
     const rules = [
-      ['미국주식 양도소득세', '1년 동안 번 돈에서 250만원을 뺀 나머지의 22%. 다음 해 5월에 신고해요.'],
-      ['미국주식 배당', '미국에서 15%를 미리 떼고 줘요. 보통 한국에서 추가로 내지 않아요.'],
-      ['한국주식 팔 때', '번 돈에 세금 없음(소액주주 기준)! 대신 팔 때 금액의 0.15%를 증권거래세로 내요.'],
-      ['한국주식 배당', '15.4%를 미리 떼고 줘요.'],
-      ['주의', '이자+배당이 1년에 2,000만원을 넘으면 세금 계산이 복잡해져요(종합과세). 그 정도가 되면 세무사와 상담!'],
+      ['미국주식 양도소득세', '연간 양도차익 합산 250만원 공제 후 22% (지방소득세 포함). 다음 해 5월 자진 신고·납부.'],
+      ['미국주식 배당', '미국에서 15% 원천징수. 금융소득 2,000만원 이하면 국내 추가 과세 없음.'],
+      ['국내주식 양도 (소액주주 장내)', '양도소득세 없음. 매도 시 증권거래세 0.15%.'],
+      ['국내 배당', '15.4% (소득세 14% + 지방소득세 1.4%) 원천징수.'],
+      ['금융소득 종합과세', '이자+배당 연 2,000만원 초과분은 종합소득에 합산 과세 — 초과 시 세무 전문가 상담 권장.'],
     ];
     const tbl = el('table', 'plain');
     const thead = el('thead'); const hr = el('tr');
@@ -1265,7 +1436,7 @@
     });
     tbl.appendChild(tb);
     wrap.appendChild(tbl);
-    wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 그 종목의 가격이 미리 채워진 계산기를 쓸 수 있어요. 세법은 바뀔 수 있어요 — 실제 신고는 어른(세무 전문가)과 함께!'));
+    wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 해당 종목 가격이 미리 입력된 세후 계산기를 사용할 수 있습니다. 세법은 개정될 수 있으므로 실제 신고 시 세무 전문가와 상담하세요.'));
   }
 
   // ───────── 새 추천 받기 ─────────
@@ -1430,7 +1601,7 @@
       btn.addEventListener('click', () => { closeSearch(); e.go(); window.scrollTo({ top: 0 }); });
       searchResults.appendChild(btn);
     });
-    if (!hits.length) searchResults.appendChild(el('p', 'viewdesc', '검색 결과가 없어요. 다른 말로 찾아보세요!'));
+    if (!hits.length) searchResults.appendChild(el('p', 'viewdesc', '검색 결과가 없습니다. 다른 키워드로 시도해 보세요.'));
   }
   searchInput.addEventListener('input', () => runSearch(searchInput.value));
 
@@ -1440,6 +1611,7 @@
       b.setAttribute('aria-selected', String(b.dataset.view === state.view)));
     VIEWS.forEach(v => { $('#view-' + v).style.display = state.view === v ? '' : 'none'; });
     if (state.view === 'home') renderHome();
+    if (state.view === 'plan') renderPlan();
     if (state.view === 'sure') renderSure();
     if (state.view === 'reco') {
       document.querySelectorAll('#hseg button').forEach(b =>
