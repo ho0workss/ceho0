@@ -191,12 +191,11 @@
 
     const chips = el('div', 'chiprow');
     chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
-    chips.appendChild(chip(MARKETS[p.market]));
     chips.appendChild(levelBadge(p));
     card.appendChild(chips);
 
     const tl = el('div', 'titleline');
-    tl.appendChild(el('span', 'tk', p.ticker));
+    tl.appendChild(el('span', 'tk', (p.market === 'US' ? '🇺🇸 ' : '🇰🇷 ') + p.ticker));
     tl.appendChild(el('span', 'nm', p.name));
     tl.appendChild(el('span', 'price', money(p.refPrice, p.currency)));
     card.appendChild(tl);
@@ -231,7 +230,6 @@
     }
     stats.appendChild(sparkline(sim));
     card.appendChild(stats);
-    card.appendChild(el('div', 'more', '투자 근거 · 시뮬레이션 · 세후 계산 →'));
 
     card.addEventListener('click', () => openModal(p));
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } });
@@ -306,15 +304,6 @@
     btnRow.appendChild(sureBtn);
     wrap.appendChild(btnRow);
 
-    wrap.appendChild(el('h2', 'homesec', '✅ 매수 전 체크리스트'));
-    const ul = el('ul', 'pts');
-    CHECKLIST.slice(0, 4).forEach(t => ul.appendChild(liTerms(t)));
-    wrap.appendChild(ul);
-    const moreChk = el('button', 'iconbtn', '전체 체크리스트 보기 →');
-    moreChk.type = 'button';
-    moreChk.style.marginTop = '0.6rem';
-    moreChk.addEventListener('click', () => { state.view = 'learn'; renderAll(); window.scrollTo({ top: 0 }); });
-    wrap.appendChild(moreChk);
   }
 
   // ───────── 팬 차트 ─────────
@@ -802,37 +791,59 @@
       m.appendChild(simNote);
     }
 
-    section(m, '📰 투자 근거 — 뉴스·이벤트');
-    const ulN = el('ul', 'pts'); p.rationale.news.forEach(t => ulN.appendChild(liTerms(t))); m.appendChild(ulN);
-    section(m, '📉 투자 근거 — 기술적 분석');
-    const ulT = el('ul', 'pts'); p.rationale.technical.forEach(t => ulT.appendChild(liTerms(t))); m.appendChild(ulT);
-    section(m, '🏢 투자 근거 — 펀더멘털');
-    const ulF = el('ul', 'pts'); p.rationale.fundamental.forEach(t => ulF.appendChild(liTerms(t))); m.appendChild(ulF);
+    // 상세 정보는 접이식으로 — 핵심(계획·시나리오·시뮬레이션)만 항상 표시
+    const fold = (title, build, open) => {
+      const d = el('details', 'lesson');
+      d.style.marginTop = '0.9rem';
+      if (open) d.open = true;
+      d.appendChild(el('summary', null, title));
+      const body = el('div', 'lb');
+      build(body);
+      d.appendChild(body);
+      m.appendChild(d);
+    };
 
-    section(m, '⚠️ 리스크 요인 (예측 변수)');
-    const ulR = el('ul', 'pts'); p.riskFactors.forEach(t => ulR.appendChild(liTerms(t))); m.appendChild(ulR);
+    fold('📚 투자 근거 (뉴스 · 기술적 분석 · 펀더멘털)', body => {
+      const sub = (t, arr) => {
+        body.appendChild(el('div', 'eb-t', t));
+        const ul = el('ul', 'pts');
+        arr.forEach(x => ul.appendChild(liTerms(x)));
+        body.appendChild(ul);
+      };
+      sub('📰 뉴스·이벤트', p.rationale.news);
+      sub('📉 기술적 분석', p.rationale.technical);
+      sub('🏢 펀더멘털', p.rationale.fundamental);
+    });
 
-    section(m, '💰 배당 정보');
-    if (p.dividend) {
-      const d = p.dividend;
-      const dt = el('table', 'plain');
-      const tb = el('tbody');
-      const row = (k, v) => { const tr = el('tr'); tr.appendChild(el('td', null, k)); tr.appendChild(el('td', 'num', v)); tb.appendChild(tr); };
-      row('1주당 배당금', money(d.perShare, d.currency) + ` (${d.frequency})`);
-      row('배당 일정', d.schedule);
-      row('배당수익률 (연)', d.yieldPct + '%');
-      row('다음 배당', d.next);
-      dt.appendChild(tb);
-      m.appendChild(dt);
-      const dn = el('p', 'summary');
-      dn.appendChild(linkTerms(d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
-      m.appendChild(dn);
-    } else {
-      m.appendChild(el('p', 'summary', '무배당 종목입니다 — 수익은 시세차익으로만 발생합니다.'));
-    }
+    fold('⚠️ 리스크 요인 (예측 변수)', body => {
+      const ul = el('ul', 'pts');
+      p.riskFactors.forEach(t => ul.appendChild(liTerms(t)));
+      body.appendChild(ul);
+    });
 
-    section(m, '🧾 세후 실수령 계산기 (한국 세법 기준)');
-    m.appendChild(taxCalcBlock(p));
+    fold('💰 배당 정보', body => {
+      if (p.dividend) {
+        const d = p.dividend;
+        const dt = el('table', 'plain');
+        const tb = el('tbody');
+        const row = (k, v) => { const tr = el('tr'); tr.appendChild(el('td', null, k)); tr.appendChild(el('td', 'num', v)); tb.appendChild(tr); };
+        row('1주당 배당금', money(d.perShare, d.currency) + ` (${d.frequency})`);
+        row('배당 일정', d.schedule);
+        row('배당수익률 (연)', d.yieldPct + '%');
+        row('다음 배당', d.next);
+        dt.appendChild(tb);
+        body.appendChild(dt);
+        const dn = el('p', 'summary');
+        dn.appendChild(linkTerms(d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
+        body.appendChild(dn);
+      } else {
+        body.appendChild(el('p', 'summary', '무배당 종목입니다 — 수익은 시세차익으로만 발생합니다.'));
+      }
+    });
+
+    fold('🧾 세후 실수령 계산기 (한국 세법 기준)', body => {
+      body.appendChild(taxCalcBlock(p));
+    });
 
     m.appendChild(el('p', 'summary', '⚠️ ' + RECO.meta.disclaimer));
 
@@ -1609,9 +1620,36 @@
   searchInput.addEventListener('input', () => runSearch(searchInput.value));
 
   // ───────── 뷰 전환 ─────────
+  const NAV_GROUPS = {
+    home: ['home'],
+    plan: ['plan'],
+    reco: ['reco', 'sure'],
+    records: ['perf', 'history'],
+    more: ['practice', 'learn', 'tax'],
+  };
+  function navOf(view) {
+    return Object.keys(NAV_GROUPS).find(k => NAV_GROUPS[k].includes(view)) || 'home';
+  }
+  function renderSubtabs() {
+    const box = $('#subtabs');
+    box.textContent = '';
+    const group = NAV_GROUPS[navOf(state.view)];
+    if (group.length < 2) return;
+    const seg = el('div', 'seg');
+    seg.style.cssText = 'display:inline-flex;margin-bottom:0.9rem;background:var(--surface-1);border:1px solid var(--border);border-radius:9px;padding:2px';
+    group.forEach(v => {
+      const b = el('button', null, MENU_LABEL[v]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(state.view === v));
+      b.addEventListener('click', () => { state.view = v; renderAll(); });
+      seg.appendChild(b);
+    });
+    box.appendChild(seg);
+  }
   function renderAll() {
     document.querySelectorAll('.viewtabs button').forEach(b =>
-      b.setAttribute('aria-selected', String(b.dataset.view === state.view)));
+      b.setAttribute('aria-selected', String(b.dataset.nav === navOf(state.view))));
+    renderSubtabs();
     VIEWS.forEach(v => { $('#view-' + v).style.display = state.view === v ? '' : 'none'; });
     if (state.view === 'home') renderHome();
     if (state.view === 'plan') renderPlan();
@@ -1632,7 +1670,7 @@
   }
 
   document.querySelectorAll('.viewtabs button').forEach(b =>
-    b.addEventListener('click', () => { state.view = b.dataset.view; renderAll(); }));
+    b.addEventListener('click', () => { state.view = NAV_GROUPS[b.dataset.nav][0]; renderAll(); }));
   document.querySelectorAll('#hseg button').forEach(b =>
     b.addEventListener('click', () => { state.horizon = b.dataset.h; renderAll(); }));
   $('#market').addEventListener('change', e => { state.market = e.target.value; renderAll(); });
@@ -1649,7 +1687,7 @@
 
   $('#asof').textContent = `최신 추천: ${RECO.batches[0].generatedAt}` +
     (RECO.batches[0].pricesAsOf ? ` · ${RECO.batches[0].pricesAsOf}` : '');
-  $('#disclaimer').textContent = '⚠️ ' + RECO.meta.disclaimer + ' 미성년자는 보호자와 함께 계좌를 만들 수 있으며, 실제 투자 전 "연습하기"로 충분히 연습하는 것을 권장합니다.';
+  $('#disclaimer').textContent = '⚠️ 본 서비스는 투자 자문이 아닌 정보 제공 도구이며, 모든 수치는 시뮬레이션 기반 확률 추정치로 수익을 보장하지 않습니다. 원금 손실이 가능하며 투자 판단과 책임은 본인에게 있습니다.';
 
   renderAll();
 })();
