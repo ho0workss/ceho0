@@ -981,7 +981,10 @@
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);
-    wrap.appendChild(tbl);
+    const tblScroll = el('div');
+    tblScroll.style.overflowX = 'auto';
+    tblScroll.appendChild(tbl);
+    wrap.appendChild(tblScroll);
 
     // 요약: 확정 vs 확률
     const surePart = rows.filter(r => r.sure).reduce((s, r) => s + r.weight, 0);
