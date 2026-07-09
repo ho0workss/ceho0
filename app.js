@@ -33,17 +33,25 @@
     month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
     long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
   };
-  const VIEWS = ['home', 'reco', 'sure', 'practice', 'learn', 'history', 'tax'];
+  const VIEWS = ['home', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax'];
   const MENU_DESC = {
     home: '오늘의 요약과 시작 가이드',
     reco: '기간별 추천 종목과 매매 계획',
     sure: '확실함 최우선 — 무위험 금리 자산과 장기 지수 적립 (확실, 안전, 보장)',
     practice: '가상 돈으로 계획 세우기 연습',
     learn: '주식 기초 · 체크리스트 · 용어사전 · FAQ',
+    perf: '예측 vs 실제 — 적중/실패 전부 공개하는 채점표 (성과, 검증, 결과)',
     history: '지난 추천 기록 보관함',
     tax: '세금 규칙과 실수령 계산',
   };
-  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', sure: '🔒 확실 수익', practice: '🎮 연습하기', learn: '📚 배우기', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
+  const MENU_LABEL = { home: '🏠 홈', reco: '📋 추천 종목', sure: '🔒 확실 수익', practice: '🎮 연습하기', learn: '📚 배우기', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 세금 계산' };
+  const OUTCOME_META = {
+    success: { icon: '✅', label: '성공',   color: 'var(--status-good)' },
+    partial: { icon: '🟡', label: '부분 성공', color: 'var(--status-warning)' },
+    fail:    { icon: '❌', label: '실패(손절)', color: 'var(--status-critical)' },
+    invalid: { icon: '➖', label: '무효(미진입)', color: 'var(--text-muted)' },
+    pending: { icon: '⏳', label: '진행 중', color: 'var(--text-muted)' },
+  };
 
   const state = {
     view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
@@ -193,6 +201,15 @@
     card.appendChild(tl);
 
     if (state.easy && easy) card.appendChild(el('div', 'easyline', '💡 ' + easy.company));
+
+    const rec = RECO.outcomes && RECO.outcomes.records && RECO.outcomes.records[p.id];
+    if (rec && OUTCOME_META[rec.status]) {
+      const om = OUTCOME_META[rec.status];
+      const ob = el('div', 'easyline');
+      ob.style.borderLeft = '3px solid ' + om.color;
+      ob.textContent = `${om.icon} 결과: ${rec.title || om.label}`;
+      card.appendChild(ob);
+    }
 
     const plan = el('div', 'plan');
     const b = el('div'); b.appendChild(el('b', null, '사기 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
@@ -1079,6 +1096,123 @@
     wrap.appendChild(gg);
   }
 
+  // ───────── 성과 검증 ─────────
+  function findPickAnywhere(id) {
+    for (const b of RECO.batches) {
+      const p = b.picks.find(x => x.id === id);
+      if (p) return { pick: p, batch: b };
+    }
+    return null;
+  }
+  function renderPerf() {
+    const wrap = $('#view-perf');
+    wrap.textContent = '';
+    const oc = RECO.outcomes || { records: {} };
+
+    const hero = el('div', 'hero');
+    hero.appendChild(el('div', 'weather', '📊 예측 채점표 — 맞은 것도, 틀린 것도 전부 공개해요'));
+    const wd = el('p', 'wdesc');
+    wd.appendChild(linkTerms('세상에 예측을 다 맞히는 사람은 없어요. 중요한 건 ① 결과를 숨기지 않고 기록하고, ② 틀린 이유를 분석해서, ③ 다음 모델을 고치는 거예요. 이 페이지가 그 작업의 기록입니다. "실패 없음"을 자랑하는 서비스는 기록을 지우고 있는 거예요.'));
+    hero.appendChild(wd);
+    wrap.appendChild(hero);
+
+    // 채점 요약 타일
+    const recs = Object.entries(oc.records || {});
+    const closed = recs.filter(([, r]) => ['success', 'partial', 'fail', 'invalid'].includes(r.status));
+    const wins = closed.filter(([, r]) => r.status === 'success' || r.status === 'partial').length;
+    const fails = closed.filter(([, r]) => r.status === 'fail').length;
+    const tiles = el('div', 'tiles');
+    const tile = (lb, vl, note) => {
+      const t = el('div', 'tile');
+      t.appendChild(el('div', 'lb', lb));
+      t.appendChild(el('div', 'vl', vl));
+      if (note) t.appendChild(el('div', 'note', note));
+      return t;
+    };
+    tiles.appendChild(tile('채점 완료', closed.length + '건', '판정이 끝난 예측'));
+    tiles.appendChild(tile('성공·부분성공', wins + '건', '목표 방향 적중'));
+    tiles.appendChild(tile('실패(손절)', fails + '건', '숨기지 않아요'));
+    tiles.appendChild(tile('진행 중', (recs.length - closed.length) + '건', '아직 기간이 안 끝남'));
+    wrap.appendChild(tiles);
+
+    // 채점표
+    wrap.appendChild(el('h2', 'homesec', '📋 예측 vs 실제'));
+    const tbl = el('table', 'plain');
+    const thead = el('thead'); const hr = el('tr');
+    ['종목 (배치)', '계획', '실제 결과', '판정'].forEach(h => hr.appendChild(el('th', null, h)));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tb = el('tbody');
+    for (const [id, r] of recs) {
+      const found = findPickAnywhere(id);
+      if (!found) continue;
+      const { pick: p, batch: b } = found;
+      const om = OUTCOME_META[r.status] || OUTCOME_META.pending;
+      const tr = el('tr');
+      const tdN = el('td');
+      tdN.appendChild(el('div', null, `${p.name}`));
+      tdN.appendChild(el('div', 'bd', `${p.ticker} · ${HORIZONS[p.horizon].label} · ${b.id.replace('batch-', '')}`));
+      tr.appendChild(tdN);
+      tr.appendChild(el('td', null, `${money(p.buy.low, p.currency)}~${money(p.buy.high, p.currency)} 매수 → ${money(p.sell.low, p.currency)}~${money(p.sell.high, p.currency)} 목표 (손절 ${money(p.sell.stop, p.currency)})`));
+      const tdA = el('td');
+      tdA.appendChild(linkTerms(r.detail || '-'));
+      tr.appendChild(tdA);
+      const tdJ = el('td');
+      const jb = el('span', null, `${om.icon} ${r.title || om.label}`);
+      jb.style.cssText = 'font-weight:700;color:' + om.color;
+      tdJ.appendChild(jb);
+      tr.appendChild(tdJ);
+      tb.appendChild(tr);
+    }
+    if (!recs.length) {
+      const tr = el('tr');
+      const td = el('td', null, '아직 채점된 예측이 없어요. 각 배치의 보유 기간이 끝나면 자동으로 기록돼요.');
+      td.colSpan = 4;
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    }
+    tbl.appendChild(tb);
+    wrap.appendChild(tbl);
+
+    // 교훈
+    if (RECO.lessons && RECO.lessons.length) {
+      wrap.appendChild(el('h2', 'homesec', '🧠 실패에서 배운 것 (교훈 → 모델 반영)'));
+      RECO.lessons.forEach(ls => {
+        const box = el('div', 'batch');
+        box.appendChild(el('div', 'bt', ls.title));
+        box.appendChild(el('div', 'bd', ls.date));
+        const bs = el('div', 'bs');
+        bs.appendChild(linkTerms(ls.text));
+        box.appendChild(bs);
+        wrap.appendChild(box);
+      });
+    }
+
+    // 모델 개선 이력
+    if (RECO.modelChangelog && RECO.modelChangelog.length) {
+      wrap.appendChild(el('h2', 'homesec', '🔧 예측 모델 개선 이력'));
+      const ct = el('table', 'plain');
+      const cth = el('thead'); const chr = el('tr');
+      ['버전', '날짜', '바뀐 것'].forEach(h => chr.appendChild(el('th', null, h)));
+      cth.appendChild(chr); ct.appendChild(cth);
+      const ctb = el('tbody');
+      RECO.modelChangelog.forEach(c => {
+        const tr = el('tr');
+        tr.appendChild(el('td', null, c.version));
+        tr.appendChild(el('td', null, c.date));
+        const td = el('td');
+        const ul = el('ul', 'pts');
+        c.changes.forEach(ch => ul.appendChild(liTerms(ch)));
+        td.appendChild(ul);
+        tr.appendChild(td);
+        ctb.appendChild(tr);
+      });
+      ct.appendChild(ctb);
+      wrap.appendChild(ct);
+    }
+
+    wrap.appendChild(el('p', 'hist-note', '판정 기준: ✅ 성공 = 목표가 도달 · 🟡 부분 성공 = 이익 실현했으나 목표 미달 · ❌ 실패 = 손절가 도달 · ➖ 무효 = 갭 등으로 매수 범위 자체가 성립 안 함(포지션 없음) · ⏳ 진행 중 = 보유 기간 미종료. 채점은 매일 아침 자동 갱신 때 함께 업데이트돼요.'));
+  }
+
   // ───────── 히스토리 ─────────
   function renderHistory() {
     const wrap = $('#view-history');
@@ -1317,6 +1451,7 @@
     }
     if (state.view === 'practice') renderPractice();
     if (state.view === 'learn') renderLearn();
+    if (state.view === 'perf') renderPerf();
     if (state.view === 'history') renderHistory();
     if (state.view === 'tax') renderTax();
   }

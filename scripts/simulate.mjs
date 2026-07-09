@@ -1,5 +1,9 @@
 // Monte Carlo simulation for stock recommendation scenarios.
-// GBM (geometric Brownian motion) with per-ticker annualized drift/volatility.
+// 모델 버전:
+//   v1 'gbm' — GBM + 정규분포 (2026-07-08 배치들. 재현성 보존을 위해 유지)
+//   v2 't'   — GBM + Student-t(ν=4) fat-tail (2026-07-09 배치1 사후분석 반영:
+//              정규분포가 -4~-7%급 하루 급변 확률을 과소평가 → 테슬라 당일 손절(7/8) 등
+//              이벤트 리스크 구간에서 P(손절)이 낙관적으로 나오던 문제 보정)
 // Deterministic seed so committed results are reproducible: node scripts/simulate.mjs > data/sim.json
 //
 // Output per pick:
@@ -33,6 +37,19 @@ function makeNormal(rand) {
     const m = Math.sqrt(-2 * Math.log(s) / s);
     spare = v * m;
     return u * m;
+  };
+}
+
+// Student-t(ν=4) 분산 1로 표준화 — fat tail (첨도 ∞→실질 급첨) 충격 생성기
+// t = Z / sqrt(W/ν), W = 카이제곱(ν) = ν개의 표준정규 제곱합. Var(t)=ν/(ν-2)=2 → /sqrt(2)
+function makeStudentT(rand, nu = 4) {
+  const normal = makeNormal(rand);
+  const scale = Math.sqrt(nu / (nu - 2));
+  return function () {
+    const z = normal();
+    let w = 0;
+    for (let k = 0; k < nu; k++) { const n = normal(); w += n * n; }
+    return (z / Math.sqrt(w / nu)) / scale;
   };
 }
 
@@ -75,18 +92,18 @@ const PICKS = [
   { id: 'b2-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
   { id: 'b2-long-samsung', s0: 281500, target: 420000,  stop: 228000,  annVol: 0.36, annDrift: 0.20, kind: 'long' },
   // ── 배치 2026-07-09 (매일 아침 자동 갱신 1회차) — 뒤에 추가해 기존 seed 유지 ──
-  { id: 'b3-day-samsung', s0: 277500,  target: 285000,  stop: 265000,  annVol: 0.45, annDrift: 0.20, kind: 'day' },
-  { id: 'b3-day-hynix',   s0: 2076000, target: 2175000, stop: 1960000, annVol: 0.60, annDrift: 0.25, kind: 'day' },
-  { id: 'b3-day-nvda',    s0: 196.93,  target: 201.5,   stop: 190.0,   annVol: 0.46, annDrift: 0.22, kind: 'day' },
-  { id: 'b3-week-tsm',    s0: 434.16,  target: 458.0,   stop: 415.0,   annVol: 0.44, annDrift: 0.22, kind: 'week' },
-  { id: 'b3-week-xom',    s0: 138.20,  target: 146.0,   stop: 134.0,   annVol: 0.30, annDrift: 0.22, kind: 'week' },
-  { id: 'b3-week-ko',     s0: 82.04,   target: 85.5,    stop: 79.0,    annVol: 0.15, annDrift: 0.15, kind: 'week' },
-  { id: 'b3-month-msft',  s0: 386.74,  target: 412.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month' },
-  { id: 'b3-month-samsung', s0: 277500, target: 315000, stop: 255000,  annVol: 0.40, annDrift: 0.22, kind: 'month' },
-  { id: 'b3-month-nvda',  s0: 196.93,  target: 215.0,   stop: 178.0,   annVol: 0.46, annDrift: 0.25, kind: 'month' },
-  { id: 'b3-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long' },
-  { id: 'b3-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long' },
-  { id: 'b3-long-samsung', s0: 277500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long' },
+  { id: 'b3-day-samsung', s0: 277500,  target: 285000,  stop: 265000,  annVol: 0.45, annDrift: 0.20, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b3-day-hynix',   s0: 2076000, target: 2175000, stop: 1960000, annVol: 0.60, annDrift: 0.25, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b3-day-nvda',    s0: 196.93,  target: 201.5,   stop: 190.0,   annVol: 0.46, annDrift: 0.22, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b3-week-tsm',    s0: 434.16,  target: 458.0,   stop: 415.0,   annVol: 0.44, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b3-week-xom',    s0: 138.20,  target: 146.0,   stop: 134.0,   annVol: 0.30, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b3-week-ko',     s0: 82.04,   target: 85.5,    stop: 79.0,    annVol: 0.15, annDrift: 0.15, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b3-month-msft',  s0: 386.74,  target: 412.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b3-month-samsung', s0: 277500, target: 315000, stop: 255000,  annVol: 0.40, annDrift: 0.22, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b3-month-nvda',  s0: 196.93,  target: 215.0,   stop: 178.0,   annVol: 0.46, annDrift: 0.25, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b3-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b3-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  { id: 'b3-long-samsung', s0: 277500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
@@ -106,9 +123,13 @@ function percentile(sorted, p) {
 function simulate(pick, seed) {
   const { steps, dtYears, sampleEvery } = KIND_STEPS[pick.kind];
   const rand = mulberry32(seed);
-  const normal = makeNormal(rand);
-  const drift = (pick.annDrift - 0.5 * pick.annVol * pick.annVol) * dtYears;
-  const diffusion = pick.annVol * Math.sqrt(dtYears);
+  // v2: model === 't' 이면 fat-tail 충격, 아니면(v1 재현) 정규분포
+  const normal = pick.model === 't' ? makeStudentT(rand, 4) : makeNormal(rand);
+  // v2: volX = 레짐 변동성 승수 (이벤트/리스크오프 국면에서 실현 변동성이
+  // 과거 변동성을 초과하는 현상 보정 — 배치1 테슬라 사후분석의 핵심 교훈)
+  const vol = pick.annVol * (pick.volX || 1);
+  const drift = (pick.annDrift - 0.5 * vol * vol) * dtYears;
+  const diffusion = vol * Math.sqrt(dtYears);
 
   // sampled step indices for fan-chart bands (always include step 0 and last)
   const sampleIdx = [0];
