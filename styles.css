@@ -120,9 +120,9 @@ header.site { padding: 1.5rem 0 0.75rem; }
 }
 .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .card .titleline { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
-.card .tk { font-weight: 700; font-size: 1.02rem; }
+.card .tk { font-weight: 700; font-size: 1.08rem; letter-spacing: -0.01em; }
 .card .nm { color: var(--text-secondary); font-size: 0.88rem; }
-.card .price { margin-left: auto; font-size: 0.88rem; color: var(--text-secondary); }
+.card .price { margin-left: auto; font-size: 0.92rem; font-weight: 650; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .card .plan { font-size: 0.8rem; color: var(--text-secondary); display: grid; gap: 0.15rem; }
 .card .plan b { color: var(--text-primary); font-weight: 600; }
 .statrow { display: flex; gap: 1rem; align-items: flex-end; }
@@ -173,6 +173,7 @@ table.plain th, table.plain td { text-align: left; padding: 0.5rem 0.7rem; borde
 table.plain tr:last-child td { border-bottom: none; }
 table.plain th { font-size: 0.74rem; color: var(--text-muted); font-weight: 600; background: color-mix(in srgb, var(--grid) 30%, var(--surface-1)); }
 table.plain td.num, table.plain th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.plain input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
 td .pos { color: var(--delta-good); font-weight: 600; }
 td .neg { color: var(--delta-bad); font-weight: 600; }
 
