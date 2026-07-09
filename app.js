@@ -78,6 +78,32 @@
   function pctCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
   function batchPicks() { return RECO.batches[state.batch].picks; }
   function pickLevel(p) { return (EASY[p.id] && EASY[p.id].level) || 'mid'; }
+  // KRX 호가단위(2023 개편) / 미국 $0.01
+  function tickSize(price, currency) {
+    if (currency === 'USD') return 0.01;
+    if (price < 2000) return 1;
+    if (price < 5000) return 5;
+    if (price < 20000) return 10;
+    if (price < 50000) return 50;
+    if (price < 200000) return 100;
+    if (price < 500000) return 500;
+    return 1000;
+  }
+  function tickRound(price, currency, dir) {
+    const t = tickSize(price, currency);
+    let v = dir === 'up' ? Math.ceil(price / t) * t : dir === 'near' ? Math.round(price / t) * t : Math.floor(price / t) * t;
+    return currency === 'USD' ? +v.toFixed(2) : v;
+  }
+  function nextTradingDays(n) {
+    const out = [];
+    const d = new Date();
+    while (out.length < n) {
+      d.setDate(d.getDate() + 1);
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) out.push(d.toISOString().slice(0, 10));
+    }
+    return out;
+  }
   function svgEl(tag, attrs) {
     const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (const k in attrs) n.setAttribute(k, attrs[k]);
@@ -682,6 +708,99 @@
     return box;
   }
 
+  // ───────── 정밀 주문 가이드 (시가 조건부 정확 주문) ─────────
+  function precisionGuide(p, sim) {
+    const box = el('div', 'calc');
+    const cur = p.currency;
+    const isKR = p.market === 'KR';
+    const openTime = isKR ? '09:00' : '09:30 ET (한국 22:30/23:30)';
+    const fmt = v => money(v, cur);
+
+    if (p.horizon === 'day') {
+      const head = el('p', 'note', `사용법: 개장(${openTime}) 시가를 확인해 아래에 입력하면, 호가단위까지 정렬된 정확한 주문가가 계산됩니다. 가격은 예측이 아니라 "시가가 정해지는 순간 확정되는 규칙"입니다.`);
+      box.appendChild(head);
+      const inrow = el('div', 'inrow');
+      const lab = el('label');
+      lab.appendChild(el('span', null, `오늘 시가 (${cur === 'KRW' ? '원' : '$'})`));
+      const openIn = el('input');
+      openIn.type = 'number'; openIn.value = p.refPrice; openIn.min = 0;
+      openIn.step = tickSize(p.refPrice, cur);
+      lab.appendChild(openIn);
+      inrow.appendChild(lab);
+      box.appendChild(inrow);
+      const out = el('table', 'plain');
+      box.appendChild(out);
+      const recalc = () => {
+        const open = +openIn.value || p.refPrice;
+        const gap = (open - p.refPrice) / p.refPrice * 100;
+        const kase = gap >= 2 ? `갭업 +${gap.toFixed(1)}% — 추격 금지, 눌림 대기` : gap <= -2 ? `갭다운 ${gap.toFixed(1)}% — 안정 확인 후` : `보합권 (${gap >= 0 ? '+' : ''}${gap.toFixed(1)}%)`;
+        const buyP = gap >= 2 ? tickRound(open * 0.988, cur, 'down')
+                   : gap <= -2 ? tickRound(open * 0.997, cur, 'down')
+                   : tickRound(open * 0.995, cur, 'down');
+        const buyWin = gap <= -2 ? (isKR ? '09:30–10:00' : '10:00–10:30 ET') : (isKR ? '09:05–09:30' : '09:35–10:00 ET');
+        const t1 = tickRound(buyP * 1.01, cur, 'down');
+        const t2 = tickRound(buyP * 1.018, cur, 'down');
+        const stop = tickRound(buyP * 0.985, cur, 'down');
+        const closeT = isKR ? '14:50' : '15:50 ET';
+        out.textContent = '';
+        const tb = el('tbody');
+        const row = (k, v, sub) => {
+          const tr = el('tr');
+          const td1 = el('td');
+          td1.appendChild(el('div', null, k));
+          if (sub) td1.appendChild(el('div', 'bd', sub));
+          tr.appendChild(td1);
+          const td2 = el('td', 'num');
+          td2.appendChild(el('b', null, v));
+          tr.appendChild(td2);
+          tb.appendChild(tr);
+        };
+        row('케이스 판정', kase, '시가 vs 전일 기준가 ' + fmt(p.refPrice));
+        row('① 매수 지정가', fmt(buyP), `주문 시각 ${buyWin} · 미체결 시 ${isKR ? '10:30' : '11:00 ET'}에 주문 취소(미진입)`);
+        row('② 1차 매도 지정가 (+1.0%) — 수량 절반', fmt(t1), sim ? `매수 직후 예약 · 도달확률 참고 ${Math.min(99, Math.round(sim.final.pHitTarget * 1.4))}% 수준` : '매수 직후 예약');
+        row('③ 2차 매도 지정가 (+1.8%) — 나머지', fmt(t2), '1차 체결 시 유지, 아니면 ④로');
+        row('④ 손절 스톱 (-1.5%)', fmt(stop), '매수 직후 자동감시(스톱로스) 주문 — 반드시 설정');
+        row('⑤ 시간 청산', closeT + ' 시장가', '②③ 미체결 잔량 전부 — 당일 전략은 포지션을 넘기지 않습니다');
+        out.appendChild(tb);
+      };
+      openIn.addEventListener('input', recalc);
+      recalc();
+    } else {
+      const n = p.horizon === 'week' ? 2 : p.horizon === 'month' ? 4 : 6;
+      const days = nextTradingDays(p.horizon === 'week' ? 2 : p.horizon === 'month' ? 8 : 60);
+      const pickDays = p.horizon === 'week' ? [days[0], days[1]]
+        : p.horizon === 'month' ? [days[0], days[2], days[4], days[7]]
+        : [days[0], days[9], days[19], days[29], days[44], days[59]];
+      box.appendChild(el('p', 'note', `분할 매수 사다리: 아래 날짜에 각 지정가로 ${n}회 나눠 주문합니다 (총 예산의 1/${n}씩). 가격이 안 내려와 미체결이면 그 회차는 건너뜁니다 — 싸게 사기 위한 규칙이므로 추격하지 않습니다. 주문 시간: ${isKR ? '10:00–11:00' : '22:30–23:30 (한국시간)'}.`));
+      const tbl = el('table', 'plain');
+      const thead = el('thead'); const hr = el('tr');
+      ['회차', '날짜', '매수 지정가 (호가 정렬)', '기준가 대비'].forEach((h, i) => hr.appendChild(el('th', i >= 2 ? 'num' : null, h)));
+      thead.appendChild(hr); tbl.appendChild(thead);
+      const tb = el('tbody');
+      const steps = p.horizon === 'week' ? [0.997, 0.985] : p.horizon === 'month' ? [0.997, 0.985, 0.97, 0.955] : [0.995, 0.98, 0.96, 0.94, 0.92, 0.90];
+      steps.forEach((s, i) => {
+        const price = tickRound(p.refPrice * s, cur, 'down');
+        const tr = el('tr');
+        tr.appendChild(el('td', null, (i + 1) + '회차'));
+        tr.appendChild(el('td', null, pickDays[i] || '-'));
+        const td = el('td', 'num');
+        td.appendChild(el('b', null, fmt(price)));
+        tr.appendChild(td);
+        tr.appendChild(el('td', 'num', ((s - 1) * 100).toFixed(1) + '%'));
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);
+      box.appendChild(tbl);
+      const sellHalf = tickRound(p.sell.low, cur, 'down');
+      const sellFull = tickRound(p.sell.high, cur, 'down');
+      const stop = tickRound(p.sell.stop, cur, 'down');
+      const outSell = el('p', 'note');
+      outSell.textContent = `매도: 1차 ${fmt(sellHalf)} 도달 시 절반 (도달확률 ${sim ? sim.final.pHitTarget.toFixed(0) : '-'}%), 2차 ${fmt(sellFull)} 도달 시 나머지 · 손절 스톱 ${fmt(stop)} (전 수량, 자동감시 주문) · 미도달 시 ${p.sell.windowKst} 시점에 재평가.`;
+      box.appendChild(outSell);
+    }
+    return box;
+  }
+
   // ───────── 상세 모달 ─────────
   const back = $('#modal-back');
   function closeModal() { back.classList.remove('open'); back.querySelector('.modal').textContent = ''; document.body.style.overflow = ''; }
@@ -799,6 +918,9 @@
     planNotes.appendChild(liTerms('매도: ' + p.sell.note));
     planNotes.style.marginTop = '0.5rem';
     m.appendChild(planNotes);
+
+    section(m, '🎯 정밀 주문 가이드 (호가단위 정렬 · 분 단위 실행)');
+    m.appendChild(precisionGuide(p, sim));
 
     section(m, '🔮 시나리오 분석');
     const sc = el('table', 'plain');
