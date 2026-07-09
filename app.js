@@ -767,11 +767,23 @@
       tr1.appendChild(el('td', 'num', `${money(p.buy.low, p.currency)} ~ ${money(p.buy.high, p.currency)}`));
       tb.appendChild(tr1);
       const tr2 = el('tr');
-      tr2.appendChild(el('td', null, '매도 (목표)'));
+      const sellLbl = el('td');
+      sellLbl.appendChild(el('div', null, '매도 목표 (도달 시)'));
+      if (sim) sellLbl.appendChild(el('div', 'bd', `도달확률 ${sim.final.pHitTarget.toFixed(0)}% — 예측이 아닌 조건`));
+      tr2.appendChild(sellLbl);
       tr2.appendChild(el('td', null, p.sell.window));
       tr2.appendChild(el('td', null, p.sell.windowKst));
       tr2.appendChild(el('td', 'num', `${money(p.sell.low, p.currency)} ~ ${money(p.sell.high, p.currency)}`));
       tb.appendChild(tr2);
+      const trM = el('tr');
+      trM.appendChild(el('td', null, '미도달 시'));
+      const mc = el('td', null, p.horizon === 'day'
+        ? '장 마감 전 시장가 청산 (당일 전략은 포지션을 넘기지 않음)'
+        : '기간 종료 시점에 재평가 — 논리 유효하면 연장, 훼손 시 정리');
+      mc.colSpan = 2;
+      trM.appendChild(mc);
+      trM.appendChild(el('td', 'num', p.horizon === 'day' ? '마감가' : '재평가'));
+      tb.appendChild(trM);
       const tr3 = el('tr');
       tr3.appendChild(el('td', null, '손절'));
       const scd = el('td', null, '도달 즉시 (자동 주문 권장)');
