@@ -1946,6 +1946,40 @@
   }
 
   // ───────── 새 추천 받기 ─────────
+  const SUPA_URL = 'https://ztjivtiuhxwazsajukto.supabase.co/rest/v1/rpc';
+  const SUPA_KEY = 'sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH';
+  function supaRpc(fn, body) {
+    return fetch(`${SUPA_URL}/${fn}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify(body || {}),
+    }).then(r => r.json());
+  }
+  function fmtWhen(iso) {
+    if (!iso) return '-';
+    try {
+      const d = new Date(iso);
+      const kst = new Date(d.getTime() + 9 * 3600000);
+      const p = n => String(n).padStart(2, '0');
+      return `${kst.getUTCFullYear()}-${p(kst.getUTCMonth() + 1)}-${p(kst.getUTCDate())} ${p(kst.getUTCHours())}:${p(kst.getUTCMinutes())} KST`;
+    } catch { return String(iso); }
+  }
+  function ago(iso) {
+    if (!iso) return '';
+    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return '방금 전';
+    if (mins < 60) return `${mins}분 전`;
+    const h = Math.round(mins / 60);
+    if (h < 24) return `${h}시간 전`;
+    return `${Math.round(h / 24)}일 전`;
+  }
+  const REQ_STATUS_META = {
+    pending: { icon: '⏳', label: '접수됨 (대기 중)', color: 'var(--status-warning)' },
+    processing: { icon: '⚙️', label: '처리 중', color: 'var(--accent)' },
+    done: { icon: '✅', label: '갱신 완료', color: 'var(--delta-good)' },
+    rejected: { icon: '⛔', label: '반려됨', color: 'var(--status-critical)' },
+  };
+
   function openRefreshModal() {
     const m = back.querySelector('.modal');
     m.textContent = '';
@@ -1959,6 +1993,57 @@
     closeBtn.addEventListener('click', closeModal);
     head.appendChild(closeBtn);
     m.appendChild(head);
+
+    // ── 갱신 상태판 (마지막 갱신 + 내 요청 진행 상황) ──
+    const statusPanel = el('div', 'easybox');
+    statusPanel.style.marginTop = '0.9rem';
+    statusPanel.appendChild(el('div', 'eb-t', '📡 갱신 상태'));
+    const lastLine = el('div');
+    lastLine.textContent = '불러오는 중…';
+    statusPanel.appendChild(lastLine);
+    const myLine = el('div');
+    myLine.style.marginTop = '0.35rem';
+    statusPanel.appendChild(myLine);
+    m.appendChild(statusPanel);
+
+    function paintStatus(data) {
+      const siteWhen = RECO.lastUpdated || (RECO.batches[0] && RECO.batches[0].generatedAt);
+      lastLine.textContent = '';
+      lastLine.appendChild(el('b', null, '사이트 최신 추천: '));
+      lastLine.appendChild(document.createTextNode(siteWhen ? siteWhen.replace(/ \(.*\)$/, '') : '-'));
+      if (data && data.lastDoneAt) {
+        lastLine.appendChild(el('div', 'bd', `마지막 요청 처리 완료: ${fmtWhen(data.lastDoneAt)} (${ago(data.lastDoneAt)})`));
+      }
+      const myId = +localStorage.getItem('lastReqId') || null;
+      myLine.textContent = '';
+      if (myId && data && data.mine && data.mine.id === myId) {
+        const meta = REQ_STATUS_META[data.mine.status] || REQ_STATUS_META.pending;
+        const badge = el('div');
+        badge.style.cssText = 'font-weight:700;color:' + meta.color;
+        badge.textContent = `내 요청 #${myId}: ${meta.icon} ${meta.label}`;
+        myLine.appendChild(badge);
+        if (data.mine.status === 'done') {
+          myLine.appendChild(el('div', 'bd', `완료 시각 ${fmtWhen(data.mine.processed_at)} — 페이지를 새로고침하면 반영된 추천을 볼 수 있어요.`));
+        } else if (data.mine.status === 'processing') {
+          myLine.appendChild(el('div', 'bd', '지금 새 추천을 만들고 있어요. 잠시 후 완료됩니다.'));
+        } else {
+          myLine.appendChild(el('div', 'bd', '접수됐어요. 매시 30분 자동 확인 때 처리됩니다 (보통 1시간 이내).'));
+        }
+      } else if (myId) {
+        myLine.appendChild(el('div', 'bd', `내 지난 요청 #${myId}은 처리 완료되었습니다.`));
+      } else {
+        myLine.appendChild(el('div', 'bd', '아직 보낸 요청이 없어요. 아래에서 갱신을 요청해 보세요.'));
+      }
+    }
+    paintStatus(null);
+    supaRpc('refresh_status', { p_id: +localStorage.getItem('lastReqId') || null }).then(paintStatus).catch(() => {
+      lastLine.textContent = '';
+      const siteWhen = RECO.lastUpdated || (RECO.batches[0] && RECO.batches[0].generatedAt);
+      lastLine.appendChild(el('b', null, '사이트 최신 추천: '));
+      lastLine.appendChild(document.createTextNode(siteWhen ? siteWhen.replace(/ \(.*\)$/, '') : '-'));
+      myLine.textContent = '(상태 서버에 연결하지 못했습니다)';
+      myLine.className = 'bd';
+    });
 
     const mkCard = (title, lines, action) => {
       const c = el('div', 'easybox');
@@ -1990,20 +2075,13 @@
       status.style.color = 'var(--text-secondary)';
       status.textContent = '보내는 중…';
       try {
-        const res = await fetch('https://ztjivtiuhxwazsajukto.supabase.co/rest/v1/rpc/request_refresh', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: 'sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH',
-            Authorization: 'Bearer sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH',
-          },
-          body: JSON.stringify({ p_note: ta.value || '' }),
-        });
-        const r = await res.json();
+        const r = await supaRpc('request_refresh', { p_note: ta.value || '' });
         if (r && r.ok) {
           status.style.color = 'var(--delta-good)';
-          status.textContent = `✅ 접수 완료 (요청 #${r.id})! 매시 30분마다 자동 확인해서 처리해요 — 보통 1시간 안에 새 추천이 이 사이트에 반영돼요.`;
+          status.textContent = `✅ 접수 완료 (요청 #${r.id})! 위 "갱신 상태"에서 진행 상황을 확인할 수 있어요 — 보통 1시간 안에 반영돼요.`;
           ta.value = '';
+          localStorage.setItem('lastReqId', String(r.id));
+          supaRpc('refresh_status', { p_id: r.id }).then(paintStatus).catch(() => {});
         } else if (r && r.reason === 'too_many_recent') {
           status.style.color = 'var(--status-critical)';
           status.textContent = '⏳ 방금 요청이 몰렸어요. 10분 뒤에 다시 눌러 주세요.';
@@ -2179,7 +2257,7 @@
     renderAll();
   });
 
-  $('#asof').textContent = `최신 추천: ${RECO.batches[0].generatedAt}` +
+  $('#asof').textContent = `🔄 최신 갱신: ${(RECO.lastUpdated || RECO.batches[0].generatedAt).replace(/ \(.*\)$/, '')}` +
     (RECO.batches[0].pricesAsOf ? ` · ${RECO.batches[0].pricesAsOf}` : '');
   $('#disclaimer').textContent = '⚠️ 본 서비스는 투자 자문이 아닌 정보 제공 도구이며, 모든 수치는 시뮬레이션 기반 확률 추정치로 수익을 보장하지 않습니다. 원금 손실이 가능하며 투자 판단과 책임은 본인에게 있습니다.';
 
