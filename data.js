@@ -102,6 +102,21 @@ window.RECO = {
       simId: 'sure-k200',
     },
   ],
+  // ── 투자 캘린더 (다가오는 이벤트 — 갱신 시 함께 관리) ──
+  events: [
+    { date: '2026-07-10', title: 'SK하이닉스 나스닥 ADR 상장 (SKHY)', kind: '상장', impact: '높음', note: '약 $294억 신주 발행 — 본주 수급 이동의 원인. 상장 후 수급 정상화 여부 주목', related: '000660.KS' },
+    { date: '2026-07-16', title: 'TSMC 2분기 실적 발표', kind: '실적', impact: '높음', note: '추정 EPS $3.80 — AI 수요의 바로미터. 반도체 섹터 전체 방향타', related: 'TSM' },
+    { date: '2026-07-16', title: '한국은행 금통위 (기준금리 결정)', kind: '금리', impact: '중간', note: '현재 2.50% — 인하 시 금리형 ETF 수익률 소폭 하락, 성장주 우호', related: '423160.KS' },
+    { date: '2026-07-22', title: '테슬라 2분기 실적 발표', kind: '실적', impact: '중간', note: '인도량 서프라이즈(+18%) 이후 마진이 관건', related: 'TSLA' },
+    { date: '2026-07-29', title: '삼성전자 2분기 확정실적·컨퍼런스콜 (예상)', kind: '실적', impact: '높음', note: '부문별 실적과 HBM4E 수주 공개 여부 — 7월 말 예정', related: '005930.KS' },
+    { date: '2026-07-29', title: '마이크로소프트 FY26 4분기 실적 (예상)', kind: '실적', impact: '높음', note: 'Azure 성장률이 관건 — 7월 말 예정', related: 'MSFT' },
+    { date: '2026-07-29', title: 'FOMC (미 연준 금리 결정)', kind: '금리', impact: '높음', note: '유가발 인플레 우려 속 금리 경로 — 7월 말 예정', related: null },
+    { date: '2026-08-13', title: '엑슨모빌 배당락 (예상)', kind: '배당', impact: '낮음', note: '분기 $1.03 — 이날 전까지 매수해야 수령', related: 'XOM' },
+    { date: '2026-08-14', title: '마이크로소프트 배당락 (예상)', kind: '배당', impact: '낮음', note: '분기 $0.91 — 이날 전까지 매수해야 수령', related: 'MSFT' },
+    { date: '2026-08-26', title: '엔비디아 FY27 2분기 실적 (예상)', kind: '실적', impact: '높음', note: '8월 말 — AI 사이클 재확인 이벤트', related: 'NVDA' },
+    { date: '2026-09-11', title: '코카콜라 배당락 (예상 9/11~15)', kind: '배당', impact: '낮음', note: '분기 $0.53 — 배당 코어 전략의 매수 데드라인', related: 'KO' },
+  ],
+
   // ── 성과 채점 (예측 vs 실제 — 매일 아침 자동 갱신 시 업데이트) ──
   outcomes: {
     updatedAt: '2026-07-09T09:20+09:00',

@@ -33,7 +33,7 @@
     month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
     long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
   };
-  const VIEWS = ['home', 'plan', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax'];
+  const VIEWS = ['home', 'plan', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax', 'portfolio', 'journal'];
   const MENU_DESC = {
     home: '오늘의 시장 브리핑과 핵심 추천',
     reco: '기간별 추천 종목과 매매 계획',
@@ -43,9 +43,11 @@
     learn: '투자 기초 · 체크리스트 · 용어사전 · FAQ',
     perf: '예측 vs 실제 — 적중/실패 전부 공개하는 채점표 (성과, 검증, 결과)',
     history: '지난 추천 기록 보관함',
-    tax: '세금 규칙과 실수령 계산',
+    tax: '세금 규칙 · 평단가 · 목표가 · 복리 적립 계산기',
+    portfolio: '보유 종목 평가 · 진단 · 배당 예측 · 리밸런싱 (내 주식, 보유, 수익률)',
+    journal: '매매 기록과 복기 — 수익률을 올리는 습관 (일지, 기록)',
   };
-  const MENU_LABEL = { home: '🏠 홈', plan: '🧭 실행 플랜', reco: '📋 추천 종목', sure: '🛡️ 안정 수익', practice: '🧮 시뮬레이터', learn: '📚 투자 가이드', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 세금·수익 계산' };
+  const MENU_LABEL = { home: '🏠 홈', plan: '🧭 실행 플랜', reco: '📋 추천 종목', sure: '🛡️ 안정 수익', practice: '🧮 시뮬레이터', learn: '📚 투자 가이드', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 계산기', portfolio: '💼 내 포트폴리오', journal: '📓 매매 일지' };
   const OUTCOME_META = {
     success: { icon: '✅', label: '성공',   color: 'var(--status-good)' },
     partial: { icon: '🟡', label: '부분 성공', color: 'var(--status-warning)' },
@@ -283,14 +285,43 @@
 
     wrap.appendChild(el('h2', 'homesec', '⭐ 오늘의 핵심 추천 TOP 3 (안정형 우선)'));
     const order = { ok: 0, mid: 1, pro: 2 };
+    const seen = new Set();
     const top3 = batchPicks().slice().sort((a, b) => {
       const d = order[pickLevel(a)] - order[pickLevel(b)];
       if (d) return d;
       return (SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0);
-    }).slice(0, 3);
+    }).filter(p => !seen.has(p.ticker) && seen.add(p.ticker)).slice(0, 3);
     const grid = el('div', 'grid');
     top3.forEach(p => grid.appendChild(pickCard(p)));
     wrap.appendChild(grid);
+
+    // 📅 다가오는 일정
+    const today = new Date().toISOString().slice(0, 10);
+    const future = (RECO.events || []).filter(e => e.date >= today).slice(0, 5);
+    if (future.length) {
+      wrap.appendChild(el('h2', 'homesec', '📅 다가오는 주요 일정'));
+      const evTbl = el('table', 'plain');
+      const evb = el('tbody');
+      future.forEach(ev => {
+        const dday = Math.round((new Date(ev.date) - new Date(today)) / 86400000);
+        const tr = el('tr');
+        const td1 = el('td');
+        td1.style.whiteSpace = 'nowrap';
+        td1.appendChild(el('b', null, dday === 0 ? '오늘' : `D-${dday}`));
+        td1.appendChild(el('div', 'bd', ev.date.slice(5).replace('-', '/')));
+        tr.appendChild(td1);
+        const td2 = el('td');
+        td2.appendChild(el('div', null, `${ev.kind === '실적' ? '📊' : ev.kind === '배당' ? '💰' : ev.kind === '금리' ? '🏦' : '🔔'} ${ev.title}`));
+        td2.appendChild(el('div', 'bd', ev.note));
+        tr.appendChild(td2);
+        const td3 = el('td', null, '영향 ' + ev.impact);
+        td3.style.whiteSpace = 'nowrap';
+        tr.appendChild(td3);
+        evb.appendChild(tr);
+      });
+      evTbl.appendChild(evb);
+      wrap.appendChild(evTbl);
+    }
 
     const btnRow = el('div');
     btnRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.9rem';
@@ -1398,6 +1429,259 @@
     wrap.appendChild(el('p', 'hist-note', '판정 기준: ✅ 성공 = 목표가 도달 · 🟡 부분 성공 = 이익 실현했으나 목표 미달 · ❌ 실패 = 손절가 도달 · ➖ 무효 = 갭 등으로 매수 범위 자체가 성립 안 함(포지션 없음) · ⏳ 진행 중 = 보유 기간 미종료. 채점은 매일 아침 자동 갱신 때 함께 업데이트돼요.'));
   }
 
+  // ───────── 내 포트폴리오 ─────────
+  function knownAssets() {
+    const map = {};
+    RECO.sureItems.forEach(s => {
+      map[s.ticker] = { ticker: s.ticker, name: s.name, price: s.refPrice, currency: s.currency, sure: s.tier === 1, divYr: annualDividend(s), market: s.market };
+    });
+    batchPicks().forEach(p => {
+      if (!map[p.ticker]) map[p.ticker] = { ticker: p.ticker, name: p.name.replace(/ \(.*\)$/, ''), price: p.refPrice, currency: p.currency, sure: false, divYr: annualDividend(p), market: p.market };
+    });
+    return map;
+  }
+  function loadPf() {
+    try { return JSON.parse(localStorage.getItem('pf-v1')) || []; }
+    catch { return []; }
+  }
+  function savePf(rows) { localStorage.setItem('pf-v1', JSON.stringify(rows)); }
+
+  function renderPortfolio() {
+    const wrap = $('#view-portfolio');
+    wrap.textContent = '';
+    wrap.appendChild(el('p', 'viewdesc', '보유 종목을 입력하면 평가금액 · 손익 · 비중 · 진단 · 예상 배당을 계산합니다. 기준가는 최신 배치 기준이며(실시간 아님), 데이터는 이 브라우저에만 저장됩니다.'));
+    const assets = knownAssets();
+    const fx = RECO.meta.fxUsdKrw;
+    const rows = loadPf();
+
+    // 입력 폼
+    const form = el('div', 'calc');
+    const inrow = el('div', 'inrow');
+    const sel = el('select');
+    sel.style.cssText = 'font:inherit;font-size:0.84rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:8px;background:var(--surface-1);color:var(--text-primary);max-width:240px';
+    Object.values(assets).forEach(a => {
+      const o = el('option', null, `${a.name} (${a.ticker})`);
+      o.value = a.ticker;
+      sel.appendChild(o);
+    });
+    const oCustom = el('option', null, '직접 입력 (목록에 없는 종목)');
+    oCustom.value = '__custom__';
+    sel.appendChild(oCustom);
+    const mk = (ph, step) => {
+      const i = el('input');
+      i.type = 'number'; i.placeholder = ph; i.min = 0; if (step) i.step = step;
+      i.style.width = '110px';
+      return i;
+    };
+    const qtyIn = mk('수량', 0.01);
+    const avgIn = mk('평단가', 0.01);
+    const nameIn = el('input');
+    nameIn.type = 'text'; nameIn.placeholder = '종목명 (직접 입력)'; nameIn.style.width = '150px'; nameIn.style.display = 'none';
+    const priceIn = mk('현재가', 0.01); priceIn.style.display = 'none';
+    const curSel = el('select');
+    curSel.style.cssText = sel.style.cssText; curSel.style.display = 'none';
+    ['KRW', 'USD'].forEach(c => { const o = el('option', null, c); o.value = c; curSel.appendChild(o); });
+    sel.addEventListener('change', () => {
+      const custom = sel.value === '__custom__';
+      nameIn.style.display = priceIn.style.display = curSel.style.display = custom ? '' : 'none';
+    });
+    const addBtn = el('button', 'iconbtn', '+ 보유 종목 추가');
+    addBtn.type = 'button';
+    addBtn.addEventListener('click', () => {
+      const qty = +qtyIn.value, avg = +avgIn.value;
+      if (!qty || !avg) { alert('수량과 평단가를 입력하세요.'); return; }
+      if (sel.value === '__custom__') {
+        if (!nameIn.value || !+priceIn.value) { alert('종목명과 현재가를 입력하세요.'); return; }
+        rows.push({ ticker: 'custom-' + Date.now(), name: nameIn.value.slice(0, 40), qty, avg, price: +priceIn.value, currency: curSel.value, custom: true });
+      } else {
+        rows.push({ ticker: sel.value, qty, avg });
+      }
+      savePf(rows); renderPortfolio();
+    });
+    [sel, qtyIn, avgIn, nameIn, priceIn, curSel, addBtn].forEach(x => inrow.appendChild(x));
+    form.appendChild(inrow);
+    form.appendChild(el('p', 'note', '수량 소수점 입력 가능 (미국주식 소수점 매매). 평단가·현재가는 해당 통화 기준.'));
+    wrap.appendChild(form);
+
+    if (!rows.length) {
+      wrap.appendChild(el('p', 'hist-note', '아직 입력된 보유 종목이 없습니다. 위에서 추가해 보세요.'));
+      return;
+    }
+
+    // 평가 계산
+    const evald = rows.map((r, idx) => {
+      const a = r.custom ? r : assets[r.ticker];
+      if (!a) return null;
+      const price = r.custom ? r.price : a.price;
+      const currency = r.custom ? r.currency : a.currency;
+      const toKrw = v => currency === 'USD' ? v * fx : v;
+      const value = toKrw(price * r.qty);
+      const cost = toKrw(r.avg * r.qty);
+      return {
+        idx, name: r.custom ? r.name : a.name, ticker: r.custom ? '직접 입력' : r.ticker,
+        qty: r.qty, avg: r.avg, price, currency, value, cost,
+        pnl: cost ? (value - cost) / cost * 100 : 0,
+        sure: !r.custom && a.sure,
+        divKrw: r.custom ? 0 : toKrw((a.divYr || 0) * r.qty) * (a.market === 'US' ? 0.85 : 0.846),
+      };
+    }).filter(Boolean);
+    const total = evald.reduce((s, e) => s + e.value, 0);
+    const totalCost = evald.reduce((s, e) => s + e.cost, 0);
+    const totalDiv = evald.reduce((s, e) => s + e.divKrw, 0);
+    const sureW = total ? evald.filter(e => e.sure).reduce((s, e) => s + e.value, 0) / total : 0;
+
+    // 요약 타일
+    const tiles = el('div', 'tiles');
+    const tile = (lb, vl, cls, note) => {
+      const t = el('div', 'tile');
+      t.appendChild(el('div', 'lb', lb));
+      t.appendChild(el('div', 'vl ' + (cls || ''), vl));
+      if (note) t.appendChild(el('div', 'note', note));
+      return t;
+    };
+    const totPnl = totalCost ? (total - totalCost) / totalCost * 100 : 0;
+    tiles.appendChild(tile('총 평가금액', krw(total), '', '기준가 기준 (실시간 아님)'));
+    tiles.appendChild(tile('총 손익', pct(totPnl), pctCls(totPnl), krw(total - totalCost)));
+    tiles.appendChild(tile('예상 연 배당 (세후)', krw(totalDiv), totalDiv > 0 ? 'pos' : '', '월평균 ' + krw(totalDiv / 12)));
+    tiles.appendChild(tile('원금 보전형 비중', Math.round(sureW * 100) + '%', '', '금리형 자산 기준'));
+    wrap.appendChild(tiles);
+
+    // 보유 목록
+    wrap.appendChild(el('h2', 'homesec', '보유 종목'));
+    const tbl = el('table', 'plain');
+    const thead = el('thead'); const hr = el('tr');
+    ['종목', '수량', '평단가', '기준가', '평가액', '손익', '비중', ''].forEach((h, i) => hr.appendChild(el('th', i >= 1 && i <= 6 ? 'num' : null, h)));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tb = el('tbody');
+    evald.forEach(e => {
+      const tr = el('tr');
+      const tdN = el('td');
+      tdN.appendChild(el('div', null, e.name));
+      tdN.appendChild(el('div', 'bd', e.ticker));
+      tr.appendChild(tdN);
+      tr.appendChild(el('td', 'num', e.qty.toLocaleString('ko-KR') + '주'));
+      tr.appendChild(el('td', 'num', money(e.avg, e.currency)));
+      tr.appendChild(el('td', 'num', money(e.price, e.currency)));
+      tr.appendChild(el('td', 'num', krw(e.value)));
+      const tdP = el('td', 'num');
+      tdP.appendChild(el('span', pctCls(e.pnl), pct(e.pnl)));
+      if (Math.abs(e.pnl) > 80) tdP.appendChild(el('div', 'bd', '⚠️ 평단가 통화 확인'));
+      tr.appendChild(tdP);
+      const w = total ? e.value / total * 100 : 0;
+      const tdW = el('td', 'num');
+      tdW.appendChild(el('div', null, w.toFixed(0) + '%'));
+      const bar = el('div');
+      bar.style.cssText = 'height:6px;border-radius:3px;background:var(--series-1);margin-top:3px;width:' + Math.max(3, Math.min(100, w)) + '%';
+      tdW.appendChild(bar);
+      tr.appendChild(tdW);
+      const tdD = el('td');
+      const del = el('button', 'brm', '삭제');
+      del.type = 'button';
+      del.addEventListener('click', () => { rows.splice(e.idx, 1); savePf(rows); renderPortfolio(); });
+      tdD.appendChild(del);
+      tr.appendChild(tdD);
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    const scroll = el('div'); scroll.style.overflowX = 'auto'; scroll.appendChild(tbl);
+    wrap.appendChild(scroll);
+
+    // 진단
+    wrap.appendChild(el('h2', 'homesec', '🩺 포트폴리오 진단'));
+    const diags = [];
+    const maxW = Math.max(...evald.map(e => total ? e.value / total : 0));
+    const maxE = evald.find(e => total && e.value / total === maxW);
+    if (maxW > 0.3) diags.push(`⚠️ 집중 위험: ${maxE.name} 비중이 ${Math.round(maxW * 100)}%입니다 — 한 종목 30% 이하를 권장합니다 (분산투자).`);
+    else diags.push('✅ 종목 분산: 단일 종목 30% 초과 없음.');
+    const usdW = total ? evald.filter(e => e.currency === 'USD').reduce((s, e) => s + e.value, 0) / total : 0;
+    if (usdW > 0.85 || usdW < 0.15) diags.push(`⚠️ 통화 편중: 달러 자산 ${Math.round(usdW * 100)}% — 원화/달러 분산을 고려하세요 (환율 리스크).`);
+    else diags.push(`✅ 통화 분산: 달러 ${Math.round(usdW * 100)}% / 원화 ${Math.round((1 - usdW) * 100)}%.`);
+    const styleTargets = { safe: 0.7, balanced: 0.4, growth: 0.1 };
+    const planStyle = loadPlan().style || 'safe';
+    const target = styleTargets[planStyle];
+    const gap = (target - sureW) * total;
+    if (Math.abs(gap) > total * 0.1 && total > 0) {
+      diags.push(gap > 0
+        ? `🧭 리밸런싱 제안: 실행 플랜 성향(${PLAN_STYLES[planStyle].label})의 원금 보전형 목표 ${Math.round(target * 100)}% 대비 부족 — 약 ${krw(gap)}를 금리형 자산(KOFR·SGOV)으로 옮기는 것을 검토하세요.`
+        : `🧭 리밸런싱 제안: 원금 보전형 비중이 목표(${Math.round(target * 100)}%)보다 높습니다 — 계획적이라면 문제 없습니다.`);
+    } else if (total > 0) {
+      diags.push(`✅ 배분 일치: 원금 보전형 비중이 실행 플랜 성향(${PLAN_STYLES[planStyle].label}) 목표와 ±10% 이내입니다.`);
+    }
+    const ulD = el('ul', 'pts');
+    diags.forEach(d => ulD.appendChild(liTerms(d)));
+    wrap.appendChild(ulD);
+    wrap.appendChild(el('p', 'hist-note', '기준가는 추천 배치 생성 시점 가격입니다. 정확한 평가는 증권사 앱에서 확인하세요. 직접 입력 종목은 배당 계산에서 제외됩니다.'));
+  }
+
+  // ───────── 매매 일지 ─────────
+  function loadJournal() {
+    try { return JSON.parse(localStorage.getItem('journal-v1')) || []; }
+    catch { return []; }
+  }
+  function saveJournal(rows) { localStorage.setItem('journal-v1', JSON.stringify(rows)); }
+
+  function renderJournal() {
+    const wrap = $('#view-journal');
+    wrap.textContent = '';
+    wrap.appendChild(el('p', 'viewdesc', '매매를 기록하고 복기하는 습관은 수익률을 올리는 가장 검증된 방법입니다. "왜 샀는지"를 적어 두면, 팔 때 감정이 아니라 기록이 판단합니다. 데이터는 이 브라우저에만 저장됩니다.'));
+    const rows = loadJournal();
+
+    const form = el('div', 'calc');
+    const inrow = el('div', 'inrow');
+    const dateIn = el('input'); dateIn.type = 'date'; dateIn.value = new Date().toISOString().slice(0, 10);
+    dateIn.style.cssText = 'font:inherit;font-size:0.86rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:8px;background:var(--page);color:var(--text-primary)';
+    const tickIn = el('input'); tickIn.type = 'text'; tickIn.placeholder = '종목/티커'; tickIn.style.width = '120px';
+    const sideSel = el('select');
+    sideSel.style.cssText = dateIn.style.cssText;
+    ['매수', '매도'].forEach(s => { const o = el('option', null, s); o.value = s; sideSel.appendChild(o); });
+    const priceIn = el('input'); priceIn.type = 'number'; priceIn.placeholder = '가격'; priceIn.style.width = '110px';
+    const qtyIn = el('input'); qtyIn.type = 'number'; qtyIn.placeholder = '수량'; qtyIn.style.width = '90px';
+    const reasonIn = el('input'); reasonIn.type = 'text'; reasonIn.placeholder = '이유 (예: 실적 D-7 런업, 손절 규칙)'; reasonIn.style.cssText = 'flex:1;min-width:200px';
+    const addBtn = el('button', 'iconbtn', '+ 기록');
+    addBtn.type = 'button';
+    addBtn.addEventListener('click', () => {
+      if (!tickIn.value) { alert('종목을 입력하세요.'); return; }
+      rows.unshift({ date: dateIn.value, ticker: tickIn.value.slice(0, 20), side: sideSel.value, price: +priceIn.value || 0, qty: +qtyIn.value || 0, reason: reasonIn.value.slice(0, 200) });
+      saveJournal(rows); renderJournal();
+    });
+    [dateIn, tickIn, sideSel, priceIn, qtyIn, reasonIn, addBtn].forEach(x => inrow.appendChild(x));
+    form.appendChild(inrow);
+    wrap.appendChild(form);
+
+    if (!rows.length) {
+      wrap.appendChild(el('p', 'hist-note', '아직 기록이 없습니다. 첫 매매(또는 시뮬레이터 연습)를 기록해 보세요.'));
+      return;
+    }
+    const tbl = el('table', 'plain');
+    const thead = el('thead'); const hr = el('tr');
+    ['날짜', '종목', '구분', '가격', '수량', '이유', ''].forEach((h, i) => hr.appendChild(el('th', i === 3 || i === 4 ? 'num' : null, h)));
+    thead.appendChild(hr); tbl.appendChild(thead);
+    const tb = el('tbody');
+    rows.forEach((r, i) => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, r.date));
+      tr.appendChild(el('td', null, r.ticker));
+      const tdS = el('td');
+      tdS.appendChild(el('span', r.side === '매수' ? 'pos' : 'neg', r.side));
+      tr.appendChild(tdS);
+      tr.appendChild(el('td', 'num', r.price ? r.price.toLocaleString('ko-KR') : '-'));
+      tr.appendChild(el('td', 'num', r.qty ? r.qty.toLocaleString('ko-KR') : '-'));
+      const tdR = el('td');
+      tdR.appendChild(document.createTextNode(r.reason || '-'));
+      tr.appendChild(tdR);
+      const tdD = el('td');
+      const del = el('button', 'brm', '삭제');
+      del.type = 'button';
+      del.addEventListener('click', () => { rows.splice(i, 1); saveJournal(rows); renderJournal(); });
+      tdD.appendChild(del);
+      tr.appendChild(tdD);
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    const scroll = el('div'); scroll.style.overflowX = 'auto'; scroll.appendChild(tbl);
+    wrap.appendChild(scroll);
+  }
+
   // ───────── 히스토리 ─────────
   function renderHistory() {
     const wrap = $('#view-history');
@@ -1451,6 +1735,80 @@
     tbl.appendChild(tb);
     wrap.appendChild(tbl);
     wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 해당 종목 가격이 미리 입력된 세후 계산기를 사용할 수 있습니다. 세법은 개정될 수 있으므로 실제 신고 시 세무 전문가와 상담하세요.'));
+
+    // ── 실전 계산기 3종 ──
+    const mkCalc = (title, inputs, compute) => {
+      wrap.appendChild(el('h2', 'homesec', title));
+      const box = el('div', 'calc');
+      const inrow = el('div', 'inrow');
+      const els = inputs.map(([label, val, step]) => {
+        const lab = el('label');
+        lab.appendChild(el('span', null, label));
+        const i = el('input');
+        i.type = 'number'; i.value = val; i.min = 0; if (step) i.step = step;
+        lab.appendChild(i);
+        inrow.appendChild(lab);
+        return i;
+      });
+      box.appendChild(inrow);
+      const out = el('table', 'plain');
+      box.appendChild(out);
+      const recalc = () => {
+        out.textContent = '';
+        const tb = el('tbody');
+        compute(els.map(i => +i.value || 0)).forEach(([k, v, cls]) => {
+          const tr = el('tr');
+          tr.appendChild(el('td', null, k));
+          const td = el('td', 'num');
+          if (cls) td.appendChild(el('span', cls, v)); else td.textContent = v;
+          tr.appendChild(td);
+          tb.appendChild(tr);
+        });
+        out.appendChild(tb);
+      };
+      els.forEach(i => i.addEventListener('input', recalc));
+      recalc();
+      wrap.appendChild(box);
+    };
+
+    mkCalc('🧮 평단가 계산기 (추가 매수 시)', [
+      ['보유 수량', 10, 1], ['현재 평단가', 100000, 100], ['추가 수량', 10, 1], ['추가 매수가', 90000, 100],
+    ], ([q1, a1, q2, a2]) => {
+      const tq = q1 + q2;
+      const avg = tq ? (q1 * a1 + q2 * a2) / tq : 0;
+      return [
+        ['새 평단가', Math.round(avg).toLocaleString('ko-KR')],
+        ['총 수량', tq.toLocaleString('ko-KR') + '주'],
+        ['총 투입금액', Math.round(q1 * a1 + q2 * a2).toLocaleString('ko-KR')],
+        ['평단 변화', (avg - a1 >= 0 ? '+' : '') + Math.round(avg - a1).toLocaleString('ko-KR'), avg <= a1 ? 'pos' : 'neg'],
+      ];
+    });
+
+    mkCalc('🎯 목표 매도가 계산기 (원하는 수익률 → 필요한 가격)', [
+      ['평단가', 100000, 100], ['목표 수익률 (%)', 10, 0.5], ['수량', 10, 1],
+    ], ([avg, tgt, qty]) => {
+      const sellP = avg * (1 + tgt / 100);
+      return [
+        ['필요 매도가', Math.round(sellP).toLocaleString('ko-KR')],
+        ['세전 차익', Math.round((sellP - avg) * qty).toLocaleString('ko-KR'), 'pos'],
+        ['참고', '해외주식은 연 250만원 초과 차익에 22% 양도세'],
+      ];
+    });
+
+    mkCalc('🌱 복리 적립 계산기 (매달 얼마씩 → n년 뒤)', [
+      ['월 적립액 (원)', 300000, 10000], ['연 수익률 가정 (%)', 7, 0.5], ['기간 (년)', 10, 1],
+    ], ([pm, ratePct, years]) => {
+      const r = ratePct / 100 / 12;
+      const n = Math.round(years * 12);
+      const fv = r > 0 ? pm * ((Math.pow(1 + r, n) - 1) / r) : pm * n;
+      const principal = pm * n;
+      return [
+        ['예상 평가금액', krw(fv)],
+        ['총 납입 원금', krw(principal)],
+        ['복리 수익', krw(fv - principal), 'pos'],
+        ['참고', 'S&P 500 장기 연평균은 약 7~10%였으나 보장 아님'],
+      ];
+    });
   }
 
   // ───────── 새 추천 받기 ─────────
@@ -1624,8 +1982,8 @@
     home: ['home'],
     plan: ['plan'],
     reco: ['reco', 'sure'],
-    records: ['perf', 'history'],
-    more: ['practice', 'learn', 'tax'],
+    records: ['perf', 'history', 'journal'],
+    more: ['portfolio', 'practice', 'tax', 'learn'],
   };
   function navOf(view) {
     return Object.keys(NAV_GROUPS).find(k => NAV_GROUPS[k].includes(view)) || 'home';
@@ -1663,6 +2021,8 @@
       renderCards();
     }
     if (state.view === 'practice') renderPractice();
+    if (state.view === 'portfolio') renderPortfolio();
+    if (state.view === 'journal') renderJournal();
     if (state.view === 'learn') renderLearn();
     if (state.view === 'perf') renderPerf();
     if (state.view === 'history') renderHistory();
