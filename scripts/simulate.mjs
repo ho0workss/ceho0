@@ -104,6 +104,19 @@ const PICKS = [
   { id: 'b3-long-msft',   s0: 386.74,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b3-long-ko',     s0: 82.04,   target: 92.0,    stop: 72.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
   { id: 'b3-long-samsung', s0: 277500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
+  // ── 배치 2026-07-10 (사이트 갱신 요청 #4, SK하이닉스 ADR 상장일·중동 리스크 잔존) ──
+  { id: 'b4-day-samsung', s0: 278500,  target: 282000,  stop: 272000,  annVol: 0.42, annDrift: 0.20, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b4-day-hynix',   s0: 2197000, target: 2250000, stop: 2080000, annVol: 0.60, annDrift: 0.22, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b4-day-nvda',    s0: 204.12,  target: 207.0,   stop: 199.0,   annVol: 0.45, annDrift: 0.22, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b4-week-tsm',    s0: 434.16,  target: 456.0,   stop: 415.0,   annVol: 0.44, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b4-week-ko',     s0: 84.35,   target: 87.0,    stop: 81.5,    annVol: 0.15, annDrift: 0.15, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b4-week-xom',    s0: 141.27,  target: 148.0,   stop: 137.0,   annVol: 0.30, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b4-month-msft',  s0: 382.29,  target: 410.0,   stop: 360.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b4-month-samsung', s0: 278500, target: 315000, stop: 255000,  annVol: 0.40, annDrift: 0.22, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b4-month-nvda',  s0: 204.12,  target: 224.0,   stop: 184.0,   annVol: 0.46, annDrift: 0.25, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b4-long-msft',   s0: 382.29,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b4-long-ko',     s0: 84.35,   target: 94.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  { id: 'b4-long-samsung', s0: 278500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
