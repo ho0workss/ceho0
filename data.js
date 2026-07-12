@@ -1,7 +1,7 @@
 // 종목 추천 데이터 — 배치(batch) 단위로 기록되며, 새 추천이 생성될 때마다 batches 맨 앞에 추가됩니다.
 // 과거 배치는 수정하지 않습니다(히스토리 보존).
 window.RECO = {
-  lastUpdated: '2026-07-10T08:10+09:00 (매일 아침 자동 갱신)',
+  lastUpdated: '2026-07-12T09:00+09:00 (주말 갱신 · 당일 전략은 7/13 월요일 기준)',
   // ── 확실성 최우선 자산 (배치 히스토리와 별도의 상시 추천) ──
   sureUpdatedAt: '2026-07-08',
   sureStats: [
@@ -105,7 +105,7 @@ window.RECO = {
   ],
   // ── 투자 캘린더 (다가오는 이벤트 — 갱신 시 함께 관리) ──
   events: [
-    { date: '2026-07-10', title: 'SK하이닉스 나스닥 ADR 상장 (SKHY)', kind: '상장', impact: '높음', note: '약 $294억 신주 발행 — 본주 수급 이동의 원인. 상장 후 수급 정상화 여부 주목', related: '000660.KS' },
+    { date: '2026-07-13', title: 'TSMC 6월 월매출 발표 (태풍 순연)', kind: '실적', impact: '중간', note: '7/16 실적의 프리뷰 — 강한 월매출이면 반도체 섹터 런업 촉매', related: 'TSM' },
     { date: '2026-07-16', title: 'TSMC 2분기 실적 발표', kind: '실적', impact: '높음', note: '추정 EPS $3.80 — AI 수요의 바로미터. 반도체 섹터 전체 방향타', related: 'TSM' },
     { date: '2026-07-16', title: '한국은행 금통위 (기준금리 결정)', kind: '금리', impact: '중간', note: '현재 2.50% — 인하 시 금리형 ETF 수익률 소폭 하락, 성장주 우호', related: '423160.KS' },
     { date: '2026-07-22', title: '테슬라 2분기 실적 발표', kind: '실적', impact: '중간', note: '인도량 서프라이즈(+18%) 이후 마진이 관건', related: 'TSLA' },
@@ -120,8 +120,26 @@ window.RECO = {
 
   // ── 성과 채점 (예측 vs 실제 — 매일 아침 자동 갱신 시 업데이트) ──
   outcomes: {
-    updatedAt: '2026-07-09T15:40+09:00',
+    updatedAt: '2026-07-12T09:00+09:00',
     records: {
+      'b5-day-nvda': {
+        status: 'success',
+        title: '성공 — 목표 도달 (규칙 청산 +약 2%)',
+        detail: '실제(7/10): 시가 $202.78 · 저가 $201.92 · 고가 $211.00 · 종가 $210.96(+4.03%). 매수 참고범위($200~206)에 개장 직후 진입 성립(시가 202.78, 눌림 저가 201.92), 이후 종일 상승해 매도 목표($206.5~208) 도달. v2.1 규칙대로 $206.5 절반·$208 전량 청산 시 약 +2% 실현(이후 $211까지 추가 상승분은 규칙상 미획득). 호재(중국 H200·미 반도체 강세)에 주가가 오른 "정방향 모멘텀"으로 전제가 유효했다.',
+        checkedAt: '2026-07-12 (주말 채점, 2개 소스 교차)',
+      },
+      'b5-day-hynix': {
+        status: 'partial',
+        title: '부분 — 진입 성립했으나 데뷔일 재료 소진으로 목표 미달(보합권 청산)',
+        detail: '실제(7/10): 나스닥 ADR(발행가 $149) 데뷔에도 본주는 오히려 약보합 — 종가 약 2,186,000원(전일 2,197,000 대비 -0.5%). 매수 참고범위(2,130,000~2,190,000)에는 눌림으로 진입 성립했으나, 매도 목표(2,230,000~2,250,000)는 미도달. 손절(2,090,000) 미발동, "미도달 시 14:50 청산" 규칙으로 종가권 보합 청산(±0% 부근). 카드가 명시했던 "데뷔일 sell-the-news" 경고가 그대로 실현 — 방향 경고는 적중, 수익은 없었다.',
+        checkedAt: '2026-07-12 (주말 채점)',
+      },
+      'b5-day-samsung': {
+        status: 'invalid',
+        title: '무효 — 갭상승 +4.5%로 지정 매수 범위 미성립 (매도 목표 좌초 결함 노출)',
+        detail: '실제(7/10): 시가 291,000원(전일 278,500 대비 +4.5% 갭상승) · 저가 282,000 · 종가 285,000(+2.52%). 지정 매수 참고범위(273,000~277,000)는 저가 282,000에도 닿지 않아 미성립 → 미진입. 더 큰 문제는 구조적 결함: v2.1은 매수만 시가 상대 규칙으로 바꿨을 뿐 매도 목표(281,000~283,000)는 고정가라, +4.5% 갭업으로 목표가 시장가 아래로 좌초됐다(눌림 매수 시 목표가 진입가보다 낮아지는 모순). 이 사례로 v2.2(매도 목표도 체결가 상대화)를 도입 — 교훈 7.',
+        checkedAt: '2026-07-12 (주말 채점)',
+      },
       'day-tsla': {
         status: 'fail',
         title: '실패 — 당일 청산 손실 약 -1.5%',
@@ -165,6 +183,16 @@ window.RECO = {
   },
   lessons: [
     {
+      date: '2026-07-12 (배치5 당일 채점)',
+      title: '교훈 7 — 매수는 상대화했지만 매도 목표는 고정이라, 갭업에서 목표가 좌초됐다',
+      text: 'v2.1은 "매수"만 시가 상대 규칙으로 바꿨을 뿐, "매도 목표"는 여전히 전일 종가 기준 고정가였다. 7/10 삼성전자가 +4.5% 갭상승(시가 291,000원)하자, 눌림 매수를 하더라도 목표(281,000~283,000)가 진입가보다 아래에 놓이는 모순이 발생했다 — 목표가 시장을 따라 올라가지 못하고 "좌초"한 것이다. 같은 날 엔비디아는 갭이 크지 않아 고정 목표가 정상 작동(성공)했으니, 결함은 "갭이 큰 날"에 국한된다. 반영(v2.2): 당일 매도 목표를 고정가에서 체결가 상대(+1% 내외, 손절 -1.2~1.5%)로 재설계하고, 화면에는 상대 규칙과 참고 가격을 함께 표기한다. 갭업이면 목표도 그만큼 위로 따라 올라간다.',
+    },
+    {
+      date: '2026-07-12 (배치5 당일 채점)',
+      title: '교훈 8 — "데뷔일·이벤트일" 당사자 종목은 호재가 이미 값에 들어가 있다',
+      text: 'SK하이닉스는 나스닥 ADR 데뷔(발행가 $149, 역대급 흥행)라는 대형 호재의 당일에 오히려 본주가 약보합(-0.5%)으로 마감했다 — 수요가 ADR로 옮겨가고 기대가 선반영된 전형적 "sell-the-news". 카드에 경고는 넣었고 손절도 안 났지만, 이런 종목의 당일 "상승" 베팅은 기대수익이 낮다. 반영: 데뷔·상장·실적 발표 "당일"의 당사자는 당일 상승 전략에서 비중을 낮추거나 방향 중립(변동성 전략)으로만 다룬다.',
+    },
+    {
       date: '2026-07-09 (배치3 당일 채점 — 사용자 실측 데이터 포함)',
       title: '교훈 5 — 고정 지정가 범위는 갭 장세에서 이틀 연속 무효가 됐다',
       text: '7/8 배치는 갭하락으로, 7/9 배치는 갭상승으로 — 전일 가격 기준의 고정 매수 범위가 이틀 연속 체결 불가능했다. 특히 7/9 하이닉스는 방향(반등)을 맞히고도 "전일 종가 아래에서 사겠다"는 설계 때문에 갭업 반등을 통째로 놓쳤다. 반영(v2.1): 당일 전략의 매수 규칙을 고정가에서 시가 기준 상대 규칙(예: 시가 대비 -0.5~-1.5% 눌림 매수)으로 전환하고, 갭 방향별 대응(갭업: 눌림 대기 / 갭다운: 안정 확인 후)을 명시한다.',
@@ -197,6 +225,15 @@ window.RECO = {
   ],
   modelChangelog: [
     {
+      version: 'v2.2', date: '2026-07-12 (배치5 채점 후)',
+      changes: [
+        '당일 매도 목표: 고정 지정가 → 체결가 상대(+1% 내외) — 7/10 삼성전자 +4.5% 갭업에서 고정 목표가 시장 아래로 좌초한 사례 반영(교훈 7)',
+        '당일 손절도 체결가 상대(-1.2~1.5%)로 통일 — 갭 방향과 무관하게 손익비 일정 유지',
+        '이벤트 당사자(데뷔·상장·실적 발표 당일) 종목은 당일 상승 전략 비중 축소 또는 중립 처리(교훈 8)',
+        '레짐 재판정: VIX 16(안정)·반도체 강세로 리스크온 복귀 → 고베타 당일 전략 재편성 허용. 단 오일/호르무즈 꼬리위험으로 volX 1.2(당일·1주)/1.1(1개월) 유지',
+      ],
+    },
+    {
       version: 'v2.1', date: '2026-07-09 (장 마감 후)',
       changes: [
         '당일 매수 규칙: 고정 지정가 범위 → 시가 기준 상대 규칙 (갭업: 시가 대비 눌림 매수 / 갭다운: 안정 확인 후) — 이틀 연속 갭 무효 사례 반영',
@@ -228,6 +265,284 @@ window.RECO = {
     disclaimer: '본 서비스는 정보 제공 목적의 시뮬레이션 도구이며 투자 자문이 아닙니다. 모든 수치는 몬테카를로 시뮬레이션(경로 20,000개, GBM 모형)에 기반한 확률 추정치로, 실제 수익을 보장하지 않습니다. 원금 손실이 발생할 수 있으며 투자 판단과 책임은 투자자 본인에게 있습니다.',
   },
   batches: [
+    {
+      id: 'batch-2026-07-13',
+      generatedAt: '2026-07-12T09:00+09:00 (주말 갱신 · 당일 전략은 7/13 월요일 기준)',
+      pricesAsOf: '기준가: 한국·미국 모두 2026-07-10(금) 종가 — 주문 전 확인',
+      title: '2026-07-13 배치 (반도체 강세 지속 · TSMC 실적 주간 · v2.2 매도 목표 상대화)',
+      marketSnapshot:
+        '7/10(금) 마감: 미국 S&P 500 7,575.39(+0.42%)·나스닥 26,281.61(+0.29%) 사상 최고권, 코스피 7,476(+2.52%) — 마이크론 $2,500억 미국 반도체 투자 발표와 SK하이닉스 나스닥 ADR 데뷔(발행가 $149)로 메모리·AI 심리 강세. 삼성전자 285,000원(+2.52%, 시가 291,000 갭업 후 되돌림), 엔비디아 $210.96(+4.03%), TSMC $434.11(-0.7%), MSFT $385.35(+0.06%). 변동성: VIX 16.0(안정) — 주식 레짐은 리스크온이나, 오일 변동성 OVX 47.6(+18%)·WTI $72·브렌트 $76로 호르무즈/미·이란 꼬리위험이 남아 volX 1.2(당일·1주)/1.1(1개월) 유지. 이번 주 촉매: TSMC 6월 월매출(7/13)·2분기 실적(7/16), 한은 금통위(7/16), FOMC(7/29). ※ 배치5 채점 결과: 엔비디아 당일 성공(규칙 청산 +약 2%), SK하이닉스 부분(데뷔일 sell-the-news로 보합), 삼성전자 무효(+4.5% 갭업으로 매수 미성립) → 이번 배치부터 v2.2로 당일 매도 목표를 "체결가 +1% 내외" 상대 규칙으로 재설계했습니다.',
+      picks: [
+        // ─────────────── 당일 (7/13 월요일) ───────────────
+        {
+          id: 'b6-day-nvda', ticker: 'NVDA', name: '엔비디아 (반도체 강세 4일차 시험)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'day', risk: 'high',
+          refPrice: 210.96, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13 09:30–10:30 (미국 ET) · 시가 기준 상대 규칙', windowKst: '한국시간 7/13(월) 22:30–23:30 · 갭 확인 후', low: 208, high: 213, note: '[v2.2] 갭업 시 시가 대비 -0.5~-1.5% 눌림 매수 / 갭다운 시 개장 30분 안정 후. 참고범위 $208~213. 3일 연속 상승(+4% 금요일) 뒤라 추격 자제. 정밀 주문 가이드로 정확가 확인.' },
+          sell: { window: '2026-07-13 14:00–15:50 (미국 ET)', windowKst: '한국시간 7/14(화) 03:00–04:50', low: 213, high: 214.5, stop: 208, note: '[v2.2] 목표 = 체결가 +1% 내외(참고 $213~214.5). 갭업이면 목표도 그만큼 위로. 미도달 시 15:50 청산. 손절 = 체결가 -1.3%(참고 $208).' },
+          expectedReturn: { base: 1.0, bull: 2.3, bear: -2.8 },
+          scenarios: [
+            { name: '낙관', prob: 27, price: 214.5, ret: 1.7, desc: '반도체 강세 4일차 + TSMC 월매출 기대' },
+            { name: '기본', prob: 44, price: 213.0, ret: 1.0, desc: '완만한 상승 후 규칙 청산' },
+            { name: '비관', prob: 29, price: 208.0, ret: -1.4, desc: '3일 상승 뒤 차익·오일 급변 — 손절' },
+          ],
+          rationale: {
+            summary: '7/10 나스닥을 이끈 AI 대장주(+4.03%, $210.96). 중국 H200 수요·마이크론 대형 투자·TSMC 실적 주간이 우호적이나, 3거래일 연속 상승으로 단기 과열·차익 가능성 — 목표를 +1%로 보수화한 당일 트레이드.',
+            news: ['7/10 +4.03% 마감, 나스닥 사상 최고권', '마이크론 $2,500억 미국 투자 — AI 메모리 훈풍', 'TSMC 월매출(7/13)·실적(7/16) 주간'],
+            technical: ['$208 지지 / $213~214 저항', '3일 상승 후 눌림 가능 — 갭업 추격 금지', 'v2.2: 매수·매도 모두 시가·체결가 상대'],
+            fundamental: ['AI 데이터센터 GPU 수요 견조', '중국 H200 판매 재개 기대'],
+          },
+          riskFactors: ['3일 상승 후 차익 매물', '오일/호르무즈 급변', 'AI 고점론', '중국 수출규제'],
+          dividend: { perShare: 0.01, currency: 'USD', frequency: '분기', schedule: '3·6·9·12월 지급', yieldPct: 0.02, next: '2026-09월 예상', note: '당일 전략 무관' },
+          simId: 'b6-day-nvda',
+        },
+        {
+          id: 'b6-day-samsung', ticker: '005930.KS', name: '삼성전자 (반등 지속 시험)', market: 'KR', exchange: 'KRX', currency: 'KRW',
+          horizon: 'day', risk: 'high',
+          refPrice: 285000, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13 09:00–09:40 (한국 KST) · 시가 기준 상대 규칙', windowKst: '오전 · 갭 확인 후', low: 281000, high: 286000, note: '[v2.2] 갭업(+2%↑) 시 시가 대비 -0.5~-1.5% 눌림 매수 / 갭다운 시 안정 후. 참고범위 281,000~286,000원. 금요일 갭업 후 되돌림(시가 291,000→종가 285,000) 반복 주의 — 갭업 추격 금지.' },
+          sell: { window: '2026-07-13 14:30–15:20 (한국 KST)', windowKst: '오후 · 목표 도달 시', low: 288000, high: 289000, stop: 281000, note: '[v2.2] 목표 = 체결가 +1% 내외(참고 288,000~289,000원). 미도달 시 14:50 마감 청산. 손절 = 체결가 -1.3%(참고 281,000원).' },
+          expectedReturn: { base: 1.1, bull: 2.4, bear: -2.8 },
+          scenarios: [
+            { name: '낙관', prob: 27, price: 289000, ret: 1.4, desc: '반도체 강세 지속 + 30만원 재도전' },
+            { name: '기본', prob: 45, price: 288000, ret: 1.1, desc: '완만한 상승 후 규칙 청산' },
+            { name: '비관', prob: 28, price: 281000, ret: -1.4, desc: '갭업 후 되돌림 반복 — 손절' },
+          ],
+          rationale: {
+            summary: '7/10 +2.52%(285,000원)로 반등했으나 시가(291,000) 대비 오후 되돌림이 나온 종목 — 아침 강세가 오후까지 이어질지 시험하는 당일 트레이드. 목표 +1%로 보수화하고 갭업 추격을 금지.',
+            news: ['7/10 +2.52% 마감(시가 291,000 갭업 후 되돌림)', 'SK하이닉스 ADR·마이크론 투자 — 메모리 심리', '7/29 확정실적 대기'],
+            technical: ['281,000 지지 / 288,000~289,000 저항', '30만원 회복까지 저항 다수', 'v2.2: 고정가 아닌 시가·체결가 상대'],
+            fundamental: ['HBM4E 기술 리더십', '목표가 대비 큰 폭 할인 지속'],
+          },
+          riskFactors: ['아침 강세의 오후 소멸(금요일 반복)', '외국인 수급', '차익 매물', '오일 급변'],
+          dividend: { perShare: 361, currency: 'KRW', frequency: '분기', schedule: '분기 361원, 연 1,444원', yieldPct: 0.51, next: '2026-08월 지급 예정', note: '당일 전략 무관' },
+          simId: 'b6-day-samsung',
+        },
+        {
+          id: 'b6-day-tsm', ticker: 'TSM', name: 'TSMC (6월 월매출 발표일)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'day', risk: 'high',
+          refPrice: 434.11, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13 09:30–10:30 (미국 ET) · 시가 기준 상대 규칙', windowKst: '한국시간 7/13(월) 22:30–23:30 · 갭 확인 후', low: 430, high: 436, note: '[v2.2] 오늘 6월 월매출 발표(태풍 순연분) — 변동성 유의. 갭업 시 시가 대비 눌림 매수, 참고범위 $430~436. 정밀 주문 가이드로 정확가 확인.' },
+          sell: { window: '2026-07-13 14:00–15:50 (미국 ET)', windowKst: '한국시간 7/14(화) 03:00–04:50', low: 438.5, high: 440, stop: 428, note: '[v2.2] 목표 = 체결가 +1% 내외(참고 $438.5~440). 미도달 시 15:50 청산. 손절 = 체결가 -1.3%(참고 $428). 7/16 실적 전 당일 트레이드로 한정.' },
+          expectedReturn: { base: 1.0, bull: 2.3, bear: -2.8 },
+          scenarios: [
+            { name: '낙관', prob: 28, price: 440, ret: 1.4, desc: '월매출 서프라이즈 → 실적 기대 런업' },
+            { name: '기본', prob: 44, price: 438.5, ret: 1.0, desc: '완만한 상승 후 규칙 청산' },
+            { name: '비관', prob: 28, price: 428, ret: -1.4, desc: '월매출 실망·차익 — 손절' },
+          ],
+          rationale: {
+            summary: '오늘(7/13) 6월 월매출 발표 — 7/16 실적의 프리뷰. 강한 월매출이면 반도체 섹터 런업 촉매가 되는 당일 이벤트 트레이드. 7/10은 -0.7%로 숨 고르기 후 진입.',
+            news: ['오늘 6월 월매출 발표(태풍 순연)', 'Citi 목표 NT$3,800으로 상향', '7/16 2분기 실적(추정 EPS $3.80)'],
+            technical: ['$428~430 지지 / $438~440 저항', '실적 주간 변동성 확대'],
+            fundamental: ['3nm/2nm 독점 — AI 파운드리 수요', 'Q1 매출 +40.6% YoY 강세 지속'],
+          },
+          riskFactors: ['월매출 실망 시 급락', '대만·중동 지정학', '실적 전 변동성'],
+          dividend: { perShare: 0.70, currency: 'USD', frequency: '분기', schedule: '분기 약 $0.70 (ADR)', yieldPct: 0.65, next: '2026-09월 예상', note: '당일 전략 무관 (ADR 원천세 유의)' },
+          simId: 'b6-day-tsm',
+        },
+        // ─────────────── 1주 ───────────────
+        {
+          id: 'b6-week-tsm', ticker: 'TSM', name: 'TSMC (실적 D-3 런업)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'week', risk: 'mid',
+          refPrice: 434.11, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–07-14 (미국 ET) 분할', windowKst: '한국시간 7/13(월)–7/15(수) 새벽', low: 428, high: 438, note: '실적(7/16) D-3 런업 — 이틀 분할 매수.' },
+          sell: { window: '2026-07-15 14:00–16:00 (미국 ET)', windowKst: '한국시간 7/16(목) 새벽', low: 450, high: 452, stop: 418, note: '실적 발표 전 차익 실현(이벤트 리스크 회피). 미도달 시 발표 전날 청산.' },
+          expectedReturn: { base: 3.9, bull: 5.5, bear: -3.7 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 452, ret: 4.1, desc: 'Citi 목표 상향 + 월매출 호조' },
+            { name: '기본', prob: 45, price: 450, ret: 3.7, desc: '실적 기대 런업' },
+            { name: '비관', prob: 25, price: 418, ret: -3.7, desc: '리스크오프 재점화 — 손절' },
+          ],
+          rationale: {
+            summary: '7/16 실적 D-3 런업. 월매출(7/13)·강한 Q1 실적 이력·Citi 목표 상향이 우호적 — 발표 전 청산으로 어닝 갭 리스크를 회피하는 이벤트 전 전략.',
+            news: ['실적 7/16 — D-3 런업', '월매출 7/13 프리뷰', 'Q1 매출 +40.6% YoY'],
+            technical: ['$428~430 지지 / $450~452 저항', '실적 전주 상승 경향'],
+            fundamental: ['3nm/2nm 독점 — AI 파운드리', '가격 전가력 강함'],
+          },
+          riskFactors: ['대만·중동 지정학', '실적 전 눈높이', '섹터 변동성'],
+          dividend: { perShare: 0.70, currency: 'USD', frequency: '분기', schedule: '분기 약 $0.70 (ADR)', yieldPct: 0.65, next: '2026-09월 예상', note: 'ADR 원천세 유의' },
+          simId: 'b6-week-tsm',
+        },
+        {
+          id: 'b6-week-samsung', ticker: '005930.KS', name: '삼성전자 (30만원 회복 시도)', market: 'KR', exchange: 'KRX', currency: 'KRW',
+          horizon: 'week', risk: 'mid',
+          refPrice: 285000, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–07-14 분할 (한국 KST)', windowKst: '이번 주 초 2회 분할', low: 280000, high: 287000, note: '반도체 강세 연장 — 2회 분할 매수.' },
+          sell: { window: '2026-07-16–07-17 (한국 KST)', windowKst: '이번 주 목–금', low: 298000, high: 300000, stop: 273000, note: '30만원 회복 목표. 미도달 시 금요일 청산.' },
+          expectedReturn: { base: 4.6, bull: 6.5, bear: -4.2 },
+          scenarios: [
+            { name: '낙관', prob: 29, price: 300000, ret: 5.3, desc: 'HBM 심리 + 30만원 돌파' },
+            { name: '기본', prob: 44, price: 298000, ret: 4.6, desc: '반등 지속' },
+            { name: '비관', prob: 27, price: 273000, ret: -4.2, desc: '갭 되돌림·차익 — 손절' },
+          ],
+          rationale: {
+            summary: '미 반도체 강세·마이크론 투자·SK하이닉스 ADR로 메모리 심리가 받쳐지는 국면. 7/10 반등(285,000)에서 30만원 회복을 노리는 1주 전략 — 7/29 확정실적은 창구 밖이라 이벤트 리스크는 낮음.',
+            news: ['마이크론 $2,500억 투자 — 메모리 훈풍', 'SK하이닉스 ADR 데뷔 심리', '7/10 코스피 +2.52%'],
+            technical: ['280,000 지지 / 298,000~300,000 저항', '30만원이 심리 관문'],
+            fundamental: ['HBM4E 리더십', '목표가 대비 큰 할인'],
+          },
+          riskFactors: ['외국인 수급', '차익 매물', '오일/환율', '30만원 저항'],
+          dividend: { perShare: 361, currency: 'KRW', frequency: '분기', schedule: '분기 361원, 연 1,444원', yieldPct: 0.51, next: '2026-08월 지급 예정', note: '1주 전략 배당 영향 미미' },
+          simId: 'b6-week-samsung',
+        },
+        {
+          id: 'b6-week-ko', ticker: 'KO', name: '코카콜라 (오일 꼬리위험 헤지)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'week', risk: 'low',
+          refPrice: 84.30, refPriceAsOf: '2026-07-10 종가 근사 — 주문 전 확인',
+          buy:  { window: '2026-07-13 (미국 ET)', windowKst: '한국시간 7/13(월) 밤', low: 83, high: 85, note: '오일/호르무즈 꼬리위험 헤지 — 방어주. $85 위 추격 자제.' },
+          sell: { window: '2026-07-16–07-17 (미국 ET)', windowKst: '이번 주 목–금', low: 86.5, high: 87, stop: 81.5, note: '방어주 강세 시 실현 또는 배당 목적 장기 전환.' },
+          expectedReturn: { base: 2.5, bull: 3.2, bear: -3.3 },
+          scenarios: [
+            { name: '낙관', prob: 28, price: 87, ret: 3.2, desc: '오일 급변 → 디펜시브 강세' },
+            { name: '기본', prob: 52, price: 86.5, ret: 2.6, desc: '완만한 우상향' },
+            { name: '비관', prob: 20, price: 81.5, ret: -3.3, desc: '위험선호 지속 — 소외·손절' },
+          ],
+          rationale: {
+            summary: '주식 레짐은 리스크온이나 오일/호르무즈 꼬리위험이 남은 국면의 방어 사슬. 반도체 집중 포트폴리오의 변동성 헤지로 편입하는 1주 전략.',
+            news: ['오일 변동성 OVX 47.6(+18%) — 꼬리위험', '사상 최고가권 유지', '9월 중순 배당락 접근'],
+            technical: ['$83 지지 / $86.5~87 저항', '하락장 상대강도 상위'],
+            fundamental: ['배당 64년 연속 증액', '가격 전가력'],
+          },
+          riskFactors: ['위험선호 지속 시 소외', '금리 재상승', '환율'],
+          dividend: { perShare: 0.53, currency: 'USD', frequency: '분기', schedule: '분기 $0.53 (연 $2.12)', yieldPct: 2.51, next: '배당락 2026-09-11~15 예상', note: '장기 전환 가치 충분' },
+          simId: 'b6-week-ko',
+        },
+        // ─────────────── 1개월 ───────────────
+        {
+          id: 'b6-month-nvda', ticker: 'NVDA', name: '엔비디아 (8/26 실적 런업)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'month', risk: 'high',
+          refPrice: 210.96, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–07-20 분할 (미국 ET)', windowKst: '이번 주~다음 주 분할', low: 200, high: 212, note: '조정 시 분할 매수 — $200 접근 시 비중 확대.' },
+          sell: { window: '2026-08-05–08-14 (미국 ET)', windowKst: '8월 초중순 (8/26 실적 전)', low: 230, high: 232, stop: 190, note: '실적 기대 정점 분할 매도. 미도달 시 재평가.' },
+          expectedReturn: { base: 9.0, bull: 12.5, bear: -9.9 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 232, ret: 10.0, desc: '중국 H200 + 실적 런업' },
+            { name: '기본', prob: 45, price: 230, ret: 9.0, desc: '완만한 회복 후 런업 초입' },
+            { name: '비관', prob: 25, price: 190, ret: -9.9, desc: 'AI 고점론·오일 급변 — 손절' },
+          ],
+          rationale: {
+            summary: '중국 H200 수요 + 8/26 실적 런업 계절성 + 마이크론 투자發 AI 훈풍 — 세 재료가 겹치는 1개월 코어 전략. 8/26 실적 전 정점 매도로 이벤트 리스크 회피.',
+            news: ['마이크론 $2,500억 투자 — AI 사이클 재확인', '중국 H200 판매 계획', '8/26 실적 — 런업 계절성'],
+            technical: ['$200 지지 / $230~232 저항', '회복 흐름'],
+            fundamental: ['AI 데이터센터 수요 견조', '중국 판매 재개'],
+          },
+          riskFactors: ['AI 고점론', '오일/금리', '8월 실적 눈높이', '중국 수출규제'],
+          dividend: { perShare: 0.01, currency: 'USD', frequency: '분기', schedule: '3·6·9·12월 지급', yieldPct: 0.02, next: '2026-09월 예상', note: '상징적 배당' },
+          simId: 'b6-month-nvda',
+        },
+        {
+          id: 'b6-month-msft', ticker: 'MSFT', name: '마이크로소프트 (7/29 실적 D-17)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'month', risk: 'mid',
+          refPrice: 385.35, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–07-22 분할 (미국 ET)', windowKst: '이번 주~다음 주 분할', low: 372, high: 388, note: '7/29 실적 전 분할 매수 — 조정 시 $372.' },
+          sell: { window: '2026-08-04–08-12 (미국 ET)', windowKst: '8월 초중순', low: 412, high: 418, stop: 362, note: '실적 후 갭 소화 분할 매도. 미도달 시 재평가.' },
+          expectedReturn: { base: 6.9, bull: 9.5, bear: -6.1 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 418, ret: 8.5, desc: 'Azure 재가속 확인' },
+            { name: '기본', prob: 43, price: 412, ret: 6.9, desc: '밸류에이션 회복' },
+            { name: '비관', prob: 25, price: 362, ret: -6.1, desc: 'AI capex 우려 — 손절' },
+          ],
+          rationale: {
+            summary: '선행 21~22배(2023년 이후 최저) + 7/29 FY26 4분기 실적 촉매 + 월가 목표 $560. 감원 노이즈에도 7/10 $385.35로 안정 — 3주 내 실적 이벤트가 오는 1개월 코어.',
+            news: ['7/29 실적 — Azure 성장률 관건', '월가 평균 목표 $560', '7/10 $385.35 안정'],
+            technical: ['$372~378 이중바닥 / $412~418 저항', '나스닥 반등 선도'],
+            fundamental: ['선행 21~22배 — 역사적 하단', 'AI capex 회수 사이클 접근'],
+          },
+          riskFactors: ['실적 가이던스', '금리(FOMC 7/29)', 'AI capex 우려'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.94, next: '배당락 2026-08월 중순 예상', note: '보유 중 배당락 1회 포함 가능' },
+          simId: 'b6-month-msft',
+        },
+        {
+          id: 'b6-month-tsm', ticker: 'TSM', name: 'TSMC (실적 후 런업 코어)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'month', risk: 'high',
+          refPrice: 434.11, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–07-17 분할 (미국 ET)', windowKst: '이번 주 분할 (실적 전후)', low: 425, high: 440, note: '7/16 실적 전후 분할 매수 — Citi 목표 NT$3,800.' },
+          sell: { window: '2026-08-05–08-14 (미국 ET)', windowKst: '8월 초중순', low: 476, high: 478, stop: 408, note: '실적 상향 반영 분할 매도. 미도달 시 재평가.' },
+          expectedReturn: { base: 9.7, bull: 12.5, bear: -6.0 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 478, ret: 10.1, desc: '실적 서프라이즈 + 가이던스 상향' },
+            { name: '기본', prob: 43, price: 476, ret: 9.7, desc: 'AI 파운드리 수요 확인' },
+            { name: '비관', prob: 25, price: 408, ret: -6.0, desc: '실적 눈높이·대만 지정학 — 손절' },
+          ],
+          rationale: {
+            summary: 'AI 파운드리 슈퍼사이클의 핵심 — 7/16 실적과 2026 가이던스 상향 기대. Q1 매출 +40.6% YoY·Citi 목표 상향이 뒷받침하는 1개월 코어 전략.',
+            news: ['7/16 실적 — 가이던스 상향 기대', 'Citi 목표 NT$3,800', 'Q1 매출 +40.6% YoY'],
+            technical: ['$425~430 지지 / $476~478 저항', '실적 후 상향 여지'],
+            fundamental: ['3nm/2nm 독점', '하이퍼스케일러 수요 가시성'],
+          },
+          riskFactors: ['실적 눈높이', '대만·중동 지정학', '섹터 변동성', '오일 급변'],
+          dividend: { perShare: 0.70, currency: 'USD', frequency: '분기', schedule: '분기 약 $0.70 (ADR)', yieldPct: 0.65, next: '2026-09월 예상', note: '보유 중 배당락 1회 포함 가능 (ADR 원천세 유의)' },
+          simId: 'b6-month-tsm',
+        },
+        // ─────────────── 장기 (6–12개월) ───────────────
+        {
+          id: 'b6-long-msft', ticker: 'MSFT', name: '마이크로소프트 (장기 코어)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'long', risk: 'low',
+          refPrice: 385.35, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–09-30 매월 분할 (미국 ET)', windowKst: '7–9월 5회 분할', low: 355, high: 390, note: '변동성 장세 분할 매수 — 전략 유지.' },
+          sell: { window: '2027-04월–07월 (미국 ET)', windowKst: '2027년 2분기', low: 480, high: 560, stop: 330, note: '목표 $560 접근 시 단계적 실현.' },
+          expectedReturn: { base: 16.0, bull: 35.0, bear: -14.4 },
+          scenarios: [
+            { name: '낙관', prob: 35, price: 520, ret: 35.0, desc: 'AI capex 수익화 입증' },
+            { name: '기본', prob: 45, price: 460, ret: 19.4, desc: '멀티플 정상화' },
+            { name: '비관', prob: 20, price: 330, ret: -14.4, desc: '회수 지연 장기화' },
+          ],
+          rationale: {
+            summary: '장기 논리 불변 — 감원·전쟁·단기 금리 어느 것도 12개월 뒤 현금창출력을 바꾸지 못한다. 3년 최저 밸류에이션에서 분할 매수 지속.',
+            news: ['월가 목표 $560 유지', 'Copilot·Azure AI 확대', '감원은 비용 효율화 성격'],
+            technical: ['$373 이중바닥 — 장기 지지', '월봉 상승 구조 불변'],
+            fundamental: ['삼중 해자(클라우드+오피스+AI)', '배당 21년 연속 증액'],
+          },
+          riskFactors: ['AI 회수 속도', '규제', '환율', '경기 침체'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.94, next: '배당락 2026-08월 중순 예상', note: '12개월 4회 수령' },
+          simId: 'b6-long-msft',
+        },
+        {
+          id: 'b6-long-samsung', ticker: '005930.KS', name: '삼성전자 (장기)', market: 'KR', exchange: 'KRX', currency: 'KRW',
+          horizon: 'long', risk: 'mid',
+          refPrice: 285000, refPriceAsOf: '2026-07-10 종가 — 주문 전 확인',
+          buy:  { window: '2026-07-13–10-30 매월 분할 (한국 KST)', windowKst: '7–10월 8회 분할', low: 255000, high: 288000, note: '반등 국면 8회 분할로 변동성 흡수.' },
+          sell: { window: '2027-04월–07월 (한국 KST)', windowKst: '2027년 2분기', low: 400000, high: 450000, stop: 228000, note: '목표가 50만원 대비 큰 할인 시작점.' },
+          expectedReturn: { base: 15.0, bull: 50.0, bear: -20.0 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 420000, ret: 47.4, desc: 'HBM 회복 + 지정학 안정' },
+            { name: '기본', prob: 45, price: 355000, ret: 24.6, desc: '사이클 지속 — 회복' },
+            { name: '비관', prob: 25, price: 228000, ret: -20.0, desc: '피크아웃 확인 — 손절' },
+          ],
+          rationale: {
+            summary: 'HBM4E 기술 리더십 + 마이크론 대형 투자가 확인시킨 AI 메모리 수요. 목표가 50만원 대비 큰 할인에서 12개월 분할 매수 — 분기배당으로 보유 비용 상쇄.',
+            news: ['마이크론 $2,500억 투자 — 메모리 재평가', '증권가 목표 500,000원', 'HBM4E 슈퍼사이클'],
+            technical: ['255,000~262,000 장기 지지', '월봉 추세 유지'],
+            fundamental: ['복합 포트폴리오 + 분기배당', 'HBM 점유율 회복 = 리레이팅'],
+          },
+          riskFactors: ['메모리 사이클 피크아웃', 'HBM 경쟁', '중동·환율'],
+          dividend: { perShare: 1444, currency: 'KRW', frequency: '분기', schedule: '분기 361원 × 4회', yieldPct: 0.51, next: '2026-08월 지급 예정', note: '12개월 4회 수령' },
+          simId: 'b6-long-samsung',
+        },
+        {
+          id: 'b6-long-ko', ticker: 'KO', name: '코카콜라 (배당 코어)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'long', risk: 'low',
+          refPrice: 84.30, refPriceAsOf: '2026-07-10 종가 근사 — 주문 전 확인',
+          buy:  { window: '2026-07-13–09-10 분할 (미국 ET)', windowKst: '9월 초까지 분할 (배당락 전 완료)', low: 80, high: 85, note: '9월 중순 배당락 전 매집 — 전략 유지.' },
+          sell: { window: '2027-07월 이후 검토', windowKst: '원칙적 장기 보유', low: 92, high: 96, stop: 74, note: '배당 수령 주목적.' },
+          expectedReturn: { base: 7.0, bull: 14.0, bear: -12.2 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 96, ret: 13.9, desc: '디펜시브 프리미엄 지속' },
+            { name: '기본', prob: 48, price: 90, ret: 6.8, desc: '완만한 우상향 + 배당' },
+            { name: '비관', prob: 20, price: 74, ret: -12.2, desc: '소비 둔화 — 손절 기준' },
+          ],
+          rationale: {
+            summary: '64년 연속 배당 증액 — 변동성·오일 꼬리위험 국면에서 가치가 재확인되는 방어 코어. 9월 배당락 전 매집 전략 지속.',
+            news: ['오일 꼬리위험 잔존 — 디펜시브 수혜', '배당락 9/11–15 예상', '사상 최고가권'],
+            technical: ['$80 장기 지지', '하락장 상대강도 상위'],
+            fundamental: ['배당왕 — 위기 검증', '글로벌 브랜드'],
+          },
+          riskFactors: ['금리 재상승', '수요 트렌드', '달러 강세', '환율'],
+          dividend: { perShare: 0.53, currency: 'USD', frequency: '분기', schedule: '분기 $0.53 (연 $2.12)', yieldPct: 2.51, next: '배당락 2026-09-11~15 예상, 지급 10/1', note: '12개월 4회 수령' },
+          simId: 'b6-long-ko',
+        },
+      ],
+    },
     {
       id: 'batch-2026-07-10-am',
       generatedAt: '2026-07-10T08:10+09:00 (매일 아침 자동 갱신)',
