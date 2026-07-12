@@ -130,6 +130,21 @@ const PICKS = [
   { id: 'b5-long-msft',   s0: 384.36,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b5-long-ko',     s0: 84.35,   target: 94.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
   { id: 'b5-long-samsung', s0: 278500, target: 420000,  stop: 225000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
+  // ── batch-2026-07-13 (7/10 종가 기준, 당일 전략은 7/13 월요일) ──
+  // 레짐: 반도체 강세·VIX 16(안정)이나 오일/호르무즈 꼬리위험 잔존 → volX 1.2(당일·1주)/1.1(1개월)
+  // v2.2: 매도 목표를 체결가 상대(+1% 내외)로 재설계 — 시가 상대 매수와 정합
+  { id: 'b6-day-nvda',    s0: 210.96,  target: 213.5,   stop: 208.0,   annVol: 0.46, annDrift: 0.20, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b6-day-samsung', s0: 285000,  target: 288000,  stop: 281000,  annVol: 0.40, annDrift: 0.18, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b6-day-tsm',     s0: 434.11,  target: 439.0,   stop: 428.0,   annVol: 0.40, annDrift: 0.20, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b6-week-tsm',    s0: 434.11,  target: 452.0,   stop: 418.0,   annVol: 0.42, annDrift: 0.24, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b6-week-samsung',s0: 285000,  target: 300000,  stop: 273000,  annVol: 0.40, annDrift: 0.22, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b6-week-ko',     s0: 84.30,   target: 87.0,    stop: 81.5,    annVol: 0.15, annDrift: 0.12, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b6-month-nvda',  s0: 210.96,  target: 232.0,   stop: 190.0,   annVol: 0.46, annDrift: 0.24, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b6-month-msft',  s0: 385.35,  target: 415.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b6-month-tsm',   s0: 434.11,  target: 478.0,   stop: 408.0,   annVol: 0.42, annDrift: 0.22, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b6-long-msft',   s0: 385.35,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b6-long-samsung',s0: 285000,  target: 430000,  stop: 228000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
+  { id: 'b6-long-ko',     s0: 84.30,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
