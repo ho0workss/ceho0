@@ -145,6 +145,21 @@ const PICKS = [
   { id: 'b6-long-msft',   s0: 385.35,  target: 520.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b6-long-samsung',s0: 285000,  target: 430000,  stop: 228000,  annVol: 0.36, annDrift: 0.20, kind: 'long', model: 't' },
   { id: 'b6-long-ko',     s0: 84.30,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  // ── batch-2026-07-14 (7/13 종가 기준, 당일 전략은 7/14 화요일) ──
+  // 레짐: 리스크오프(호르무즈 봉쇄→오일 급등, 코스피 -8.95% 서킷브레이커, 반도체 폭락) → volX 1.3(당일·1주)/1.2(1개월)
+  // 당일 전략은 고베타 반도체 제외, 방어(KO)·에너지(XOM)·퀄리티(MSFT) 중심. 반도체는 워시아웃 후 주간·월간·장기 역발상만.
+  { id: 'b7-day-xom',     s0: 139.41,  target: 141.5,   stop: 137.0,   annVol: 0.30, annDrift: 0.20, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b7-day-ko',      s0: 85.50,   target: 86.8,    stop: 84.0,    annVol: 0.15, annDrift: 0.15, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b7-day-msft',    s0: 379.0,   target: 383.0,   stop: 373.0,   annVol: 0.28, annDrift: 0.12, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b7-week-xom',    s0: 139.41,  target: 146.0,   stop: 133.0,   annVol: 0.32, annDrift: 0.25, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b7-week-msft',   s0: 379.0,   target: 396.0,   stop: 362.0,   annVol: 0.28, annDrift: 0.15, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b7-week-samsung',s0: 254500,  target: 275000,  stop: 235000,  annVol: 0.50, annDrift: 0.25, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b7-month-nvda',  s0: 203.57,  target: 226.0,   stop: 182.0,   annVol: 0.48, annDrift: 0.24, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b7-month-msft',  s0: 379.0,   target: 410.0,   stop: 356.0,   annVol: 0.28, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b7-month-samsung',s0: 254500, target: 290000,  stop: 228000,  annVol: 0.48, annDrift: 0.25, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b7-long-msft',   s0: 379.0,   target: 520.0,   stop: 320.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b7-long-samsung',s0: 254500,  target: 400000,  stop: 205000,  annVol: 0.38, annDrift: 0.22, kind: 'long', model: 't' },
+  { id: 'b7-long-ko',     s0: 85.50,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
