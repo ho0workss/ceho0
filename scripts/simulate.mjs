@@ -160,6 +160,22 @@ const PICKS = [
   { id: 'b7-long-msft',   s0: 379.0,   target: 520.0,   stop: 320.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b7-long-samsung',s0: 254500,  target: 400000,  stop: 205000,  annVol: 0.38, annDrift: 0.22, kind: 'long', model: 't' },
   { id: 'b7-long-ko',     s0: 85.50,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  // ── batch-2026-07-15 (7/14 종가 기준, 당일 전략은 7/15 수요일) ──
+  // 레짐: 부분 회복 — 6월 CPI 3.5%<3.8%(디스인플레), 반도체 반등(SMH +2.5%), 호르무즈 20% 수수료 철회로 오일 고점 이탈.
+  // 단 이란 추가 타격으로 지정학 꼬리 잔존 → 리스크오프에서 중립~완만한 리스크온으로 전환, volX 1.2(당일·1주)/1.1(1개월).
+  // 반도체 당일 전략 재편입(반등 모멘텀), 에너지(XOM) 헤지 유지.
+  { id: 'b8-day-nvda',    s0: 209.0,   target: 211.5,   stop: 205.5,   annVol: 0.48, annDrift: 0.20, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b8-day-xom',     s0: 144.74,  target: 146.5,   stop: 142.0,   annVol: 0.32, annDrift: 0.18, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b8-day-samsung', s0: 260000,  target: 263000,  stop: 256000,  annVol: 0.48, annDrift: 0.18, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b8-week-tsm',    s0: 433.0,   target: 452.0,   stop: 415.0,   annVol: 0.42, annDrift: 0.24, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b8-week-samsung',s0: 260000,  target: 278000,  stop: 245000,  annVol: 0.48, annDrift: 0.24, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b8-week-xom',    s0: 144.74,  target: 151.0,   stop: 138.0,   annVol: 0.32, annDrift: 0.22, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b8-month-nvda',  s0: 209.0,   target: 230.0,   stop: 188.0,   annVol: 0.46, annDrift: 0.24, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b8-month-msft',  s0: 385.0,   target: 415.0,   stop: 362.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b8-month-samsung',s0: 260000, target: 295000,  stop: 232000,  annVol: 0.46, annDrift: 0.24, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b8-long-msft',   s0: 385.0,   target: 520.0,   stop: 325.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b8-long-samsung',s0: 260000,  target: 410000,  stop: 210000,  annVol: 0.38, annDrift: 0.22, kind: 'long', model: 't' },
+  { id: 'b8-long-ko',     s0: 84.27,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
