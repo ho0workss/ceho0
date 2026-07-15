@@ -176,6 +176,22 @@ const PICKS = [
   { id: 'b8-long-msft',   s0: 385.0,   target: 520.0,   stop: 325.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b8-long-samsung',s0: 260000,  target: 410000,  stop: 210000,  annVol: 0.38, annDrift: 0.22, kind: 'long', model: 't' },
   { id: 'b8-long-ko',     s0: 84.27,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  // ── batch-2026-07-16 (7/15 종가 기준, 당일 전략은 7/16 목요일 = TSMC 실적일) ──
+  // 레짐: 리스크온이나 프로시클 프로스(froth) — 코스피 +6.24%(매수 사이드카), 삼성 +6.27%, SK하이닉스 +8.8%.
+  // 단 미 반도체는 빅테크로 순환매(MSFT/AMZN/GOOGL +3%, Micron -8%). V자 급반등 되돌림 리스크 → volX 1.2(당일·1주)/1.1(1개월).
+  // TSMC 7/16 실적일이라 TSM 당일 전략 제외(이벤트), 리더십(MSFT)·모멘텀(삼성·NVDA) 중심.
+  { id: 'b9-day-msft',    s0: 396.0,   target: 400.0,   stop: 390.0,   annVol: 0.28, annDrift: 0.16, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b9-day-nvda',    s0: 212.50,  target: 215.0,   stop: 209.0,   annVol: 0.46, annDrift: 0.18, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b9-day-samsung', s0: 279500,  target: 282500,  stop: 275000,  annVol: 0.50, annDrift: 0.15, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b9-week-tsm',    s0: 430.0,   target: 452.0,   stop: 412.0,   annVol: 0.42, annDrift: 0.22, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b9-week-msft',   s0: 396.0,   target: 412.0,   stop: 380.0,   annVol: 0.28, annDrift: 0.18, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b9-week-samsung',s0: 279500,  target: 298000,  stop: 262000,  annVol: 0.50, annDrift: 0.20, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b9-month-nvda',  s0: 212.50,  target: 234.0,   stop: 191.0,   annVol: 0.46, annDrift: 0.22, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b9-month-msft',  s0: 396.0,   target: 424.0,   stop: 372.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b9-month-samsung',s0: 279500, target: 315000,  stop: 250000,  annVol: 0.46, annDrift: 0.22, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b9-long-msft',   s0: 396.0,   target: 530.0,   stop: 335.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b9-long-samsung',s0: 279500,  target: 430000,  stop: 225000,  annVol: 0.38, annDrift: 0.20, kind: 'long', model: 't' },
+  { id: 'b9-long-ko',     s0: 84.00,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
