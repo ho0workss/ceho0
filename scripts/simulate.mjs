@@ -192,6 +192,22 @@ const PICKS = [
   { id: 'b9-long-msft',   s0: 396.0,   target: 530.0,   stop: 335.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b9-long-samsung',s0: 279500,  target: 430000,  stop: 225000,  annVol: 0.38, annDrift: 0.20, kind: 'long', model: 't' },
   { id: 'b9-long-ko',     s0: 84.00,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  // ── batch-2026-07-17 (7/16 종가 기준, 당일 전략은 7/17 금요일) ──
+  // 레짐: 리스크오프 재점화 — 한국은행 기준금리 +25bp(2.75%, 2023년 1월 이후 첫 인상)로 코스피 -6.37% 베어마켓 진입,
+  // TSMC 호실적에도 capex 상향($60~64B)으로 -4%·메모리 -7% 반도체 재매도. 주간 휨쏘(월 -9%·수 +6%·목 -6.4%).
+  // → volX 1.3(당일·1주)/1.2(1개월), 당일 전략은 반도체·한국 제외 방어(KO)·에너지(XOM)·퀄리티(MSFT) 중심·소액.
+  { id: 'b10-day-xom',    s0: 145.0,   target: 147.0,   stop: 142.5,   annVol: 0.32, annDrift: 0.18, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b10-day-ko',     s0: 84.50,   target: 85.8,    stop: 83.0,    annVol: 0.15, annDrift: 0.15, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b10-day-msft',   s0: 390.0,   target: 394.0,   stop: 384.0,   annVol: 0.28, annDrift: 0.10, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b10-week-xom',   s0: 145.0,   target: 152.0,   stop: 139.0,   annVol: 0.32, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b10-week-msft',  s0: 390.0,   target: 406.0,   stop: 373.0,   annVol: 0.28, annDrift: 0.15, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b10-week-tsm',   s0: 413.0,   target: 435.0,   stop: 396.0,   annVol: 0.44, annDrift: 0.24, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b10-month-nvda', s0: 207.0,   target: 228.0,   stop: 186.0,   annVol: 0.48, annDrift: 0.24, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b10-month-msft', s0: 390.0,   target: 418.0,   stop: 366.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b10-month-samsung',s0: 262000,target: 296000,  stop: 234000,  annVol: 0.50, annDrift: 0.22, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b10-long-msft',  s0: 390.0,   target: 525.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b10-long-samsung',s0: 262000, target: 410000,  stop: 210000,  annVol: 0.40, annDrift: 0.20, kind: 'long', model: 't' },
+  { id: 'b10-long-ko',    s0: 84.50,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {

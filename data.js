@@ -1,7 +1,7 @@
 // 종목 추천 데이터 — 배치(batch) 단위로 기록되며, 새 추천이 생성될 때마다 batches 맨 앞에 추가됩니다.
 // 과거 배치는 수정하지 않습니다(히스토리 보존).
 window.RECO = {
-  lastUpdated: '2026-07-16T07:30+09:00 (평일 아침 자동 갱신 · 당일 전략은 7/16 목요일 기준)',
+  lastUpdated: '2026-07-17T07:30+09:00 (평일 아침 자동 갱신 · 당일 전략은 7/17 금요일 기준)',
   // ── 확실성 최우선 자산 (배치 히스토리와 별도의 상시 추천) ──
   sureUpdatedAt: '2026-07-08',
   sureStats: [
@@ -105,9 +105,8 @@ window.RECO = {
   ],
   // ── 투자 캘린더 (다가오는 이벤트 — 갱신 시 함께 관리) ──
   events: [
-    { date: '2026-07-16', title: 'TSMC 2분기 실적 발표', kind: '실적', impact: '높음', note: '6월 매출 +67.9% YoY 호조 확인 — 리스크오프 진정 시 반등 촉매 여부 주목', related: 'TSM' },
-    { date: '2026-07-16', title: '한국은행 금통위 (기준금리 결정)', kind: '금리', impact: '중간', note: '현재 2.50% — 인하 시 금리형 ETF 수익률 소폭 하락, 성장주 우호', related: '423160.KS' },
     { date: '2026-07-22', title: '테슬라 2분기 실적 발표', kind: '실적', impact: '중간', note: '인도량 서프라이즈(+18%) 이후 마진이 관건', related: 'TSLA' },
+    { date: '2026-08-14', title: '한국은행 금통위 (다음 회의)', kind: '금리', impact: '높음', note: '7/16 2.75% 인상(긴축 진입) 후 추가 인상 여부 — 한국 증시 최대 변수', related: '005930.KS' },
     { date: '2026-07-29', title: '삼성전자 2분기 확정실적·컨퍼런스콜 (예상)', kind: '실적', impact: '높음', note: '부문별 실적과 HBM4E 수주 공개 여부 — 7월 말 예정', related: '005930.KS' },
     { date: '2026-07-29', title: '마이크로소프트 FY26 4분기 실적 (예상)', kind: '실적', impact: '높음', note: 'Azure 성장률이 관건 — 7월 말 예정', related: 'MSFT' },
     { date: '2026-07-29', title: 'FOMC (미 연준 금리 결정)', kind: '금리', impact: '높음', note: '유가발 인플레 우려 속 금리 경로 — 7월 말 예정', related: null },
@@ -119,8 +118,26 @@ window.RECO = {
 
   // ── 성과 채점 (예측 vs 실제 — 매일 아침 자동 갱신 시 업데이트) ──
   outcomes: {
-    updatedAt: '2026-07-16T07:30+09:00',
+    updatedAt: '2026-07-17T07:30+09:00',
     records: {
+      'b9-day-samsung': {
+        status: 'invalid',
+        title: '무효 — 금리인상發 갭다운 급락, "안정 확인 후 매수" 규칙이 진입 차단',
+        detail: '실제(7/16): 한국은행이 기준금리를 2.75%로 +25bp 인상(2023년 1월 이후 첫 인상, 긴축 사이클 진입)하자 코스피 -6.37%(6,820.60, 베어마켓 진입). 삼성전자도 급락(약 -6%대). 매수 참고범위(275,000~281,000)는 갭다운으로 성립 불가, v2.2 규칙(갭다운 시 안정 확인 후 매수)대로 미진입 → 급락을 회피. 하루 전 +6.27% 급등을 되돌린 극단적 휨쏘 — 방어 규칙이 다시 손실을 막았다.',
+        checkedAt: '2026-07-17 (장 마감 후)',
+      },
+      'b9-day-nvda': {
+        status: 'fail',
+        title: '실패 — 반도체 재매도, 손절 청산 (약 -1.5%)',
+        detail: '실제(7/16): TSMC가 호실적(매출 +33.7% YoY $40.2B)에도 capex를 $60~64B로 상향하며 -4%, 메모리주 -7% 등 반도체 재매도(나스닥 -1.47%). 엔비디아도 하락(약 -2%대). 매수 참고범위($208~214) 진입 후 v2.2 손절(체결가 -1.5%, 참고 $209) 발동 → 약 -1.5% 손실. 순환매→재매도로 이틀 만에 방향이 뒤집혔다.',
+        checkedAt: '2026-07-17 (2개 소스 교차)',
+      },
+      'b9-day-msft': {
+        status: 'fail',
+        title: '실패 — 기술주 동반 약세, 손절 청산 (약 -1.5%)',
+        detail: '실제(7/16): 반도체發 매도가 기술주 전반으로 확산(나스닥 -1.47%)되며 전일 리더였던 빅테크도 약세 전환. 마이크로소프트도 하락(약 -1.5%대). 매수 참고범위($391~398) 진입 후 v2.2 손절(참고 $390) 발동 → 약 -1.5% 손실. 하루 전 순환매 리더십(성공 시나리오)이 하루 만에 무너진 휨쏘.',
+        checkedAt: '2026-07-17 (2개 소스 교차)',
+      },
       'b8-day-samsung': {
         status: 'success',
         title: '성공 — 갭업 급등, v2.2 상대 목표가 제대로 작동 (약 +1%)',
@@ -242,6 +259,16 @@ window.RECO = {
   },
   lessons: [
     {
+      date: '2026-07-17 (배치9 당일 채점 — 휨쏘 주간)',
+      title: '교훈 15 — 지수가 이틀 연속 ±6%로 뒤집히는 "휨쏘 국면"에선 당일 전략을 줄여야 한다',
+      text: '이번 주 코스피는 월 -8.95% → 수 +6.24% → 목 -6.37%로 사흘 동안 방향이 두 번 뒤집혔다. 배치9 당일 전략(삼성·엔비디아·MSFT)은 하루 전 성공했던 모멘텀이 하루 만에 무너져 무효 1·손절 2로 끝났다. 이런 휨쏘 국면에서는 +1% 목표 대비 손절 위험이 불리하다(방향 예측의 기대값이 음수). 반영(v2.6): 대표 지수가 직전 세션에 ±4%를 넘겨 움직였거나 이틀 연속 급변한 "불안정 레짐"에서는 해당 시장의 당일 전략을 소액으로 줄이거나 중단하고, 주간·월간(시간이 변동성을 흡수)만 편성한다.',
+    },
+    {
+      date: '2026-07-17 (배치9 당일 채점)',
+      title: '교훈 16 — 중앙은행 결정일·capex 가이던스는 "종목 호재"를 덮는다',
+      text: '7/16 한국은행이 2023년 1월 이후 첫 금리 인상(2.75%)을 단행하자 코스피가 -6.37% 베어마켓에 진입했고(금리 인상은 주식에 역풍), 같은 날 TSMC는 매출 +33.7%의 호실적에도 capex를 $60~64B로 대폭 상향하자 -4% 급락했다(과잉투자·마진 우려). 두 사건 모두 "실적/종목 재료"보다 "정책·투자 가이던스"가 그날 방향을 결정했다. 반영: 중앙은행 결정일은 해당 시장 당일 전략 제외(이벤트), 실적일에도 매출뿐 아니라 capex·가이던스가 주가를 좌우하므로 "호실적=상승" 가정을 금지한다.',
+    },
+    {
       date: '2026-07-16 (배치8 당일 채점)',
       title: '교훈 13 — v2.2 "상대 매도 목표"가 갭업에서 제대로 작동함을 확인했다',
       text: '7/15 삼성전자가 +6.27% 갭업 급등했을 때, 지정 참고범위(256,000~262,000)는 건너뛰었지만 v2.2의 "매도 목표 = 체결가 +1%" 규칙 덕분에 갭업 눌림 진입 후 목표가 시장을 따라 올라가 정상 실현(약 +1%)됐다. 정확히 7/10 삼성전자에서 고정 목표가 시장 아래로 좌초해 무효가 났던 문제(교훈 7)를 고친 것이 검증된 사례다. 결론: 모델 수정은 "다음 유사 상황에서 실제로 작동하는지"까지 확인해야 완결된다 — 이번엔 작동했다.',
@@ -314,6 +341,15 @@ window.RECO = {
   ],
   modelChangelog: [
     {
+      version: 'v2.6', date: '2026-07-17 (배치9 채점 후 — 휨쏘 주간)',
+      changes: [
+        '불안정 레짐 감지: 대표 지수가 직전 세션 ±4% 초과·이틀 연속 급변한 휨쏘 국면에선 해당 시장 당일 전략 축소·중단, 주간/월간만 편성(교훈 15)',
+        '중앙은행 결정일 제외: 한은·FOMC 등 정책 결정일은 해당 시장 당일 전략 이벤트 제외(교훈 16)',
+        '실적일 가정 수정: "호실적=상승" 금지 — capex·가이던스가 방향을 뒤집을 수 있음(TSMC 매출 +33.7%에도 capex 상향으로 -4%)',
+        '한국 긴축 반영: 한은 금리 2.75% 인상(긴축 사이클 진입)으로 코스피 베어마켓 — 한국 종목 리스크 프리미엄 상향, 당일 전략에서 한국 제외',
+      ],
+    },
+    {
       version: 'v2.5', date: '2026-07-16 (배치8 채점 후)',
       changes: [
         '순환매 인식: 리스크온이라도 자금 방향(빅테크 vs 순수 칩, 미국 vs 한국)을 구분 — 7/15 한국 반도체·빅테크 급등 vs 미 칩주 소외(교훈 14). 순환매 소외 종목은 목표 보수화',
@@ -381,6 +417,284 @@ window.RECO = {
     disclaimer: '본 서비스는 정보 제공 목적의 시뮬레이션 도구이며 투자 자문이 아닙니다. 모든 수치는 몬테카를로 시뮬레이션(경로 20,000개, GBM 모형)에 기반한 확률 추정치로, 실제 수익을 보장하지 않습니다. 원금 손실이 발생할 수 있으며 투자 판단과 책임은 투자자 본인에게 있습니다.',
   },
   batches: [
+    {
+      id: 'batch-2026-07-17',
+      generatedAt: '2026-07-17T07:30+09:00 (평일 아침 자동 갱신)',
+      pricesAsOf: '기준가: 한국·미국 모두 2026-07-16(목) 종가 — 주문 전 확인 (대부분 근사치, 특히 반도체·한국주)',
+      title: '2026-07-17 배치 (리스크오프 재점화 · 한은 금리인상 · 반도체 재매도 · 방어 중심)',
+      marketSnapshot:
+        '7/16(목) 리스크오프 재점화: 한국은행이 기준금리를 2.75%로 +25bp 인상(2023년 1월 이후 첫 인상, 긴축 사이클 진입)하자 코스피 -6.37%(6,820.60)로 베어마켓 진입. 미국: TSMC가 2분기 매출 +33.7% YoY($40.2B) 호실적에도 capex를 $60~64B로 상향(기존 $52~56B)하며 -4%, 메모리주 -7% 등 반도체 재매도 — 나스닥 -1.47%(25,881.95)·S&P -0.51%(7,533.77). 이번 주 극단적 휨쏘: 코스피 월 -8.95% → 수 +6.24% → 목 -6.37%. ※ 배치9 당일 채점: 삼성전자 무효(금리인상 갭다운, "안정 확인 후" 규칙이 진입 차단→손실 회피), 엔비디아·MSFT 손절(반도체發 매도 확산, 각 약 -1.5%). 반영(v2.6): 휨쏘·불안정 레짐에선 당일 전략을 방어(코카콜라)·에너지(엑슨모빌)·퀄리티(MS)로 축소하고 반도체·한국주는 당일 제외, 워시아웃은 주간·월간·장기 역발상만. 중앙은행 결정일·capex 가이던스가 종목 호재를 덮는다는 교훈 반영. volX 1.3/1.2. ※ 대부분 기준가는 근사치입니다.',
+      picks: [
+        // ─────────────── 당일 (7/17 금요일) · 방어·에너지·퀄리티 (반도체·한국 제외) ───────────────
+        {
+          id: 'b10-day-xom', ticker: 'XOM', name: '엑슨모빌 (고유가·방어)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'day', risk: 'mid',
+          refPrice: 145.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17 09:30–10:30 (미국 ET) · 시가 기준 상대 규칙', windowKst: '한국시간 7/17(금) 22:30–23:30 · 갭 확인 후', low: 142.5, high: 146, note: '[v2.2] 오일 강세·인플레 국면 방어 — 갭업 시 시가 대비 눌림 매수, 참고범위 $142.5~146. 호르무즈 완화 뉴스 시 청산.' },
+          sell: { window: '2026-07-17 14:00–15:50 (미국 ET)', windowKst: '한국시간 7/18(토) 새벽', low: 146.5, high: 147.5, stop: 142.5, note: '[v2.2] 목표 = 체결가 +1.3% 내외(참고 $146.5~147.5). 미도달 시 15:50 청산. 손절 = 체결가 -1.7%(참고 $142.5).' },
+          expectedReturn: { base: 1.1, bull: 1.7, bear: -1.7 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 147.5, ret: 1.7, desc: '오일 강세 + 리스크오프 방어 수요' },
+            { name: '기본', prob: 45, price: 146.5, ret: 1.0, desc: '에너지 상대강세, 규칙 청산' },
+            { name: '비관', prob: 25, price: 142.5, ret: -1.7, desc: '유가 조정·차익 — 손절' },
+          ],
+          rationale: {
+            summary: '한은이 "유가·약원화발 인플레"를 인상 근거로 든 국면 — 고유가가 이어지는 에너지 대장주. 반도체·기술주가 팔릴 때 방어+역상관을 노리는 당일 전략.',
+            news: ['한은 인상 근거에 "고유가" 명시', '리스크오프 방어 수요', 'WTI $79·브렌트 $84 유지'],
+            technical: ['$142.5 지지 / $146~147 저항', '리스크오프 상대강도 상위'],
+            fundamental: ['고유가 = 실적 레버리지', '배당+자사주'],
+          },
+          riskFactors: ['유가 급락', '차익 매물', '변동성'],
+          dividend: { perShare: 1.03, currency: 'USD', frequency: '분기', schedule: '분기 $1.03 (연 $4.12)', yieldPct: 2.84, next: '배당락 2026-08-13 예상', note: '당일 전략 무관' },
+          simId: 'b10-day-xom',
+        },
+        {
+          id: 'b10-day-ko', ticker: 'KO', name: '코카콜라 (리스크오프 방어)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'day', risk: 'low',
+          refPrice: 84.50, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17 09:30–10:30 (미국 ET) · 시가 기준 상대 규칙', windowKst: '한국시간 7/17(금) 밤 · 갭 확인 후', low: 83.5, high: 85, note: '[v2.2] 리스크오프 방어 수요 — 참고범위 $83.5~85. 갭업 추격 자제.' },
+          sell: { window: '2026-07-17 14:00–15:50 (미국 ET)', windowKst: '한국시간 7/18(토) 새벽', low: 85.5, high: 86, stop: 83, note: '[v2.2] 목표 = 체결가 +1% 내외(참고 $85.5~86). 미도달 시 15:50 청산. 손절 = 체결가 -1.5%(참고 $83).' },
+          expectedReturn: { base: 1.0, bull: 1.8, bear: -1.7 },
+          scenarios: [
+            { name: '낙관', prob: 28, price: 86, ret: 1.8, desc: '리스크오프 심화 → 디펜시브 강세' },
+            { name: '기본', prob: 52, price: 85.5, ret: 1.2, desc: '완만한 방어 강세, 규칙 청산' },
+            { name: '비관', prob: 20, price: 83, ret: -1.7, desc: '위험선호 반등 — 소외·손절' },
+          ],
+          rationale: {
+            summary: '반도체·기술주가 팔리고 금리 변수가 커진 국면의 대표 방어주. 이번 주 극단적 휨쏘 속에서 가장 보수적인 당일 전략.',
+            news: ['금리·반도체 변수 — 방어주 수요', '64년 연속 배당 증액', '9월 중순 배당락 접근'],
+            technical: ['$83.5 지지 / $85.5~86 저항', '하락장 상대강도 상위'],
+            fundamental: ['저변동성 필수소비재', '가격 전가력'],
+          },
+          riskFactors: ['위험선호 급반등 시 소외', '금리', '환율'],
+          dividend: { perShare: 0.53, currency: 'USD', frequency: '분기', schedule: '분기 $0.53 (연 $2.12)', yieldPct: 2.51, next: '배당락 2026-09-11~15 예상', note: '당일 전략 무관' },
+          simId: 'b10-day-ko',
+        },
+        {
+          id: 'b10-day-msft', ticker: 'MSFT', name: '마이크로소프트 (퀄리티 · 소액)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'day', risk: 'mid',
+          refPrice: 390.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17 09:30–10:30 (미국 ET) · 시가 기준 상대 규칙', windowKst: '한국시간 7/17(금) 밤 · 안정 확인 후', low: 385, high: 392, note: '[v2.2] 휨쏘 국면 — 갭다운 시 개장 30분 안정 확인 후에만 소액 매수. 참고범위 $385~392. 지수 추가 하락 시 관망.' },
+          sell: { window: '2026-07-17 14:00–15:50 (미국 ET)', windowKst: '한국시간 7/18(토) 새벽', low: 393.5, high: 394.5, stop: 384, note: '[v2.2] 목표 = 체결가 +1% 내외(참고 $393.5~394.5). 미도달 시 15:50 청산. 손절 = 체결가 -1.5%(참고 $384).' },
+          expectedReturn: { base: 1.0, bull: 1.3, bear: -1.5 },
+          scenarios: [
+            { name: '낙관', prob: 26, price: 394.5, ret: 1.2, desc: '기술주 안정 → 퀄리티 반등' },
+            { name: '기본', prob: 45, price: 393.5, ret: 0.9, desc: '완만한 안정, 규칙 청산' },
+            { name: '비관', prob: 29, price: 384, ret: -1.5, desc: '기술주 매도 지속 — 손절' },
+          ],
+          rationale: {
+            summary: '반도체發 매도가 기술주로 번진 국면이라 당일 전략은 소액·안정 확인 필수. 순수 칩주보다 방어적인 소프트웨어 대형주로, 지수 안정 시 낙폭과대 반등만 짧게 노린다.',
+            news: ['기술주 매도 확산(나스닥 -1.47%)', '반도체 capex 우려', '7/29 실적 대기'],
+            technical: ['$384 지지 / $393~394 저항', '휨쏘 — 안정 확인 필수'],
+            fundamental: ['클라우드+AI 구조 성장', '반도체 대비 방어적'],
+          },
+          riskFactors: ['기술주 매도 지속', '휨쏘 되돌림', 'AI capex 우려'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.93, next: '배당락 2026-08월 중순 예상', note: '당일 전략 무관' },
+          simId: 'b10-day-msft',
+        },
+        // ─────────────── 1주 ───────────────
+        {
+          id: 'b10-week-xom', ticker: 'XOM', name: '엑슨모빌 (에너지 모멘텀)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'week', risk: 'mid',
+          refPrice: 145.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-20 (미국 ET) 분할', windowKst: '한국시간 7/17–7/21 새벽', low: 141, high: 146, note: '고유가·리스크오프 방어 — 이틀 분할.' },
+          sell: { window: '2026-07-23–07-24 (미국 ET)', windowKst: '다음 주 중반', low: 151, high: 152, stop: 139, note: '오일 강세·방어 지속 시 실현. 유가 급락 시 조기 청산.' },
+          expectedReturn: { base: 4.0, bull: 5.8, bear: -4.5 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 152, ret: 4.8, desc: '고유가 지속 + 방어 강세' },
+            { name: '기본', prob: 43, price: 151, ret: 4.1, desc: '에너지 상대강세' },
+            { name: '비관', prob: 25, price: 139, ret: -4.5, desc: '유가 급락 — 손절' },
+          ],
+          rationale: {
+            summary: '금리·반도체 변수로 리스크오프가 재점화된 국면의 에너지 헤지. 고유가가 이어지는 한 시장과 역상관을 노리는 1주 전략.',
+            news: ['한은 인상 근거 "고유가"', '리스크오프 방어 수요', 'WTI $79 유지'],
+            technical: ['$141 지지 / $151~152 저항', '상대강도 상위'],
+            fundamental: ['고유가 = 실적 레버리지', '배당+자사주'],
+          },
+          riskFactors: ['유가 급락', '수요 둔화', '변동성'],
+          dividend: { perShare: 1.03, currency: 'USD', frequency: '분기', schedule: '분기 $1.03 (연 $4.12)', yieldPct: 2.84, next: '배당락 2026-08-13 예상', note: '1주 전략 배당 영향 미미' },
+          simId: 'b10-week-xom',
+        },
+        {
+          id: 'b10-week-msft', ticker: 'MSFT', name: '마이크로소프트 (퀄리티 회복)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'week', risk: 'mid',
+          refPrice: 390.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-20 분할 (미국 ET)', windowKst: '이번 주 말~다음 주 초 분할', low: 378, high: 392, note: '반도체 대비 방어적 퀄리티 — 조정 시 분할.' },
+          sell: { window: '2026-07-23–07-27 (미국 ET)', windowKst: '다음 주 중후반', low: 404, high: 406, stop: 373, note: '시황 안정 시 회복. 7/29 실적까지 홀딩 연장 가능(월간 연결).' },
+          expectedReturn: { base: 4.0, bull: 5.5, bear: -4.4 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 406, ret: 4.1, desc: '기술주 안정 + 저가 매수' },
+            { name: '기본', prob: 45, price: 404, ret: 3.6, desc: '시황 안정 회복' },
+            { name: '비관', prob: 25, price: 373, ret: -4.4, desc: '기술주 매도 지속 — 손절' },
+          ],
+          rationale: {
+            summary: '반도체 급락과 달리 상대적으로 견조한 소프트웨어 대형주 + 7/29 실적 촉매. 휨쏘 진정 시 낙폭과대 회복을 노리는 1주 전략.',
+            news: ['반도체 대비 방어적', '7/29 실적 촉매', '선행 21~22배 저평가'],
+            technical: ['$378 지지 / $404~406 저항', '상대강도 우위'],
+            fundamental: ['클라우드+AI 성장', '월가 목표 $560'],
+          },
+          riskFactors: ['기술주 매도 지속', 'FOMC 7/29', 'AI capex 우려'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.93, next: '배당락 2026-08월 중순 예상', note: '1주 전략 배당 영향 미미' },
+          simId: 'b10-week-msft',
+        },
+        {
+          id: 'b10-week-tsm', ticker: 'TSM', name: 'TSMC (실적 후 낙폭과대 반등 · 고위험)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'week', risk: 'high',
+          refPrice: 413.0, refPriceAsOf: '2026-07-16 종가 근사치(실적일 -4%) — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-20 분할 (미국 ET)', windowKst: '이번 주 말~다음 주 초 분할', low: 405, high: 416, note: '호실적(매출 +33.7%)에도 capex 우려로 -4% 과매도 — 반등 노림. 넓은 손절.' },
+          sell: { window: '2026-07-23–07-24 (미국 ET)', windowKst: '다음 주 중반', low: 434, high: 435, stop: 396, note: 'capex 우려 진정 시 반등 목표. 미도달 시 재평가.' },
+          expectedReturn: { base: 5.3, bull: 7.5, bear: -4.1 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 435, ret: 5.3, desc: 'capex 우려 과도 → 낙폭과대 반등' },
+            { name: '기본', prob: 43, price: 434, ret: 5.1, desc: '호실적 재평가' },
+            { name: '비관', prob: 27, price: 396, ret: -4.1, desc: 'capex·마진 우려 지속 — 손절' },
+          ],
+          rationale: {
+            summary: '2분기 매출 +33.7%·2026 가이던스 40%+ 호실적에도, capex 상향($60~64B) 우려로 -4% 급락한 파운드리 대장주. capex 우려가 과도하다면 낙폭과대 반등이 가능한 고위험 1주 전략(넓은 손절 필수).',
+            news: ['2분기 매출 +33.7% YoY $40.2B', 'capex $60~64B 상향 — 우려', '2026 매출 40%+ 성장 전망'],
+            technical: ['$405 지지 / $434~435 저항', '실적일 급락 후 반등 시도'],
+            fundamental: ['AI 파운드리 수요 견조', 'capex = 미래 성장 투자'],
+          },
+          riskFactors: ['capex·마진 우려 지속', '반도체 재매도', '대만 지정학', '고변동성'],
+          dividend: { perShare: 0.70, currency: 'USD', frequency: '분기', schedule: '분기 약 $0.70 (ADR)', yieldPct: 0.68, next: '2026-09월 예상', note: 'ADR 원천세 유의' },
+          simId: 'b10-week-tsm',
+        },
+        // ─────────────── 1개월 ───────────────
+        {
+          id: 'b10-month-nvda', ticker: 'NVDA', name: '엔비디아 (8/26 실적 · 워시아웃)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'month', risk: 'high',
+          refPrice: 207.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-24 분할 (미국 ET)', windowKst: '이번 주 말~다음 주 분할', low: 194, high: 208, note: '반도체 재매도 워시아웃 분할 — $194 접근 시 비중 확대.' },
+          sell: { window: '2026-08-05–08-14 (미국 ET)', windowKst: '8월 초중순 (8/26 실적 전)', low: 226, high: 228, stop: 186, note: '실적 런업 정점 분할 매도. 미도달 시 재평가.' },
+          expectedReturn: { base: 9.5, bull: 13.0, bear: -10.1 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 228, ret: 10.1, desc: 'capex 우려 진정 + 실적 런업' },
+            { name: '기본', prob: 44, price: 226, ret: 9.2, desc: '워시아웃 후 런업 초입' },
+            { name: '비관', prob: 26, price: 186, ret: -10.1, desc: '반도체 매도 장기화 — 손절' },
+          ],
+          rationale: {
+            summary: 'TSMC capex發 반도체 재매도로 눌린 AI 대장주를 8/26 실적 런업까지 분할 매수하는 1개월 코어. 당일이 아닌 월간이라 휨쏘 노이즈를 시간으로 흡수.',
+            news: ['반도체 capex 우려 매도', '8/26 실적 — 런업 계절성', '중국 H200 수요'],
+            technical: ['$194 지지 / $226~228 저항', '워시아웃 후 회복 여지'],
+            fundamental: ['AI 데이터센터 수요 견조', 'capex는 GPU 수요의 원천'],
+          },
+          riskFactors: ['반도체 매도 장기화', '금리·지정학', '8월 실적 눈높이', '중국 수출규제'],
+          dividend: { perShare: 0.01, currency: 'USD', frequency: '분기', schedule: '3·6·9·12월 지급', yieldPct: 0.02, next: '2026-09월 예상', note: '상징적 배당' },
+          simId: 'b10-month-nvda',
+        },
+        {
+          id: 'b10-month-msft', ticker: 'MSFT', name: '마이크로소프트 (7/29 실적 D-12)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'month', risk: 'mid',
+          refPrice: 390.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-25 분할 (미국 ET)', windowKst: '이번 주 말~다음 주 분할', low: 375, high: 392, note: '7/29 실적 전 분할 매수 — 조정 시 $375.' },
+          sell: { window: '2026-08-04–08-12 (미국 ET)', windowKst: '8월 초중순', low: 416, high: 418, stop: 366, note: '실적 후 갭 소화 분할 매도. 미도달 시 재평가.' },
+          expectedReturn: { base: 7.2, bull: 9.5, bear: -6.2 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 418, ret: 7.2, desc: 'Azure 재가속 확인' },
+            { name: '기본', prob: 43, price: 416, ret: 6.7, desc: '밸류에이션 회복' },
+            { name: '비관', prob: 25, price: 366, ret: -6.2, desc: 'AI capex 우려·시황 — 손절' },
+          ],
+          rationale: {
+            summary: '반도체 대비 방어적인 퀄리티 대형주 + 7/29 실적 촉매 + 저평가. 휨쏘 조정을 분할 매수 기회로 삼는 1개월 코어.',
+            news: ['반도체 대비 방어적', '7/29 실적 — Azure 관건', '월가 목표 $560'],
+            technical: ['$375 지지 / $416~418 저항', '상대강도 우위'],
+            fundamental: ['선행 21~22배 저평가', 'AI capex 회수 접근'],
+          },
+          riskFactors: ['실적 가이던스', 'FOMC 7/29', '기술주 매도 지속'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.93, next: '배당락 2026-08월 중순 예상', note: '보유 중 배당락 1회 포함 가능' },
+          simId: 'b10-month-msft',
+        },
+        {
+          id: 'b10-month-samsung', ticker: '005930.KS', name: '삼성전자 (폭락 후 실적 · 금리 역풍 유의)', market: 'KR', exchange: 'KRX', currency: 'KRW',
+          horizon: 'month', risk: 'high',
+          refPrice: 262000, refPriceAsOf: '2026-07-16 종가 근사치(금리인상 급락) — 주문 전 확인',
+          buy:  { window: '2026-07-17–07-24 분할 (한국 KST)', windowKst: '이번 주 말~다음 주 4회 분할', low: 240000, high: 264000, note: '금리인상發 급락 후 4회 분할 — 7/29 확정실적 촉매. 긴축 역풍 유의, 소액.' },
+          sell: { window: '2026-08-10–08-18 (한국 KST)', windowKst: '8월 중순', low: 294000, high: 296000, stop: 234000, note: '확정실적·HBM4E 수주 확인 시 회복. 미도달 시 재평가.' },
+          expectedReturn: { base: 12.5, bull: 17.0, bear: -10.7 },
+          scenarios: [
+            { name: '낙관', prob: 27, price: 296000, ret: 13.0, desc: '실적 서프라이즈 + 과매도 반등' },
+            { name: '기본', prob: 44, price: 294000, ret: 12.2, desc: '급락 후 회복' },
+            { name: '비관', prob: 29, price: 234000, ret: -10.7, desc: '긴축 역풍·피크아웃 — 손절' },
+          ],
+          rationale: {
+            summary: '금리인상發 급락으로 목표가 대비 할인이 다시 심화된 대형 반도체주. 7/29 확정실적·HBM4E 수주가 촉매이나, 한은 긴축 사이클 진입이 한국 증시 전반의 역풍이라 소액·분할·넓은 손절이 필수인 1개월 역발상.',
+            news: ['한은 2.75% 인상 — 긴축 역풍', '7/29 확정실적 — HBM4E 관건', '목표가 대비 큰 괴리'],
+            technical: ['240,000 지지 시험 / 294,000~296,000 회복 관문', '금리·변동성 국면'],
+            fundamental: ['HBM4E 기술 리더십', '메모리 사이클 vs 금리 역풍'],
+          },
+          riskFactors: ['한은 추가 긴축', '확정실적 부진', '외국인 매도', '고변동성'],
+          dividend: { perShare: 361, currency: 'KRW', frequency: '분기', schedule: '분기 361원, 연 1,444원', yieldPct: 0.55, next: '2026-08월 지급 예정', note: '분기배당 1회 포함 예상' },
+          simId: 'b10-month-samsung',
+        },
+        // ─────────────── 장기 (6–12개월) ───────────────
+        {
+          id: 'b10-long-msft', ticker: 'MSFT', name: '마이크로소프트 (장기 코어)', market: 'US', exchange: 'NASDAQ', currency: 'USD',
+          horizon: 'long', risk: 'low',
+          refPrice: 390.0, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–09-30 매월 분할 (미국 ET)', windowKst: '7–9월 5회 분할', low: 360, high: 395, note: '변동성 장세 분할 매수 — 휨쏘는 매집 기회.' },
+          sell: { window: '2027-04월–07월 (미국 ET)', windowKst: '2027년 2분기', low: 490, high: 560, stop: 330, note: '목표 $560 접근 시 단계적 실현.' },
+          expectedReturn: { base: 16.0, bull: 35.0, bear: -15.4 },
+          scenarios: [
+            { name: '낙관', prob: 35, price: 525, ret: 34.6, desc: 'AI capex 수익화 입증' },
+            { name: '기본', prob: 45, price: 465, ret: 19.2, desc: '멀티플 정상화' },
+            { name: '비관', prob: 20, price: 330, ret: -15.4, desc: '회수 지연 장기화' },
+          ],
+          rationale: {
+            summary: '장기 논리 불변 — 금리·휨쏘·단기 매도 어느 것도 12개월 뒤 현금창출력을 바꾸지 못한다. 반도체 대비 방어적인 퀄리티를 분할 매집.',
+            news: ['월가 목표 $560 유지', 'Copilot·Azure AI 확대', '반도체 대비 방어적'],
+            technical: ['$360~378 지지 — 장기', '월봉 상승 구조'],
+            fundamental: ['삼중 해자(클라우드+오피스+AI)', '배당 21년 연속 증액'],
+          },
+          riskFactors: ['AI 회수 속도', '규제', '환율', '경기 침체'],
+          dividend: { perShare: 0.91, currency: 'USD', frequency: '분기', schedule: '분기 $0.91 (연 $3.64)', yieldPct: 0.93, next: '배당락 2026-08월 중순 예상', note: '12개월 4회 수령' },
+          simId: 'b10-long-msft',
+        },
+        {
+          id: 'b10-long-samsung', ticker: '005930.KS', name: '삼성전자 (장기 · 금리 역풍 감안 매집)', market: 'KR', exchange: 'KRX', currency: 'KRW',
+          horizon: 'long', risk: 'mid',
+          refPrice: 262000, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–10-30 매월 분할 (한국 KST)', windowKst: '7–10월 8회 분할', low: 230000, high: 264000, note: '긴축·변동성 국면 8회 분할로 흡수 — 장기 매집. 금리 역풍 감안 소액씩.' },
+          sell: { window: '2027-04월–07월 (한국 KST)', windowKst: '2027년 2분기', low: 400000, high: 410000, stop: 210000, note: '목표가 50만원 대비 할인 시작점.' },
+          expectedReturn: { base: 15.0, bull: 52.0, bear: -19.8 },
+          scenarios: [
+            { name: '낙관', prob: 30, price: 400000, ret: 52.7, desc: 'HBM 회복 + 긴축 완화' },
+            { name: '기본', prob: 45, price: 330000, ret: 26.0, desc: '사이클 회복' },
+            { name: '비관', prob: 25, price: 210000, ret: -19.8, desc: '긴축 장기화·피크아웃 — 손절' },
+          ],
+          rationale: {
+            summary: 'HBM4E 리더십은 유효하나 한은 긴축 사이클 진입이 한국 증시의 새 역풍. 목표가 대비 할인에서 12개월 8회 분할로 변동성·금리 리스크를 흡수하며 매집하는 장기 전략.',
+            news: ['한은 2.75% 인상 — 긴축 역풍', '증권가 목표 500,000원', 'HBM4E 슈퍼사이클'],
+            technical: ['230,000 장기 지지 시험', '금리·월봉 추세 점검'],
+            fundamental: ['복합 포트폴리오 + 분기배당', 'HBM 점유율 회복 vs 금리 역풍'],
+          },
+          riskFactors: ['한은 추가 긴축', '메모리 피크아웃', 'HBM 경쟁', '지정학·환율'],
+          dividend: { perShare: 1444, currency: 'KRW', frequency: '분기', schedule: '분기 361원 × 4회', yieldPct: 0.55, next: '2026-08월 지급 예정', note: '12개월 4회 수령' },
+          simId: 'b10-long-samsung',
+        },
+        {
+          id: 'b10-long-ko', ticker: 'KO', name: '코카콜라 (배당 코어)', market: 'US', exchange: 'NYSE', currency: 'USD',
+          horizon: 'long', risk: 'low',
+          refPrice: 84.50, refPriceAsOf: '2026-07-16 종가 근사치 — 주문 전 확인',
+          buy:  { window: '2026-07-17–09-10 분할 (미국 ET)', windowKst: '9월 초까지 분할 (배당락 전 완료)', low: 80, high: 85, note: '9월 중순 배당락 전 매집 — 방어 코어.' },
+          sell: { window: '2027-07월 이후 검토', windowKst: '원칙적 장기 보유', low: 92, high: 96, stop: 74, note: '배당 수령 주목적.' },
+          expectedReturn: { base: 7.0, bull: 14.0, bear: -12.2 },
+          scenarios: [
+            { name: '낙관', prob: 32, price: 96, ret: 13.6, desc: '디펜시브 프리미엄' },
+            { name: '기본', prob: 48, price: 90, ret: 6.5, desc: '완만한 우상향 + 배당' },
+            { name: '비관', prob: 20, price: 74, ret: -12.4, desc: '소비 둔화 — 손절 기준' },
+          ],
+          rationale: {
+            summary: '64년 연속 배당 증액 — 금리·변동성 국면에서 가치가 재확인되는 방어 코어. 9월 배당락 전 매집 전략 지속.',
+            news: ['리스크오프 — 디펜시브 수혜', '배당락 9/11–15 예상', '사상 최고가권'],
+            technical: ['$80 장기 지지', '하락장 상대강도 상위'],
+            fundamental: ['배당왕 — 위기 검증', '글로벌 브랜드'],
+          },
+          riskFactors: ['금리 재상승', '수요 트렌드', '달러 강세', '환율'],
+          dividend: { perShare: 0.53, currency: 'USD', frequency: '분기', schedule: '분기 $0.53 (연 $2.12)', yieldPct: 2.51, next: '배당락 2026-09-11~15 예상, 지급 10/1', note: '12개월 4회 수령' },
+          simId: 'b10-long-ko',
+        },
+      ],
+    },
     {
       id: 'batch-2026-07-16',
       generatedAt: '2026-07-16T07:30+09:00 (평일 아침 자동 갱신)',
