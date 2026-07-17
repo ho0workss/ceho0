@@ -58,6 +58,7 @@
 
   const state = {
     view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
+    perfHorizon: 'all',
     easy: localStorage.getItem('easymode') === '1',
   };
 
@@ -1466,11 +1467,71 @@
     hero.appendChild(wd);
     wrap.appendChild(hero);
 
-    // 채점 요약 타일
-    const recs = Object.entries(oc.records || {});
-    const closed = recs.filter(([, r]) => ['success', 'partial', 'fail', 'invalid'].includes(r.status));
-    const wins = closed.filter(([, r]) => r.status === 'success' || r.status === 'partial').length;
-    const fails = closed.filter(([, r]) => r.status === 'fail').length;
+    // ── 기간별 분리: 각 기록의 투자 기간(당일/1주/1개월/장기)을 종목 데이터에서 조회 ──
+    const recsAll = Object.entries(oc.records || {}).map(([id, r]) => {
+      const found = findPickAnywhere(id);
+      return found ? { id, r, pick: found.pick, batch: found.batch, horizon: found.pick.horizon } : null;
+    }).filter(Boolean);
+
+    const statsFor = list => {
+      const closed = list.filter(x => ['success', 'partial', 'fail'].includes(x.r.status));
+      const s = list.filter(x => x.r.status === 'success').length;
+      const p = list.filter(x => x.r.status === 'partial').length;
+      const f = list.filter(x => x.r.status === 'fail').length;
+      const inv = list.filter(x => x.r.status === 'invalid').length;
+      const pend = list.filter(x => x.r.status === 'pending').length;
+      const rate = closed.length ? Math.round((s + p) / closed.length * 100) : null;
+      return { s, p, f, inv, pend, judged: closed.length, rate };
+    };
+
+    // 기간 선택 세그먼트 (전체/당일/1주일/1개월/장기)
+    const HKEYS = ['all', 'day', 'week', 'month', 'long'];
+    const seg = el('div', 'seg');
+    seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', '기간별 보기');
+    seg.style.marginBottom = '0.9rem';
+    HKEYS.forEach(hk => {
+      const cnt = hk === 'all' ? recsAll.length : recsAll.filter(x => x.horizon === hk).length;
+      const b = el('button', null, (hk === 'all' ? '전체' : HORIZONS[hk].label) + (cnt ? ` (${cnt})` : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String((state.perfHorizon || 'all') === hk));
+      b.addEventListener('click', () => { state.perfHorizon = hk; renderPerf(); });
+      seg.appendChild(b);
+    });
+    wrap.appendChild(seg);
+
+    // 기간별 성공률 한눈에 보기 (승률 = 성공+부분 / 판정완료. 무효(미진입)·진행중 제외)
+    const glance = el('table', 'plain');
+    const gh = el('thead'); const ghr = el('tr');
+    ['기간', '판정 완료', '✅ 성공', '🟡 부분', '❌ 실패', '➖ 무효', '⏳ 진행', '성공률*'].forEach(h => ghr.appendChild(el('th', null, h)));
+    gh.appendChild(ghr); glance.appendChild(gh);
+    const gb = el('tbody');
+    HKEYS.slice(1).forEach(hk => {
+      const st = statsFor(recsAll.filter(x => x.horizon === hk));
+      const tr = el('tr');
+      if ((state.perfHorizon || 'all') === hk) tr.style.background = 'color-mix(in srgb, var(--status-good) 8%, transparent)';
+      tr.appendChild(el('td', null, HORIZONS[hk].label));
+      tr.appendChild(el('td', null, st.judged + '건'));
+      tr.appendChild(el('td', null, String(st.s)));
+      tr.appendChild(el('td', null, String(st.p)));
+      tr.appendChild(el('td', null, String(st.f)));
+      tr.appendChild(el('td', null, String(st.inv)));
+      tr.appendChild(el('td', null, String(st.pend)));
+      const rateTd = el('td', null, st.rate === null ? '—' : st.rate + '%');
+      rateTd.style.fontWeight = '700';
+      if (st.rate !== null) rateTd.style.color = st.rate >= 60 ? 'var(--status-good)' : st.rate >= 40 ? 'var(--status-warning)' : 'var(--status-critical)';
+      tr.appendChild(rateTd);
+      gb.appendChild(tr);
+    });
+    glance.appendChild(gb);
+    wrap.appendChild(el('h2', 'homesec', '📐 기간별 성적표'));
+    wrap.appendChild(glance);
+    const rateNote = el('p', 'hist-note', '* 성공률 = (성공+부분성공) ÷ 판정완료(성공·부분·실패). 무효(미진입)와 진행 중은 분모에서 제외합니다. 당일 매매의 성공률이 낮은 것은 구조적인 것으로, v3.0부터 고확률 설계(작은 목표 + 긴 기간 + 파킹형)로 성공률을 끌어올립니다 — 단, 승률이 높다고 수익률이 높은 것은 아닙니다.');
+    wrap.appendChild(rateNote);
+
+    // 선택된 기간의 요약 타일
+    const cur = (state.perfHorizon || 'all');
+    const curList = cur === 'all' ? recsAll : recsAll.filter(x => x.horizon === cur);
+    const st = statsFor(curList);
     const tiles = el('div', 'tiles');
     const tile = (lb, vl, note) => {
       const t = el('div', 'tile');
@@ -1479,23 +1540,22 @@
       if (note) t.appendChild(el('div', 'note', note));
       return t;
     };
-    tiles.appendChild(tile('채점 완료', closed.length + '건', '판정이 끝난 예측'));
-    tiles.appendChild(tile('성공·부분성공', wins + '건', '목표 방향 적중'));
-    tiles.appendChild(tile('실패(손절)', fails + '건', '숨기지 않아요'));
-    tiles.appendChild(tile('진행 중', (recs.length - closed.length) + '건', '아직 기간이 안 끝남'));
+    tiles.appendChild(tile('판정 완료', st.judged + '건', cur === 'all' ? '전체 기간' : HORIZONS[cur].label + ' 전략'));
+    tiles.appendChild(tile('성공·부분성공', (st.s + st.p) + '건', '목표 방향 적중'));
+    tiles.appendChild(tile('실패(손절·손실)', st.f + '건', '숨기지 않아요'));
+    tiles.appendChild(tile('성공률', st.rate === null ? '—' : st.rate + '%', '무효·진행중 제외'));
     wrap.appendChild(tiles);
 
-    // 채점표
-    wrap.appendChild(el('h2', 'homesec', '📋 예측 vs 실제'));
+    // 채점표 (선택된 기간만)
+    wrap.appendChild(el('h2', 'homesec', '📋 예측 vs 실제' + (cur === 'all' ? '' : ' — ' + HORIZONS[cur].label)));
     const tbl = el('table', 'plain');
     const thead = el('thead'); const hr = el('tr');
     ['종목 (배치)', '계획', '실제 결과', '판정'].forEach(h => hr.appendChild(el('th', null, h)));
     thead.appendChild(hr); tbl.appendChild(thead);
     const tb = el('tbody');
-    for (const [id, r] of recs) {
-      const found = findPickAnywhere(id);
-      if (!found) continue;
-      const { pick: p, batch: b } = found;
+    const recs = curList.map(x => [x.id, x.r]);
+    for (const x of curList) {
+      const { id, r, pick: p, batch: b } = x;
       const om = OUTCOME_META[r.status] || OUTCOME_META.pending;
       const tr = el('tr');
       const tdN = el('td');
