@@ -208,6 +208,25 @@ const PICKS = [
   { id: 'b10-long-msft',  s0: 390.0,   target: 525.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b10-long-samsung',s0: 262000, target: 410000,  stop: 210000,  annVol: 0.40, annDrift: 0.20, kind: 'long', model: 't' },
   { id: 'b10-long-ko',    s0: 84.50,   target: 96.0,    stop: 74.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  // ── batch-2026-07-20 (v3.0 고확률 모드 — 사용자 요청: 성공률 ≥90% 설계) ──
+  // 설계 원리: 성공확률(목표 터치 확률)을 높이는 정직한 트레이드오프 =
+  //   ① 목표 축소(변동성의 0.1~0.2σ) ② 손절 확대(비대칭 리스크 — 명시) ③ 저변동·양(+)드리프트 자산 ④ 파킹형 포함
+  //   ⑤ 당일 주식은 구조적으로 90% 불가 → 파킹형 2 + 대조군 1(확률 명시)
+  // 모든 목표/손절은 시뮬레이터(2만 경로, fat-tail)로 pHitTarget ≥ 90% 검증 후 확정.
+  // 파킹형(SGOV/KOFR)의 단기(당일·1주) annVol은 일중 실현변동성 기준 재보정 —
+  // 연 0.6%/0.3%는 수개월 금리변동 리스크이며, 하루~1주 NAV는 이자 적립으로 사실상 결정적(실측: 마이너스 일 없음)
+  { id: 'b11-day-sgov',   s0: 100.55,  target: 100.56,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b11-day-kofr',   s0: 112000,  target: 112005,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b11-day-ko',     s0: 84.50,   target: 84.75,   stop: 81.0,    annVol: 0.15, annDrift: 0.15, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b11-week-sgov',  s0: 100.55,  target: 100.59,  stop: 99.8,    annVol: 0.002, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b11-week-ko',    s0: 84.50,   target: 84.75,   stop: 79.0,    annVol: 0.15, annDrift: 0.12, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b11-week-msft',  s0: 390.0,   target: 391.2,   stop: 360.0,   annVol: 0.28, annDrift: 0.15, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b11-month-kofr', s0: 112000,  target: 112110,  stop: 111000,  annVol: 0.003, annDrift: 0.025, kind: 'month', model: 't' },
+  { id: 'b11-month-ko',   s0: 84.50,   target: 84.80,   stop: 76.0,    annVol: 0.15, annDrift: 0.10, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b11-month-msft', s0: 390.0,   target: 392.0,   stop: 340.0,   annVol: 0.27, annDrift: 0.15, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b11-long-sgov',  s0: 100.55,  target: 103.0,   stop: 98.5,    annVol: 0.006, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b11-long-ko',    s0: 84.50,   target: 86.6,    stop: 70.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
+  { id: 'b11-long-msft',  s0: 390.0,   target: 404.0,   stop: 300.0,   annVol: 0.27, annDrift: 0.16, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
