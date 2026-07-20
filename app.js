@@ -969,16 +969,20 @@
       m.appendChild(d);
     };
 
-    fold('📚 투자 근거 (뉴스 · 기술적 분석 · 펀더멘털)', body => {
+    fold('📚 투자 근거 (뉴스 · 차트 · 여론 · 재무)', body => {
       const sub = (t, arr) => {
+        if (!arr || !arr.length) return;
         body.appendChild(el('div', 'eb-t', t));
         const ul = el('ul', 'pts');
         arr.forEach(x => ul.appendChild(liTerms(x)));
         body.appendChild(ul);
       };
       sub('📰 뉴스·이벤트', p.rationale.news);
-      sub('📉 기술적 분석', p.rationale.technical);
+      sub('📉 차트·기술적 분석', p.rationale.technical);
+      sub('🗣️ 여론·센티먼트', p.rationale.sentiment);
       sub('🏢 펀더멘털', p.rationale.fundamental);
+      sub('🧾 재무제표 스냅샷', p.rationale.financials);
+      if (p.rationale.sourcedAt) body.appendChild(el('p', 'hist-note', '자료 수집 시점: ' + p.rationale.sourcedAt));
     });
 
     fold('⚠️ 리스크 요인 (예측 변수)', body => {
