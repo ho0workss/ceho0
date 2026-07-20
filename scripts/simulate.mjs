@@ -227,6 +227,21 @@ const PICKS = [
   { id: 'b11-long-sgov',  s0: 100.55,  target: 103.0,   stop: 98.5,    annVol: 0.006, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b11-long-ko',    s0: 84.50,   target: 86.6,    stop: 70.0,    annVol: 0.14, annDrift: 0.08, kind: 'long', model: 't' },
   { id: 'b11-long-msft',  s0: 390.0,   target: 404.0,   stop: 300.0,   annVol: 0.27, annDrift: 0.16, kind: 'long', model: 't' },
+  // ── batch-2026-07-20-r (v3.1 멀티소스 리서치 — 뉴스·차트·여론·재무 4소스, 7/17 종가 기준, 당일은 7/20 월) ──
+  // 레짐: 리스크오프 지속 — 7/17 S&P -1.0%·나스닥 -1.4%(AI capex 축소 우려 반도체 연쇄 매도), 에너지만 상승, KO -4%.
+  // F&G 43(공포) → volX 1.3(당일·1주)/1.2(1개월). 당일은 에너지 1 + 파킹형 2.
+  { id: 'b12-day-xom',    s0: 146.0,   target: 147.8,   stop: 143.5,   annVol: 0.32, annDrift: 0.20, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b12-day-kofr',   s0: 112000,  target: 112005,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b12-day-sgov',   s0: 100.55,  target: 100.56,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b12-week-msft',  s0: 395.0,   target: 405.0,   stop: 380.0,   annVol: 0.28, annDrift: 0.16, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b12-week-xom',   s0: 146.0,   target: 152.0,   stop: 140.0,   annVol: 0.32, annDrift: 0.22, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b12-week-ko',    s0: 81.0,    target: 83.4,    stop: 77.5,    annVol: 0.16, annDrift: 0.15, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b12-month-samsung', s0: 260000, target: 295000, stop: 233000, annVol: 0.50, annDrift: 0.25, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b12-month-nvda', s0: 200.0,   target: 222.0,   stop: 179.0,   annVol: 0.50, annDrift: 0.25, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b12-month-msft', s0: 395.0,   target: 420.0,   stop: 368.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b12-long-msft',  s0: 395.0,   target: 530.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b12-long-samsung', s0: 260000, target: 420000, stop: 208000,  annVol: 0.40, annDrift: 0.22, kind: 'long', model: 't' },
+  { id: 'b12-long-nvda',  s0: 200.0,   target: 275.0,   stop: 148.0,   annVol: 0.45, annDrift: 0.25, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
