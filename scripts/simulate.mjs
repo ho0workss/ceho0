@@ -242,6 +242,20 @@ const PICKS = [
   { id: 'b12-long-msft',  s0: 395.0,   target: 530.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b12-long-samsung', s0: 260000, target: 420000, stop: 208000,  annVol: 0.40, annDrift: 0.22, kind: 'long', model: 't' },
   { id: 'b12-long-nvda',  s0: 200.0,   target: 275.0,   stop: 148.0,   annVol: 0.45, annDrift: 0.25, kind: 'long', model: 't' },
+
+  // -- batch-2026-07-21 (v3.2 high-probability precision calibration -- 7/20 close basis, day=7/21 Tue) --
+  { id: 'b13-day-kofr',   s0: 112005,  target: 112011,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b13-day-sgov',   s0: 100.57,  target: 100.58,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b13-day-ko',     s0: 81.50,   target: 81.66,   stop: 78.00,   annVol: 0.15, annDrift: 0.12, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b13-week-sgov',  s0: 100.57,  target: 100.61,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b13-week-kofr',  s0: 112005,  target: 112040,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b13-week-ko',    s0: 81.50,   target: 81.95,   stop: 77.50,   annVol: 0.16, annDrift: 0.12, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b13-month-sgov', s0: 100.57,  target: 100.70,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b13-month-ko',   s0: 81.50,   target: 83.10,   stop: 76.00,   annVol: 0.16, annDrift: 0.14, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b13-month-msft', s0: 394.0,   target: 402.0,   stop: 355.0,   annVol: 0.27, annDrift: 0.18, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b13-long-sgov',  s0: 100.57,  target: 101.30,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b13-long-ko',    s0: 81.50,   target: 83.50,   stop: 74.00,   annVol: 0.16, annDrift: 0.14, kind: 'long', model: 't' },
+  { id: 'b13-long-msft',  s0: 394.0,   target: 415.0,   stop: 340.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
