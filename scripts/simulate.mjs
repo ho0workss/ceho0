@@ -270,6 +270,20 @@ const PICKS = [
   { id: 'b14-long-ko',    s0: 82.00,   target: 84.05,   stop: 74.50,   annVol: 0.16, annDrift: 0.14, kind: 'long', model: 't' },
   { id: 'b14-long-msft',  s0: 384.0,   target: 404.0,   stop: 330.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b14-long-sgov',  s0: 100.58,  target: 101.30,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+
+  // -- batch-2026-07-27 (v3.2 precision -- 7/24 close basis, day=7/27 Mon, earnings week: KO 7/28, MSFT/삼성/FOMC 7/29) --
+  { id: 'b15-day-kofr',   s0: 112015,  target: 112021,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b15-day-sgov',   s0: 100.59,  target: 100.60,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b15-day-ko',     s0: 82.25,   target: 82.41,   stop: 78.70,   annVol: 0.15, annDrift: 0.12, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b15-week-sgov',  s0: 100.59,  target: 100.63,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b15-week-kofr',  s0: 112015,  target: 112050,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b15-week-ko',    s0: 82.25,   target: 82.70,   stop: 78.20,   annVol: 0.16, annDrift: 0.12, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b15-month-sgov', s0: 100.59,  target: 100.72,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b15-month-xom',  s0: 156.0,   target: 160.2,   stop: 140.4,   annVol: 0.32, annDrift: 0.20, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b15-month-ko',   s0: 82.25,   target: 83.90,   stop: 76.70,   annVol: 0.16, annDrift: 0.14, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b15-long-ko',    s0: 82.25,   target: 84.30,   stop: 74.80,   annVol: 0.16, annDrift: 0.14, kind: 'long', model: 't' },
+  { id: 'b15-long-msft',  s0: 381.0,   target: 401.0,   stop: 328.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b15-long-sgov',  s0: 100.59,  target: 101.32,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
