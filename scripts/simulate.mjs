@@ -298,6 +298,20 @@ const PICKS = [
   { id: 'b16-long-ko',    s0: 83.50,   target: 85.59,   stop: 76.00,   annVol: 0.16, annDrift: 0.14, kind: 'long', model: 't' },
   { id: 'b16-long-msft',  s0: 380.0,   target: 400.0,   stop: 327.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b16-long-sgov',  s0: 100.60,  target: 101.33,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+
+  // -- batch-2026-07-29 (v3.2 -- 7/28 close, day=7/29 Wed = FOMC + MSFT/삼성 실적 초이벤트일; 주식 당일 축소, JNJ는 FOMC 전 오전 청산; KO는 실적 +6% 후 새 기준) --
+  { id: 'b17-day-kofr',   s0: 112025,  target: 112031,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b17-day-sgov',   s0: 100.61,  target: 100.62,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b17-day-jnj',    s0: 259.0,   target: 259.52,  stop: 247.9,   annVol: 0.14, annDrift: 0.12, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b17-week-sgov',  s0: 100.61,  target: 100.65,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b17-week-kofr',  s0: 112025,  target: 112060,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b17-week-jnj',   s0: 259.0,   target: 260.42,  stop: 246.1,   annVol: 0.15, annDrift: 0.12, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b17-month-sgov', s0: 100.61,  target: 100.74,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b17-month-jnj',  s0: 259.0,   target: 264.2,   stop: 241.0,   annVol: 0.15, annDrift: 0.14, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b17-month-ko',   s0: 87.50,   target: 89.25,   stop: 81.50,   annVol: 0.16, annDrift: 0.14, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b17-long-ko',    s0: 87.50,   target: 89.69,   stop: 79.60,   annVol: 0.16, annDrift: 0.13, kind: 'long', model: 't' },
+  { id: 'b17-long-msft',  s0: 381.0,   target: 401.0,   stop: 328.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
+  { id: 'b17-long-sgov',  s0: 100.61,  target: 101.34,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
