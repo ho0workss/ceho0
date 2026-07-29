@@ -312,6 +312,21 @@ const PICKS = [
   { id: 'b17-long-ko',    s0: 87.50,   target: 89.69,   stop: 79.60,   annVol: 0.16, annDrift: 0.13, kind: 'long', model: 't' },
   { id: 'b17-long-msft',  s0: 381.0,   target: 401.0,   stop: 328.0,   annVol: 0.27, annDrift: 0.18, kind: 'long', model: 't' },
   { id: 'b17-long-sgov',  s0: 100.61,  target: 101.34,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+
+  // 레짐: 7/29 매파적 동결 급락(다우 -2.19% 4월來 최악·나스닥 조정권) 후 7/30 선물 소폭 반등(MSFT 실적 서프라이즈 견인).
+  // 리스크오프 유지·완만한 안도랠 시도 → 파킹 중심+저변동 방어주(JNJ·KO)만. MSFT는 실적 갭업·가격 불확실로 이번 배치 제외. volX 1.3(당일·1주)/1.2(1개월)
+  { id: 'b18-day-kofr',   s0: 112030,  target: 112036,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b18-day-sgov',   s0: 100.62,  target: 100.63,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b18-day-jnj',    s0: 266.73,  target: 267.26,  stop: 255.0,   annVol: 0.13, annDrift: 0.12, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b18-week-sgov',  s0: 100.62,  target: 100.66,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b18-week-kofr',  s0: 112030,  target: 112065,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b18-week-jnj',   s0: 266.73,  target: 268.20,  stop: 253.5,   annVol: 0.14, annDrift: 0.12, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b18-month-sgov', s0: 100.62,  target: 100.75,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b18-month-jnj',  s0: 266.73,  target: 272.10,  stop: 248.5,   annVol: 0.14, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b18-month-ko',   s0: 87.00,   target: 88.74,   stop: 81.00,   annVol: 0.16, annDrift: 0.14, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b18-long-sgov',  s0: 100.62,  target: 101.35,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b18-long-ko',    s0: 87.00,   target: 89.18,   stop: 79.00,   annVol: 0.16, annDrift: 0.13, kind: 'long', model: 't' },
+  { id: 'b18-long-jnj',   s0: 266.73,  target: 274.00,  stop: 245.0,   annVol: 0.14, annDrift: 0.13, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
