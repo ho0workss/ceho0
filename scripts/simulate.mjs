@@ -327,6 +327,22 @@ const PICKS = [
   { id: 'b18-long-sgov',  s0: 100.62,  target: 101.35,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b18-long-ko',    s0: 87.00,   target: 89.18,   stop: 79.00,   annVol: 0.16, annDrift: 0.13, kind: 'long', model: 't' },
   { id: 'b18-long-jnj',   s0: 266.73,  target: 274.00,  stop: 245.0,   annVol: 0.14, annDrift: 0.13, kind: 'long', model: 't' },
+
+  // 레짐: 7/30 강한 반등(S&P +1.7%·나스닥 +2.8%·MSFT +16% 사상 최대 시총 증가) 후 7/31. 다만 Fed "인플레 뒤처짐" + 고용 둔화 신호로 매크로 불확실.
+  // JNJ는 7/30 소송(talc $5.5B 합의 불확실)+딜 희석으로 -3.49% 급락 → 당일 세트에서 제외. MSFT는 +16% 급등으로 추격 위험 → 장기만 미편입.
+  // 파킹(SGOV·KOFR) 중심 + 클린 방어주 KO. JNJ는 장기 1종만 저확신·소송 리스크 명시. volX 1.3(당일·1주)/1.2(1개월)
+  { id: 'b19-day-kofr',   s0: 112035,  target: 112041,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b19-day-sgov',   s0: 100.63,  target: 100.64,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b19-day-ko',     s0: 88.52,   target: 88.70,   stop: 84.50,   annVol: 0.16, annDrift: 0.13, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b19-week-sgov',  s0: 100.63,  target: 100.67,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b19-week-kofr',  s0: 112035,  target: 112070,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b19-week-ko',    s0: 88.52,   target: 89.01,   stop: 85.00,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b19-month-sgov', s0: 100.63,  target: 100.76,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b19-month-kofr', s0: 112035,  target: 112180,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'month', model: 't' },
+  { id: 'b19-month-ko',   s0: 88.52,   target: 90.29,   stop: 82.50,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b19-long-sgov',  s0: 100.63,  target: 101.36,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b19-long-ko',    s0: 88.52,   target: 90.73,   stop: 80.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+  { id: 'b19-long-jnj',   s0: 257.50,  target: 264.40,  stop: 236.0,   annVol: 0.18, annDrift: 0.10, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
