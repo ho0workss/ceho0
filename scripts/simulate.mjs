@@ -343,6 +343,21 @@ const PICKS = [
   { id: 'b19-long-sgov',  s0: 100.63,  target: 101.36,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b19-long-ko',    s0: 88.52,   target: 90.73,   stop: 80.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
   { id: 'b19-long-jnj',   s0: 257.50,  target: 264.40,  stop: 236.0,   annVol: 0.18, annDrift: 0.10, kind: 'long', model: 't' },
+
+  // 레짐: 7/31 리스크온(아마존 실적 서프라이즈·다우 4개월 연속 상승)에 방어주 KO -1.02% → 당일 단일 종목 2연패(JNJ 7/30·KO 7/31).
+  // 교훈 23: 당일 세트의 단일 종목 슬롯을 폐지하고 파킹 전용(KOFR·SGOV·BIL)으로 전환. KO는 1주+ 방어로만. 8/3(월) 특별 이벤트 없음·8월 계절성 약세. volX 1.3(당일·1주)/1.2(1개월)
+  { id: 'b20-day-kofr',   s0: 112040,  target: 112046,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b20-day-sgov',   s0: 100.64,  target: 100.65,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b20-day-bil',    s0: 91.68,   target: 91.69,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b20-week-sgov',  s0: 100.64,  target: 100.68,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b20-week-kofr',  s0: 112040,  target: 112075,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b20-week-ko',    s0: 87.59,   target: 88.07,   stop: 84.00,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b20-month-sgov', s0: 100.64,  target: 100.77,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b20-month-bil',  s0: 91.68,   target: 91.80,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b20-month-ko',   s0: 87.59,   target: 89.34,   stop: 81.50,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b20-long-sgov',  s0: 100.64,  target: 101.37,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b20-long-kofr',  s0: 112040,  target: 112600,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b20-long-ko',    s0: 87.59,   target: 89.78,   stop: 79.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
