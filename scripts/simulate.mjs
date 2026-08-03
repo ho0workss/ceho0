@@ -358,6 +358,21 @@ const PICKS = [
   { id: 'b20-long-sgov',  s0: 100.64,  target: 101.37,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b20-long-kofr',  s0: 112040,  target: 112600,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b20-long-ko',    s0: 87.59,   target: 89.78,   stop: 79.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+
+  // 레짐: 8/3 강한 리스크온(다우 사상 최고 53,178·S&P +1.48%·나스닥 +2.1%, 이란 긴장완화로 유가 하락+빅테크). 파킹 당일 3종 성공.
+  // v3.3 유지: 당일 파킹 전용(단일 종목 슬롯은 폐지 후 1일 — 리짐 아닌 구조적 결정이라 일관 유지). KO는 8/3 종가 미확인이라 7/31 종가 기준 근사. 8월 계절성 약세·8/7 고용보고서. volX 1.3(당일·1주)/1.2(1개월)
+  { id: 'b21-day-kofr',   s0: 112045,  target: 112051,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b21-day-sgov',   s0: 100.65,  target: 100.66,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b21-day-bil',    s0: 91.69,   target: 91.70,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b21-week-sgov',  s0: 100.65,  target: 100.69,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b21-week-kofr',  s0: 112045,  target: 112080,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b21-week-ko',    s0: 87.60,   target: 88.08,   stop: 84.00,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b21-month-sgov', s0: 100.65,  target: 100.78,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b21-month-bil',  s0: 91.69,   target: 91.81,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b21-month-ko',   s0: 87.60,   target: 89.35,   stop: 81.50,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b21-long-sgov',  s0: 100.65,  target: 101.38,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b21-long-kofr',  s0: 112045,  target: 112605,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b21-long-ko',    s0: 87.60,   target: 89.79,   stop: 79.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
