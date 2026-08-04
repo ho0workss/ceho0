@@ -373,6 +373,21 @@ const PICKS = [
   { id: 'b21-long-sgov',  s0: 100.65,  target: 101.38,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b21-long-kofr',  s0: 112045,  target: 112605,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b21-long-ko',    s0: 87.60,   target: 89.79,   stop: 79.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+
+  // 레짐: 8/4 기록적 리스크온(S&P 7,737 사상최고·다우 54,086 첫 5.4만 돌파·나스닥 +2.59%). 파킹 당일 3종 성공(누적 파킹 18/18).
+  // v3.3 유지: 당일 파킹 전용. KO는 8/4 종가 $86.56로 검증(멜트업에 방어주 계속 소외). 리스크온·8월 변동성 완화(Citadel) 감안 volX 1.2(1주)/1.1(1개월)로 소폭 완화. 8/7 고용보고서.
+  { id: 'b22-day-kofr',   s0: 112050,  target: 112056,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b22-day-sgov',   s0: 100.66,  target: 100.67,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b22-day-bil',    s0: 91.70,   target: 91.71,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b22-week-sgov',  s0: 100.66,  target: 100.70,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b22-week-kofr',  s0: 112050,  target: 112085,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b22-week-ko',    s0: 86.56,   target: 87.04,   stop: 83.00,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b22-month-sgov', s0: 100.66,  target: 100.79,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b22-month-bil',  s0: 91.70,   target: 91.82,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b22-month-ko',   s0: 86.56,   target: 88.29,   stop: 80.50,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b22-long-sgov',  s0: 100.66,  target: 101.39,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b22-long-kofr',  s0: 112050,  target: 112610,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b22-long-ko',    s0: 86.56,   target: 88.72,   stop: 78.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
