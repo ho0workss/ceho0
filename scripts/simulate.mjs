@@ -388,6 +388,21 @@ const PICKS = [
   { id: 'b22-long-sgov',  s0: 100.66,  target: 101.39,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b22-long-kofr',  s0: 112050,  target: 112610,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b22-long-ko',    s0: 86.56,   target: 88.72,   stop: 78.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+
+  // 레짐: 8/5 로테이션일(다우 +0.5% 사상최고 54,349·5일 연속↑, S&P -0.2%·나스닥 -0.8% 4일랠리 마감). 성장→가치/방어 순환에 KO $86.85로 소폭 반등.
+  // v3.3 유지: 당일 파킹 전용(파킹 누적 21/21). 로테이션이 방어주(KO)엔 우호적. 리스크오프 아님 → KO volX 1.2(1주)/1.1(1개월). 8/7 고용보고서.
+  { id: 'b23-day-kofr',   s0: 112055,  target: 112061,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b23-day-sgov',   s0: 100.67,  target: 100.68,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b23-day-bil',    s0: 91.71,   target: 91.72,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b23-week-sgov',  s0: 100.67,  target: 100.71,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b23-week-kofr',  s0: 112055,  target: 112090,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b23-week-ko',    s0: 86.85,   target: 87.33,   stop: 83.20,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b23-month-sgov', s0: 100.67,  target: 100.80,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b23-month-bil',  s0: 91.71,   target: 91.83,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b23-month-ko',   s0: 86.85,   target: 88.59,   stop: 80.80,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.1 },
+  { id: 'b23-long-sgov',  s0: 100.67,  target: 101.40,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b23-long-kofr',  s0: 112055,  target: 112615,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b23-long-ko',    s0: 86.85,   target: 89.02,   stop: 78.80,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
