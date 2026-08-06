@@ -403,6 +403,21 @@ const PICKS = [
   { id: 'b23-long-sgov',  s0: 100.67,  target: 101.40,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b23-long-kofr',  s0: 112055,  target: 112615,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b23-long-ko',    s0: 86.85,   target: 89.02,   stop: 78.80,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+
+  // 레짐: 8/6 소폭 조정(다우 -0.85% 53,885 기록행진 마감·S&P -0.18%·나스닥 -0.06%, 유가↑·국채금리↑·고용보고서 대기). KO $86.59 보합.
+  // v3.3 유지: 당일 파킹 전용(파킹 누적 24/24). ★8/7 미 7월 고용보고서(컨센 +8.5만·실업 4.2%)가 최대 이벤트 → 이벤트 리스크로 KO volX 1.3(1주)/1.2(1개월)로 상향. 당일 파킹은 이벤트 무관.
+  { id: 'b24-day-kofr',   s0: 112060,  target: 112066,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b24-day-sgov',   s0: 100.68,  target: 100.69,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b24-day-bil',    s0: 91.72,   target: 91.73,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b24-week-sgov',  s0: 100.68,  target: 100.72,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b24-week-kofr',  s0: 112060,  target: 112095,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b24-week-ko',    s0: 86.59,   target: 87.07,   stop: 83.20,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b24-month-sgov', s0: 100.68,  target: 100.81,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b24-month-bil',  s0: 91.72,   target: 91.84,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b24-month-ko',   s0: 86.59,   target: 88.32,   stop: 80.80,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b24-long-sgov',  s0: 100.68,  target: 101.41,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b24-long-kofr',  s0: 112060,  target: 112620,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b24-long-ko',    s0: 86.59,   target: 88.75,   stop: 78.80,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
