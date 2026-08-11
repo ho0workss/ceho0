@@ -442,6 +442,18 @@ const PICKS = [
   { id: 'b26-long-sgov',  s0: 100.49,  target: 101.22,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b26-long-kofr',  s0: 112090,  target: 112650,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b26-long-ko',    s0: 87.10,   target: 89.28,   stop: 79.25,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+  { id: 'b27-day-kofr',   s0: 112100,  target: 112106,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b27-day-sgov',   s0: 100.50,  target: 100.51,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b27-day-bil',    s0: 91.47,   target: 91.48,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b27-week-sgov',  s0: 100.50,  target: 100.54,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b27-week-kofr',  s0: 112100,  target: 112135,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b27-week-ko',    s0: 86.29,   target: 86.76,   stop: 82.85,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b27-month-sgov', s0: 100.50,  target: 100.63,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b27-month-bil',  s0: 91.47,   target: 91.59,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b27-month-ko',   s0: 86.29,   target: 88.02,   stop: 80.50,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b27-long-sgov',  s0: 100.50,  target: 101.23,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b27-long-kofr',  s0: 112100,  target: 112660,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b27-long-ko',    s0: 86.29,   target: 88.45,   stop: 78.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
