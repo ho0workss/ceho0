@@ -454,6 +454,18 @@ const PICKS = [
   { id: 'b27-long-sgov',  s0: 100.50,  target: 101.23,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b27-long-kofr',  s0: 112100,  target: 112660,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b27-long-ko',    s0: 86.29,   target: 88.45,   stop: 78.50,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+  { id: 'b28-day-kofr',   s0: 112110,  target: 112116,  stop: 111500,  annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b28-day-sgov',   s0: 100.51,  target: 100.52,  stop: 100.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b28-day-bil',    s0: 91.48,   target: 91.49,   stop: 91.0,    annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b28-week-sgov',  s0: 100.51,  target: 100.55,  stop: 99.8,    annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b28-week-kofr',  s0: 112110,  target: 112145,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b28-week-ko',    s0: 86.67,   target: 87.15,   stop: 83.60,   annVol: 0.16, annDrift: 0.13, kind: 'week', model: 't' },
+  { id: 'b28-month-sgov', s0: 100.51,  target: 100.64,  stop: 99.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b28-month-bil',  s0: 91.48,   target: 91.60,   stop: 90.5,    annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b28-month-ko',   s0: 86.67,   target: 88.40,   stop: 80.85,   annVol: 0.16, annDrift: 0.13, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b28-long-sgov',  s0: 100.51,  target: 101.24,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b28-long-kofr',  s0: 112110,  target: 112670,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b28-long-ko',    s0: 86.67,   target: 88.84,   stop: 78.85,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
