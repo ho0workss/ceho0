@@ -2,7 +2,15 @@
 (function () {
   'use strict';
   const RECO = window.RECO;
-  const SIM = window.SIM_RESULTS || {};
+  // data/sim.js 는 JSON 문자열을 담아 둡니다(생성 스크립트가 JSON.stringify 로 감쌉니다).
+  // 파싱하지 않으면 SIM[id] 가 전부 undefined 라 확률 타일·스파크라인·팬차트가 조용히 사라지고
+  // pProfit 기준 정렬도 무력화됩니다. 객체로 들어오는 경우도 대비해 둡니다.
+  const SIM = (function () {
+    const raw = window.SIM_RESULTS;
+    if (!raw) return {};
+    if (typeof raw !== 'string') return raw;
+    try { return JSON.parse(raw); } catch (e) { return {}; }
+  })();
   const EASY = window.EASY || {};
   const GLOSSARY = window.GLOSSARY || [];
   const LESSONS = window.LESSONS || [];
@@ -98,6 +106,15 @@
   function pctCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
   function batchPicks() { return RECO.batches[state.batch].picks; }
   function pickLevel(p) { return (EASY[p.id] && EASY[p.id].level) || 'mid'; }
+  // 카드 한 줄 요약. 구 배치는 rationale.summary 를 갖고 있고, 최신 배치는 없습니다.
+  // 없으면 쉬운 설명 → 첫 뉴스 근거 순으로 대체합니다(항상 문자열을 돌려줍니다).
+  function pickSummary(p) {
+    const r = p.rationale || {};
+    if (r.summary) return r.summary;
+    if (EASY[p.id] && EASY[p.id].company) return EASY[p.id].company;
+    if (Array.isArray(r.news) && r.news.length) return r.news[0];
+    return `${p.name} — ${HORIZONS[p.horizon] ? HORIZONS[p.horizon].label : ''} 전략`;
+  }
   // KRX 호가단위(2023 개편) / 미국 $0.01
   function tickSize(price, currency) {
     if (currency === 'USD') return 0.01;
@@ -919,9 +936,14 @@
       void tts;
     }
 
-    const sm = el('p', 'summary');
-    sm.appendChild(linkTerms(p.rationale.summary));
-    m.appendChild(sm);
+    // rationale.summary 는 구 배치에만 있습니다. 최신 배치에는 없어서 그대로 읽으면
+    // 쉬운 설명 모드에서 linkTerms 가 undefined 를 받아 모달이 열리지 않습니다.
+    const summaryText = pickSummary(p);
+    if (summaryText) {
+      const sm = el('p', 'summary');
+      sm.appendChild(linkTerms(summaryText));
+      m.appendChild(sm);
+    }
 
     const tiles = el('div', 'tiles');
     const tile = (lb, vl, cls, note) => {
@@ -2274,7 +2296,7 @@
     VIEWS.forEach(v => idx.push({ kind: '메뉴', label: MENU_LABEL[v], desc: MENU_DESC[v], go: () => { state.view = v; renderAll(); } }));
     idx.push({ kind: '기능', label: '🔄 새 추천 받기', desc: '최신 데이터로 추천 다시 만들기 (갱신, 새로고침)', go: openRefreshModal });
     batchPicks().concat(RECO.sureItems).forEach(p => idx.push({
-      kind: '종목', label: `${p.name} ${p.ticker}`, desc: (EASY[p.id] ? EASY[p.id].company : p.rationale.summary).slice(0, 40),
+      kind: '종목', label: `${p.name} ${p.ticker}`, desc: String(pickSummary(p)).slice(0, 40),
       go: () => openModal(p),
     }));
     GLOSSARY.forEach((g, i) => idx.push({
