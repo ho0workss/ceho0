@@ -477,6 +477,22 @@ const PICKS = [
   // 당일 실제 주식 3종 구성을 위해 저변동 ETF 2종 추가(이익확률은 변동성이 낮을수록 높습니다).
   { id: 'b28-stk-day-schd',  s0: 34.19,  target: 34.33,  stop: 33.78,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't' },
   { id: 'b28-stk-day-spy',   s0: 772.58, target: 776.06, stop: 762.54, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
+  // ── batch-2026-08-14 (8/14 금) · 기준가는 8/13 종가를 장중 레인지까지 확인해 사용 ──
+  { id: 'b29-day-kofr',      s0: 112120, target: 112126, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b29-day-sgov',      s0: 100.52, target: 100.53, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b29-day-bil',       s0: 91.49,  target: 91.50,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b29-stk-day-schd',  s0: 34.35,  target: 34.49,  stop: 33.94,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't' },
+  { id: 'b29-stk-day-voo',   s0: 713.33, target: 716.54, stop: 704.06, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
+  { id: 'b29-stk-day-spy',   s0: 777.42, target: 780.92, stop: 767.31, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
+  { id: 'b29-week-sgov',     s0: 100.52, target: 100.56, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b29-week-kofr',     s0: 112120, target: 112155, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b29-stk-week-schd', s0: 34.35,  target: 34.66,  stop: 33.32,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't' },
+  { id: 'b29-month-sgov',    s0: 100.52, target: 100.65, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b29-month-bil',     s0: 91.49,  target: 91.61,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b29-stk-month-voo', s0: 713.33, target: 727.60, stop: 677.66, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b29-long-sgov',     s0: 100.52, target: 101.25, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b29-long-kofr',     s0: 112120, target: 112680, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b29-stk-long-schd', s0: 34.35,  target: 36.07,  stop: 30.23,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
