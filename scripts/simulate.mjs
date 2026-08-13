@@ -474,6 +474,9 @@ const PICKS = [
   { id: 'b28-stk-month-voo', s0: 710.31, target: 724.52, stop: 674.79, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
   { id: 'b28-stk-month-msft',s0: 492.43, target: 507.20, stop: 453.04, annVol: 0.32, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
   { id: 'b28-stk-long-schd', s0: 34.19,  target: 35.90,  stop: 30.09,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // 당일 실제 주식 3종 구성을 위해 저변동 ETF 2종 추가(이익확률은 변동성이 낮을수록 높습니다).
+  { id: 'b28-stk-day-schd',  s0: 34.19,  target: 34.33,  stop: 33.78,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't' },
+  { id: 'b28-stk-day-spy',   s0: 772.58, target: 776.06, stop: 762.54, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
 ];
 
 const KIND_STEPS = {

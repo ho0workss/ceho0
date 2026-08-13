@@ -46,6 +46,19 @@
     if (p.assetClass === 'stock' || p.assetClass === 'parking') return p.assetClass;
     return PARKING_TICKERS.has(p.ticker) ? 'parking' : 'stock';
   }
+  // 이익 확률(시뮬 2만 경로 중 이익으로 끝난 비율). 없으면 null.
+  function profitProb(p) {
+    const s = SIM[p.simId];
+    return s && s.final ? s.final.pProfit : null;
+  }
+  // 확률 배지 색: 80% 이상이면 초록, 60% 이상이면 노랑, 그 아래는 빨강.
+  // 당일 실제 주식은 구조상 50%대가 상한이라 대부분 빨강으로 뜹니다 — 그게 사실입니다.
+  function probTone(v) {
+    if (v == null) return 'var(--text-muted)';
+    if (v >= 80) return 'var(--status-good)';
+    if (v >= 60) return 'var(--status-warning)';
+    return 'var(--status-critical)';
+  }
   const RISKS = {
     low: { label: '리스크 낮음', color: 'var(--status-good)' },
     mid: { label: '리스크 중간', color: 'var(--status-warning)' },
@@ -260,6 +273,13 @@
     const ac = ASSET_CLASSES[assetClassOf(p)];
     chips.appendChild(chip(ac.label, ac.color));
     chips.appendChild(levelBadge(p));
+    const pp = profitProb(p);
+    if (pp != null) {
+      const pb = el('span', 'chip', `이익확률 ${pp}%`);
+      pb.style.color = probTone(pp);
+      pb.style.fontWeight = '700';
+      chips.appendChild(pb);
+    }
     card.appendChild(chips);
 
     const tl = el('div', 'titleline');
@@ -325,8 +345,10 @@
       note.style.borderLeft = '4px solid ' + meta.color;
       note.appendChild(linkTerms(meta.desc));
       host.appendChild(note);
+      // 이익확률이 높은 순으로 정렬 — "확률 높은 것 위주로" 고르려면 그 순서로 보여야 합니다.
       const grid = el('div', 'grid');
-      group.forEach(p => grid.appendChild(pickCard(p)));
+      group.slice().sort((a, b) => (profitProb(b) ?? -1) - (profitProb(a) ?? -1))
+        .forEach(p => grid.appendChild(pickCard(p)));
       host.appendChild(grid);
     });
   }
