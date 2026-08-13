@@ -466,6 +466,14 @@ const PICKS = [
   { id: 'b28-long-sgov',  s0: 100.51,  target: 101.24,  stop: 99.0,    annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b28-long-kofr',  s0: 112110,  target: 112670,  stop: 111000,  annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b28-long-ko',    s0: 86.67,   target: 88.84,   stop: 78.85,   annVol: 0.16, annDrift: 0.12, kind: 'long', model: 't' },
+  // ── 실제 주식 세트 (파킹 아님). 기준가는 2026-08-12 종가를 2개 이상 날짜 명시 소스로 직접 교차 확인.
+  //    드리프트는 과장을 피해 보수적으로 둡니다(광범위 ETF 0.07~0.08, 개별주 0.08~0.12).
+  { id: 'b28-stk-day-voo',   s0: 710.31, target: 713.86, stop: 699.66, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
+  { id: 'b28-stk-week-schd', s0: 34.19,  target: 34.50,  stop: 33.16,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't' },
+  { id: 'b28-stk-week-nvda', s0: 224.09, target: 230.81, stop: 210.64, annVol: 0.45, annDrift: 0.12, kind: 'week', model: 't' },
+  { id: 'b28-stk-month-voo', s0: 710.31, target: 724.52, stop: 674.79, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b28-stk-month-msft',s0: 492.43, target: 507.20, stop: 453.04, annVol: 0.32, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b28-stk-long-schd', s0: 34.19,  target: 35.90,  stop: 30.09,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
