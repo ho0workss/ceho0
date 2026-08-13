@@ -112,6 +112,9 @@ header.site { padding: 1.5rem 0 0.75rem; }
   transition: border-color 0.15s;
 }
 .card:hover, .card:focus-visible { border-color: var(--accent); outline: none; }
+/* 자산 성격 구분 — 실제 주식(변동 큼)과 파킹(현금성)을 한눈에 */
+.card.ac-stock { border-left: 4px solid var(--series-1); }
+.card.ac-parking { border-left: 4px solid var(--series-4); }
 .chiprow { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
 .chip {
   display: inline-flex; align-items: center; gap: 0.32rem;

@@ -20,6 +20,24 @@
     mid: { label: '🟡 중립형', cls: 'lvl-mid' },
     pro: { label: '🔴 공격형', cls: 'lvl-pro' },
   };
+
+  // ───────── 자산 성격(파킹 vs 실제 주식) ─────────
+  // 파킹(현금성)은 구조상 원금이 거의 줄지 않아 승률이 매우 높지만 수익폭이 아주 작습니다.
+  // 실제 주식은 오르내림이 커서 승률은 낮고 손실도 실제로 날 수 있습니다. 둘을 섞어 보면
+  // "승률이 높다"는 말이 "많이 번다"는 뜻이 아님을 오해하기 쉬워 칸을 나눠서 보여 줍니다.
+  const PARKING_TICKERS = new Set(['423160.KS', 'SGOV', 'BIL', 'SHV', 'BOXX']);
+  const ASSET_CLASSES = {
+    stock:   { key: 'stock',   label: '📈 실제 주식', color: 'var(--series-1)',
+               head: '📈 실제 주식 — 진짜 오르내리는 주식',
+               desc: '승률은 파킹보다 훨씬 낮지만, 오르면 수익폭이 큽니다. 손실도 실제로 날 수 있어요.' },
+    parking: { key: 'parking', label: '🛡️ 파킹(현금성)', color: 'var(--series-4)',
+               head: '🛡️ 안정형 — 파킹(현금성) 자산',
+               desc: '국고채·초단기 국채급. 원금 방어가 목적이고 하루 수익은 아주 작습니다(+0.005~0.01%).' },
+  };
+  function assetClassOf(p) {
+    if (p.assetClass === 'stock' || p.assetClass === 'parking') return p.assetClass;
+    return PARKING_TICKERS.has(p.ticker) ? 'parking' : 'stock';
+  }
   const RISKS = {
     low: { label: '리스크 낮음', color: 'var(--status-good)' },
     mid: { label: '리스크 중간', color: 'var(--status-warning)' },
@@ -58,6 +76,7 @@
 
   const state = {
     view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
+    assetClass: 'all',
     perfHorizon: 'all',
     easy: localStorage.getItem('easymode') === '1',
   };
@@ -178,6 +197,7 @@
   function filteredPicks() {
     return batchPicks().filter(p =>
       (state.horizon === 'all' || p.horizon === state.horizon) &&
+      (state.assetClass === 'all' || assetClassOf(p) === state.assetClass) &&
       (state.market === 'all' || p.market === state.market) &&
       (state.level === 'all' || pickLevel(p) === state.level) &&
       (!state.divOnly || (p.dividend && p.dividend.yieldPct >= 0.3))
@@ -213,13 +233,15 @@
   function pickCard(p) {
     const sim = SIM[p.simId];
     const easy = EASY[p.id];
-    const card = el('article', 'card');
+    const card = el('article', 'card ac-' + assetClassOf(p));
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `${p.name} 상세 보기`);
 
     const chips = el('div', 'chiprow');
     chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
+    const ac = ASSET_CLASSES[assetClassOf(p)];
+    chips.appendChild(chip(ac.label, ac.color));
     chips.appendChild(levelBadge(p));
     card.appendChild(chips);
 
@@ -266,12 +288,30 @@
   }
 
   function renderCards() {
-    const grid = $('#cards');
-    grid.textContent = '';
+    const host = $('#cards');
+    host.textContent = '';
+    host.className = '';
     const picks = filteredPicks();
-    $('#count').textContent = `${picks.length}개 종목`;
-    picks.forEach(p => grid.appendChild(pickCard(p)));
-    if (!picks.length) grid.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없습니다. 필터를 조정해 보세요.'));
+    const nStock = picks.filter(p => assetClassOf(p) === 'stock').length;
+    $('#count').textContent = `${picks.length}개 종목 (실제 주식 ${nStock} · 파킹 ${picks.length - nStock})`;
+    if (!picks.length) {
+      host.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없습니다. 필터를 조정해 보세요.'));
+      return;
+    }
+    // 실제 주식 칸을 먼저, 파킹 칸을 뒤에 — 성격이 완전히 다르므로 항상 나눠서 보여 줍니다.
+    ['stock', 'parking'].forEach(key => {
+      const group = picks.filter(p => assetClassOf(p) === key);
+      if (!group.length) return;
+      const meta = ASSET_CLASSES[key];
+      host.appendChild(el('h3', 'homesec', `${meta.head} (${group.length})`));
+      const note = el('p', 'hist-note');
+      note.style.borderLeft = '4px solid ' + meta.color;
+      note.appendChild(linkTerms(meta.desc));
+      host.appendChild(note);
+      const grid = el('div', 'grid');
+      group.forEach(p => grid.appendChild(pickCard(p)));
+      host.appendChild(grid);
+    });
   }
 
   // ───────── 홈 ─────────
@@ -322,6 +362,32 @@
     top3.forEach(p => grid.appendChild(pickCard(p)));
     wrap.appendChild(grid);
 
+    // 📈 실제 주식 칸 — 파킹(현금성)과 성격이 완전히 달라 따로 보여 줍니다.
+    const stockPicks = batchPicks().filter(p => assetClassOf(p) === 'stock');
+    if (stockPicks.length) {
+      wrap.appendChild(el('h2', 'homesec', `📈 실제 주식 (${stockPicks.length}종목) — 파킹 아님`));
+      const sn = el('p', 'hist-note');
+      sn.style.borderLeft = '4px solid ' + ASSET_CLASSES.stock.color;
+      sn.appendChild(linkTerms(state.easy
+        ? '위 안정형은 "거의 안 잃지만 아주 조금 버는" 파킹이에요. 여기 있는 건 진짜 주식이라 오르면 더 벌지만, 떨어지면 진짜로 잃어요. 성공 확률도 훨씬 낮아요.'
+        : '파킹(현금성) 자산과 달리 실제 주가 변동을 그대로 받습니다. 시뮬레이션 성공 확률이 파킹보다 크게 낮고(대략 50~70%), 손절 폭이 목표 폭보다 몇 배 큰 카드도 있습니다. 모든 수치는 확률 추정치이며 수익을 보장하지 않습니다.'));
+      wrap.appendChild(sn);
+      const sgrid = el('div', 'grid');
+      stockPicks.slice()
+        .sort((a, b) => (SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0))
+        .slice(0, 6)
+        .forEach(p => sgrid.appendChild(pickCard(p)));
+      wrap.appendChild(sgrid);
+      const sb = el('button', 'iconbtn', '📈 실제 주식만 모아 보기 →');
+      sb.type = 'button';
+      sb.style.marginTop = '0.7rem';
+      sb.addEventListener('click', () => {
+        state.view = 'reco'; state.assetClass = 'stock'; state.horizon = 'all'; state.level = 'all';
+        renderAll(); window.scrollTo({ top: 0 });
+      });
+      wrap.appendChild(sb);
+    }
+
     // 📅 다가오는 일정
     const today = new Date().toISOString().slice(0, 10);
     const future = (RECO.events || []).filter(e => e.date >= today).slice(0, 5);
@@ -352,7 +418,7 @@
 
     const btnRow = el('div');
     btnRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.9rem';
-    const all = el('button', 'iconbtn', '추천 12종목 전체 보기 →');
+    const all = el('button', 'iconbtn', `추천 ${batchPicks().length}종목 전체 보기 →`);
     all.type = 'button';
     all.addEventListener('click', () => { state.view = 'reco'; state.level = 'all'; renderAll(); window.scrollTo({ top: 0 }); });
     btnRow.appendChild(all);
@@ -1107,8 +1173,12 @@
 
     if (alloc.picks > 0) {
       const order = { ok: 0, mid: 1, pro: 2 };
-      const cands = batchPicks()
-        .filter(p => (p.horizon === 'long' || p.horizon === 'month') && pickLevel(p) !== 'pro')
+      // 이 슬롯은 "성장" 몫입니다. 파킹(현금성)은 이미 kofr·sgov 슬롯에 별도 배분되므로
+      // 여기서까지 파킹을 뽑으면 성장 배분이 사실상 현금이 됩니다 — 실제 주식만 대상으로 합니다.
+      const eligible = batchPicks()
+        .filter(p => (p.horizon === 'long' || p.horizon === 'month') && pickLevel(p) !== 'pro');
+      const stockOnly = eligible.filter(p => assetClassOf(p) === 'stock');
+      const cands = (stockOnly.length ? stockOnly : eligible)
         .sort((a, b) => (order[pickLevel(a)] - order[pickLevel(b)]) || ((SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0)))
         .slice(0, 2);
       const each = alloc.picks / Math.max(1, cands.length);
@@ -1898,7 +1968,7 @@
       openBtn.type = 'button';
       openBtn.addEventListener('click', () => {
         state.batch = i; state.view = 'reco';
-        state.horizon = 'all'; state.market = 'all'; state.level = 'all'; state.divOnly = false;
+        state.horizon = 'all'; state.market = 'all'; state.level = 'all'; state.divOnly = false; state.assetClass = 'all';
         renderAll();
         window.scrollTo({ top: 0 });
       });
@@ -2050,7 +2120,7 @@
     const head = el('div', 'mhead');
     const hwrap = el('div');
     hwrap.appendChild(el('h2', null, '🔄 새 추천 받기'));
-    hwrap.appendChild(el('div', 'sub', '최신 뉴스와 가격으로 추천 12종목을 다시 만들어 드려요. 이전 추천은 히스토리에 그대로 보관돼요.'));
+    hwrap.appendChild(el('div', 'sub', '최신 뉴스와 가격으로 추천 종목을 다시 만들어 드려요. 이전 추천은 히스토리에 그대로 보관돼요.'));
     head.appendChild(hwrap);
     const closeBtn = el('button', 'close', '✕');
     closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', '닫기');
@@ -2291,6 +2361,8 @@
     if (state.view === 'reco') {
       document.querySelectorAll('#hseg button').forEach(b =>
         b.setAttribute('aria-pressed', String(b.dataset.h === state.horizon)));
+      document.querySelectorAll('#acseg button').forEach(b =>
+        b.setAttribute('aria-pressed', String(b.dataset.ac === state.assetClass)));
       $('#market').value = state.market;
       $('#level').value = state.level;
       $('#batchchip').textContent = RECO.batches[state.batch].title;
@@ -2309,6 +2381,8 @@
     b.addEventListener('click', () => { state.view = NAV_GROUPS[b.dataset.nav][0]; renderAll(); }));
   document.querySelectorAll('#hseg button').forEach(b =>
     b.addEventListener('click', () => { state.horizon = b.dataset.h; renderAll(); }));
+  document.querySelectorAll('#acseg button').forEach(b =>
+    b.addEventListener('click', () => { state.assetClass = b.dataset.ac; renderAll(); }));
   $('#market').addEventListener('change', e => { state.market = e.target.value; renderAll(); });
   $('#level').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
   $('#divonly').addEventListener('change', e => { state.divOnly = e.target.checked; renderAll(); });
