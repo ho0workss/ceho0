@@ -493,6 +493,26 @@ const PICKS = [
   { id: 'b29-long-sgov',     s0: 100.52, target: 101.25, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b29-long-kofr',     s0: 112120, target: 112680, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b29-stk-long-schd', s0: 34.35,  target: 36.07,  stop: 30.23,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-17 (v4 2회차 · 기준가 8/14 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고 표본 12건으로 여전히 부족 → annVol/annDrift 가정은 변경하지 않음.
+  // 레짐: 리스크오프 아님(지수 사상최고 부근·3주 연속 주간 상승). 당일·1주 volX 없음.
+  // 1개월은 잭슨홀(8/27~29, 신임 의장 첫 기조연설)·엔비디아 실적·9월 FOMC가 구간에 들어와 volX 1.2.
+  // IWM(러셀2000)은 새 노출 — 소형주 연 변동성 22%/기대수익 9% (장기 실적 기준, 부풀리지 않음)
+  { id: 'b30-day-kofr',      s0: 112128, target: 112134, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't' },
+  { id: 'b30-day-sgov',      s0: 100.55, target: 100.56, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b30-day-bil',       s0: 91.51,  target: 91.52,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't' },
+  { id: 'b30-stk-day-spy',   s0: 776.34, target: 780.00, stop: 766.25, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't' },
+  { id: 'b30-stk-day-schd',  s0: 34.52,  target: 34.66,  stop: 34.11,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't' },
+  { id: 'b30-stk-day-iwm',   s0: 305.09, target: 307.19, stop: 299.60, annVol: 0.22, annDrift: 0.09, kind: 'day', model: 't' },
+  { id: 'b30-week-sgov',     s0: 100.55, target: 100.59, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't' },
+  { id: 'b30-week-kofr',     s0: 112128, target: 112163, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't' },
+  { id: 'b30-stk-week-schd', s0: 34.52,  target: 34.83,  stop: 33.48,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't' },
+  { id: 'b30-month-sgov',    s0: 100.55, target: 100.68, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b30-month-bil',     s0: 91.51,  target: 91.63,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't' },
+  { id: 'b30-stk-month-spy', s0: 776.34, target: 792.00, stop: 737.50, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b30-long-sgov',     s0: 100.55, target: 101.28, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b30-long-kofr',     s0: 112128, target: 112690, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b30-stk-long-schd', s0: 34.52,  target: 36.25,  stop: 30.40,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
