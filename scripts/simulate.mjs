@@ -513,6 +513,25 @@ const PICKS = [
   { id: 'b30-long-sgov',     s0: 100.55, target: 101.28, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b30-long-kofr',     s0: 112128, target: 112690, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b30-stk-long-schd', s0: 34.52,  target: 36.25,  stop: 30.40,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-18 (v4 3회차 · 기준가 8/17 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고 표본 17건, 구간당 최대 5건으로 여전히 부족 → annVol/annDrift 가정 변경 없음.
+  // 레짐: 리스크오프. 8/17 미·이란 긴장 재점화로 유가·국채금리 급등(30년물 수십 년 최고),
+  // 4대 지수 동반 하락 → 규칙대로 volX 1.3(당일·1주)/1.2(1개월) 적용. 고베타(연 50%↑) 편성 없음.
+  { id: 'b31-day-kofr',      s0: 112150, target: 112156, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-day-sgov',      s0: 100.57, target: 100.58, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-day-bil',       s0: 91.53,  target: 91.54,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-stk-day-spy',   s0: 772.28, target: 777.00, stop: 759.15, annVol: 0.15, annDrift: 0.08, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-stk-day-schd',  s0: 34.30,  target: 34.48,  stop: 33.79,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-stk-day-iwm',   s0: 304.06, target: 306.80, stop: 297.07, annVol: 0.22, annDrift: 0.09, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b31-week-sgov',     s0: 100.57, target: 100.61, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b31-week-kofr',     s0: 112150, target: 112185, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b31-stk-week-schd', s0: 34.30,  target: 34.70,  stop: 32.96,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b31-month-sgov',    s0: 100.57, target: 100.70, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b31-month-bil',     s0: 91.53,  target: 91.65,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b31-stk-month-spy', s0: 772.28, target: 790.80, stop: 725.94, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b31-long-sgov',     s0: 100.57, target: 101.30, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b31-long-kofr',     s0: 112150, target: 112715, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b31-stk-long-schd', s0: 34.30,  target: 36.02,  stop: 30.20,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
