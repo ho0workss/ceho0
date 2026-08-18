@@ -532,6 +532,26 @@ const PICKS = [
   { id: 'b31-long-sgov',     s0: 100.57, target: 101.30, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b31-long-kofr',     s0: 112150, target: 112715, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b31-stk-long-schd', s0: 34.30,  target: 36.02,  stop: 30.20,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-19 (v4 4회차 · 기준가 8/18 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고 표본 23건, 구간당 최대 8건이나 가중 격차가 기준(±7%p) 이내 → annVol/annDrift 변경 없음.
+  // 회고 조치 반영: SPY는 당일 슬롯 1승 2패(33%)로 오늘 당일에서 제외하고 1개월에만 유지.
+  // 레짐: 리스크오프 지속(S&P 3일 연속 하락·30년물 금리 20년 최고·AI/반도체 매도) → volX 1.3/1.2.
+  // XLE는 유가 급등 요인에 반대로 반응하는 자리 — 세 종목의 거시 논리를 서로 다르게 하기 위한 편성(교훈 26).
+  { id: 'b32-day-kofr',      s0: 112159, target: 112165, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-day-sgov',      s0: 100.59, target: 100.60, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-day-bil',       s0: 91.55,  target: 91.56,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-stk-day-schd',  s0: 34.55,  target: 34.73,  stop: 34.03,  annVol: 0.13, annDrift: 0.07, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-stk-day-xle',   s0: 63.68,  target: 64.41,  stop: 61.83,  annVol: 0.28, annDrift: 0.08, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-stk-day-iwm',   s0: 301.06, target: 303.77, stop: 294.14, annVol: 0.22, annDrift: 0.09, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b32-week-sgov',     s0: 100.59, target: 100.63, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b32-week-kofr',     s0: 112159, target: 112194, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b32-stk-week-schd', s0: 34.55,  target: 34.95,  stop: 33.20,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b32-month-sgov',    s0: 100.59, target: 100.72, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b32-month-bil',     s0: 91.55,  target: 91.67,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b32-stk-month-spy', s0: 766.97, target: 785.40, stop: 720.95, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b32-long-sgov',     s0: 100.59, target: 101.32, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b32-long-kofr',     s0: 112159, target: 112725, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b32-stk-long-schd', s0: 34.55,  target: 36.28,  stop: 30.40,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
