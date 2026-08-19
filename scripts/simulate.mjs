@@ -552,6 +552,33 @@ const PICKS = [
   { id: 'b32-long-sgov',     s0: 100.59, target: 101.32, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b32-long-kofr',     s0: 112159, target: 112725, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b32-stk-long-schd', s0: 34.55,  target: 36.28,  stop: 30.40,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-20 (v4 5회차 · 기준가 8/19 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // ★모델 v3.4: 회고 캘리브레이션이 처음으로 기준을 넘었습니다(0~50% 구간 예측 48.7% vs 실제 40%,
+  //   가중 격차 -8.7%p, 표본 10건). 조치로 '당일' 실제 주식의 annDrift를 0으로 낮춥니다 —
+  //   하루 단위에서 주식 위험프리미엄(연 7~9% → 하루 0.03%)은 잡음보다 훨씬 작은데도
+  //   모든 당일 카드의 목표 도달 확률을 체계적으로 위로 밀어 올리기 때문입니다.
+  //   annVol은 올리지 않습니다 — 배리어 터치형 목표에서는 변동성을 키우면 도달 확률이 오히려 올라가
+  //   격차가 더 벌어집니다(회고 스크립트의 일반 제안은 기간에 따라 방향이 다릅니다).
+  //   1주·1개월·장기의 드리프트는 그대로 둡니다(그 구간에서는 프리미엄이 잡음 대비 의미가 있습니다).
+  // 회고 조치 반영: IWM은 당일 0승 3패이고, 8/19에는 전제(금리 하락)가 실제로 실현됐는데도
+  //   러셀2000이 -1.30%로 빠져 논리 자체가 반증됐습니다 → SPY에 이어 IWM도 당일 슬롯에서 제외.
+  // 레짐: 급성 리스크오프는 해소(국채 바이백으로 금리 급락·3일 연속 하락 마감) 그러나 의사록이
+  //   매파(3명 인상 소수의견)이고 8/27~29 잭슨홀이 남아 volX 1.2로 완화 적용(당일·1주·1개월).
+  { id: 'b33-day-kofr',      s0: 112167, target: 112173, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-day-sgov',      s0: 100.61, target: 100.62, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-day-bil',       s0: 91.57,  target: 91.58,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-stk-day-schd',  s0: 35.08,  target: 35.25,  stop: 34.59,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-stk-day-dia',   s0: 535.39, target: 538.23, stop: 527.36, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-stk-day-xle',   s0: 63.65,  target: 64.32,  stop: 61.93,  annVol: 0.28, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b33-week-sgov',     s0: 100.61, target: 100.65, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b33-week-kofr',     s0: 112167, target: 112202, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b33-stk-week-schd', s0: 35.08,  target: 35.46,  stop: 33.82,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.2 },
+  { id: 'b33-month-sgov',    s0: 100.61, target: 100.74, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b33-month-bil',     s0: 91.57,  target: 91.69,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b33-stk-month-spy', s0: 768.59, target: 787.00, stop: 722.47, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b33-long-sgov',     s0: 100.61, target: 101.34, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b33-long-kofr',     s0: 112167, target: 112733, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b33-stk-long-schd', s0: 35.08,  target: 36.83,  stop: 30.87,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
