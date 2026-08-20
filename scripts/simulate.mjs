@@ -579,6 +579,28 @@ const PICKS = [
   { id: 'b33-long-sgov',     s0: 100.61, target: 101.34, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b33-long-kofr',     s0: 112167, target: 112733, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b33-stk-long-schd', s0: 35.08,  target: 36.83,  stop: 30.87,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-21 (v4 6회차 · 기준가 8/20 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고: 캘리브레이션 -10.1%p 경고는 전부 v3.4 이전 예측에서 나온 표본이라 이번엔 추가 조정하지 않음
+  //   (같은 증거로 두 번 조정하지 않는다 — v3.4 이후 표본이 쌓인 뒤 다시 판단).
+  // 레짐: 리스크오프 재점화 — 국채 바이백 랠리 하루 만에 소멸(금리 재상승), WTI +6% $91.94(장중 $100 터치),
+  //   다우 -1.32%(월마트 급락)·4대 지수 동반 하락 → volX 1.3(당일·1주)/1.2(1개월).
+  // XLE는 8/20 종가를 2개 소스로 확정하지 못해 오늘 편성 제외(채점도 보류). XLV(헬스케어)로 대체 —
+  //   방어 섹터 + 이번 주 신약 뉴스 흐름, annVol 0.16(섹터 ETF · 최근 모더나발 변동 확대 반영).
+  { id: 'b34-day-kofr',      s0: 112175, target: 112181, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-day-sgov',      s0: 100.63, target: 100.64, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-day-bil',       s0: 91.59,  target: 91.60,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-stk-day-schd',  s0: 34.87,  target: 35.05,  stop: 34.35,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-stk-day-dia',   s0: 527.99, target: 531.00, stop: 519.54, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-stk-day-xlv',   s0: 173.46, target: 174.59, stop: 170.34, annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b34-week-sgov',     s0: 100.63, target: 100.67, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b34-week-kofr',     s0: 112175, target: 112210, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b34-stk-week-schd', s0: 34.87,  target: 35.29,  stop: 33.51,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b34-month-sgov',    s0: 100.63, target: 100.76, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b34-month-bil',     s0: 91.59,  target: 91.71,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b34-stk-month-spy', s0: 761.93, target: 780.20, stop: 716.20, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b34-long-sgov',     s0: 100.63, target: 101.36, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b34-long-kofr',     s0: 112175, target: 112741, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b34-stk-long-schd', s0: 34.87,  target: 36.61,  stop: 30.69,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
