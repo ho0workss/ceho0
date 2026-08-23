@@ -601,6 +601,28 @@ const PICKS = [
   { id: 'b34-long-sgov',     s0: 100.63, target: 101.36, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b34-long-kofr',     s0: 112175, target: 112741, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b34-stk-long-schd', s0: 34.87,  target: 36.61,  stop: 30.69,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-25주 월요일 (v4 7회차 · 기준가 8/21 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고: 가중 캘리브레이션 격차 -1.9%p로 기준(±7%p) 이내 → 모델 무변경. v3.4 이후 채점 표본 5건(<8)이라
+  //   당일 드리프트 수정의 효과 판정도 보류. stock/day 손실 집중은 구조적 지표(교훈 25)라 유지.
+  // 레짐: 8/21 리스크온 반등(다우 +0.98%·4대 지수 상승, 기업활동 4년래 최고) → 당일 volX 1.2로 완화.
+  //   단 이번 주 안에 엔비디아 실적(8/26)·잭슨홀 기조연설(8/28)이 있어 1주는 1.3, 1개월은 1.2 유지.
+  // XLE 복귀: 8/21 종가 $63.64(-0.17%)가 등락률·전일 범위와 산술 일치로 확인돼 시세 품질 조건 충족.
+  //   XLV는 8/21 소스가 상충(-1.9% vs 강세)해 기준가 확정 불가 → 오늘 제외.
+  { id: 'b35-day-kofr',      s0: 112199, target: 112205, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-day-sgov',      s0: 100.66, target: 100.67, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-day-bil',       s0: 91.62,  target: 91.63,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-stk-day-schd',  s0: 35.11,  target: 35.28,  stop: 34.62,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-stk-day-dia',   s0: 533.17, target: 536.00, stop: 525.17, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-stk-day-xle',   s0: 63.64,  target: 64.31,  stop: 61.92,  annVol: 0.28, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b35-week-sgov',     s0: 100.66, target: 100.70, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b35-week-kofr',     s0: 112199, target: 112234, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b35-stk-week-schd', s0: 35.11,  target: 35.53,  stop: 33.74,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b35-month-sgov',    s0: 100.66, target: 100.79, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b35-month-bil',     s0: 91.62,  target: 91.74,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b35-stk-month-spy', s0: 765.24, target: 783.60, stop: 719.30, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b35-long-sgov',     s0: 100.66, target: 101.39, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b35-long-kofr',     s0: 112199, target: 112765, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b35-stk-long-schd', s0: 35.11,  target: 36.87,  stop: 30.90,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
