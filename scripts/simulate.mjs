@@ -623,6 +623,32 @@ const PICKS = [
   { id: 'b35-long-sgov',     s0: 100.66, target: 101.39, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b35-long-kofr',     s0: 112199, target: 112765, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b35-stk-long-schd', s0: 35.11,  target: 36.87,  stop: 30.90,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-25 화요일 (v4 8회차 · 기준가 8/24 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고: 가중 캘리브레이션 격차 +5.6%p(과소평가 방향)로 기준(±7%p) 이내 → 모델 무변경.
+  //   v3.4 이후 당일 실제주식 표본이 오늘 채점으로 9건(≥8) 도달: 예측평균 ~49.6% vs 실측 목표터치 4/9=44.4%
+  //   → 격차 -5.2%p, 기준 이내 + n=9라 표준오차(~17%p)가 커서 조정하지 않음. 다음 점검은 표본 15건쯤.
+  // 레짐: 8/24 로테이션 데이 — 다우 +0.26%(53,417.16, +140.15p 산술확인) vs 나스닥 -0.55%(칩 급락: 마이크론 -5.8%),
+  //   러셀 +0.85%, VIX 15.13(-5.5%), 10Y 4.72%(-2bp). 미-이란 완화(제재 유예/초기 합의 보도)로 WTI 급락 →
+  //   에너지 섹터 -1.16%. 이벤트: NVDA 실적 8/26(수) 마감후, 잭슨홀 8/27-29(워시 의장 기조연설 8/28 금),
+  //   트럼프 캐나다 관세(차·부품·철강 50%, 2027-01-01 발효) 발표 → 당일 volX 1.2, 1주 1.3, 1개월 1.2.
+  // 당일 3종: SCHD(배당가치, 8/24 성공)·DIA(구경제, 관세 경고)·XLV(방어 헬스케어, 8/24 +1.3%).
+  //   XLE 제외: "유가 카운터 노출" 논지가 평화 진전으로 반대로 작동(8/24 fail) — 유가 하락 국면엔 편성 안 함.
+  //   XLV 기준가 $176.29는 환산값(8/21 종가 $174.03 직접확인 × 8/24 섹터 +1.3%), 52주 고점 $176.60 이내로 검산.
+  { id: 'b36-day-kofr',      s0: 112205, target: 112211, stop: 111500, annVol: 0.0005, annDrift: 0.025, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-day-sgov',      s0: 100.67, target: 100.68, stop: 100.0,  annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-day-bil',       s0: 91.63,  target: 91.64,  stop: 91.0,   annVol: 0.0008, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-stk-day-schd',  s0: 35.17,  target: 35.34,  stop: 34.68,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-stk-day-dia',   s0: 533.61, target: 536.40, stop: 525.60, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-stk-day-xlv',   s0: 176.29, target: 177.40, stop: 173.10, annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b36-week-sgov',     s0: 100.67, target: 100.71, stop: 99.8,   annVol: 0.0008, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b36-week-kofr',     s0: 112205, target: 112240, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b36-stk-week-schd', s0: 35.17,  target: 35.59,  stop: 33.80,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b36-month-sgov',    s0: 100.67, target: 100.80, stop: 99.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b36-month-bil',     s0: 91.63,  target: 91.75,  stop: 90.5,   annVol: 0.0008, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b36-stk-month-spy', s0: 763.10, target: 781.40, stop: 717.30, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b36-long-sgov',     s0: 100.67, target: 101.40, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b36-long-kofr',     s0: 112205, target: 112771, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b36-stk-long-schd', s0: 35.17,  target: 36.93,  stop: 30.95,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
