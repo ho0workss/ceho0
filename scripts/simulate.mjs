@@ -649,6 +649,35 @@ const PICKS = [
   { id: 'b36-long-sgov',     s0: 100.67, target: 101.40, stop: 99.0,   annVol: 0.0008, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b36-long-kofr',     s0: 112205, target: 112771, stop: 111000, annVol: 0.0005, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b36-stk-long-schd', s0: 35.17,  target: 36.93,  stop: 30.95,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-26 수요일 (v4 9회차 · 기준가 8/25 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // ★모델 v3.5: 파킹 자산 annVol 하향 (SGOV/BIL 0.0008→0.0004, KOFR 0.0005→0.0003).
+  //   근거: 가중 캘리브레이션 격차 +8.6%p(기준 ±7%p 초과), 표본 ≥8건 구간 3개 — 전부 파킹 구간
+  //   (70-80%: +23%p n=11 / 90-95%: +7.6%p n=8). 실측 24/24인데 예측이 75~92%로 과소평가.
+  //   파킹 목표는 일일 이자 적립이라 사실상 결정적 — 변동성 가정이 미달 경로를 과다 생성했음.
+  //   100%로 부풀리지 않도록 절반만 하향(Wilson 95% 하한 86% 이상, 100% 미만 예측이 나오는 수준).
+  //   당일 주식 구간(0-50%)은 +1.7%p(n=22)로 잘 맞아 건드리지 않음. 기존 항목·seed 불변, b37부터 적용.
+  // 레짐: 8/25 화 — S&P +0.32% 7,677.28, 다우 +160.24p 53,577.40(산술확인), 나스닥 +0.6~0.7%.
+  //   엔비디아 +2%로 7일 연속 하락 마감, 칩 반등(실적 전야). IT·헬스케어 주도, 상승 섹터 4개뿐(좁은 랠리).
+  //   유가 -3%(대이란 경제압박 전환) → XLE 계속 제외(교훈 31). 캐나다 보복관세 발표에도 시장은 무시.
+  //   이벤트: 엔비디아 실적 오늘(8/26 수) 마감 후 — 당일 카드는 종가 청산이라 실적 헤드라인 전에 나감.
+  //   잭슨홀 8/27~29(기조연설 8/28 금). 당일 volX 1.2, 1주 1.3, 1개월 1.2 유지.
+  // 당일 3종: SCHD(어제 -0.11% fail — 로테이션 역회전 경고 실현)·DIA(다우 3일 연속 상승, 4일째 베팅)·
+  //   XLV(+0.52% 지속 강세, 단 기준가 이중 환산 ±0.3% 오차 경고).
+  { id: 'b37-day-kofr',      s0: 112212, target: 112218, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-day-sgov',      s0: 100.68, target: 100.69, stop: 100.0,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-day-bil',       s0: 91.64,  target: 91.65,  stop: 91.0,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-stk-day-schd',  s0: 35.13,  target: 35.30,  stop: 34.64,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-stk-day-dia',   s0: 535.21, target: 538.00, stop: 527.18, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-stk-day-xlv',   s0: 177.21, target: 178.30, stop: 174.00, annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b37-week-sgov',     s0: 100.68, target: 100.72, stop: 99.8,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b37-week-kofr',     s0: 112212, target: 112247, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b37-stk-week-schd', s0: 35.13,  target: 35.55,  stop: 33.76,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b37-month-sgov',    s0: 100.68, target: 100.81, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b37-month-bil',     s0: 91.64,  target: 91.76,  stop: 90.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b37-stk-month-spy', s0: 765.53, target: 783.90, stop: 719.60, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b37-long-sgov',     s0: 100.68, target: 101.41, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b37-long-kofr',     s0: 112212, target: 112778, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b37-stk-long-schd', s0: 35.13,  target: 36.89,  stop: 30.92,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
