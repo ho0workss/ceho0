@@ -678,6 +678,33 @@ const PICKS = [
   { id: 'b37-long-sgov',     s0: 100.68, target: 101.41, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b37-long-kofr',     s0: 112212, target: 112778, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b37-stk-long-schd', s0: 35.13,  target: 36.89,  stop: 30.92,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-08-30 일요일 통합분 (v4 10회차 · 세션 중단으로 목·금 2회 미실행 → 1회 통합 · 기준가 8/28 종가) ──
+  // 회고: 가중 격차 +9.6%p 경고는 전부 v3.5 이전 파킹 표본의 잔상 → 재조정 안 함(교훈 29). v3.5 이후 파킹
+  //   표본은 이번 채점 3건이 처음. 당일 주식 구간은 +3.9%p(n=25)로 양호.
+  // 채점(8/26 수): 파킹 3승, 주식 3패 — SCHD -0.23%(뮤트 데이), DIA -0.21%(나흘째 베팅 꺾임, 다우 53,463.88
+  //   목요일 종가 역산 확인), XLV는 기준가 자체가 52주 고가(176.60)를 넘는 이중 환산 오류(177.21) 위에서
+  //   주 후반 급락(목 171.58·금 170.92) → fail + 교훈 32(이중 환산 금지).
+  // 주간 사건: 수 마감후 NVDA 대형 비트(매출 $96.2B, +106% y/y, 시간외 +4.4%) → 목 S&P +0.72% 7,730.99.
+  //   금 잭슨홀 워시 첫 기조연설 매파 해석("물가가 최우선") → 9월 25bp 인상 확률 35%→57% 급등,
+  //   금 S&P -0.25% 7,711.76 · 다우 -0.02% 53,559.99 · 나스닥 -0.52%. 주간: S&P +0.5%, 나스닥 +0.9%, 다우 +0.5%.
+  // 당일 3종(월 8/31): SCHD(배당가치 — 금리 인상 베팅 급증이 역풍, 정직 경고)·DIA(구경제 — 주간 +0.5%)·
+  //   QQQ(신규 — NVDA 어닝 모멘텀 논지, 금리 역풍 경고). XLV 제외: 월요일 J&J talc 심리(이진 리스크) +
+  //   주 후반 -3% 급락 + 직접 쿼트 미확보. volX: 당일 1.2 · 1주 1.3(9/4 고용보고서) · 1개월 1.2(9월 FOMC).
+  { id: 'b38-day-kofr',      s0: 112233, target: 112239, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-day-sgov',      s0: 100.71, target: 100.72, stop: 100.0,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-day-bil',       s0: 91.67,  target: 91.68,  stop: 91.0,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-stk-day-schd',  s0: 34.82,  target: 35.00,  stop: 34.33,  annVol: 0.13, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-stk-day-dia',   s0: 535.04, target: 537.80, stop: 527.00, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-stk-day-qqq',   s0: 716.48, target: 722.40, stop: 702.20, annVol: 0.22, annDrift: 0.0, kind: 'day', model: 't', volX: 1.2 },
+  { id: 'b38-week-sgov',     s0: 100.71, target: 100.75, stop: 99.8,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b38-week-kofr',     s0: 112233, target: 112268, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b38-stk-week-schd', s0: 34.82,  target: 35.24,  stop: 33.46,  annVol: 0.13, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b38-month-sgov',    s0: 100.71, target: 100.84, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b38-month-bil',     s0: 91.67,  target: 91.79,  stop: 90.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b38-stk-month-spy', s0: 768.97, target: 787.40, stop: 722.80, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b38-long-sgov',     s0: 100.71, target: 101.44, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b38-long-kofr',     s0: 112233, target: 112799, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b38-stk-long-schd', s0: 34.82,  target: 36.56,  stop: 30.65,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
