@@ -705,6 +705,33 @@ const PICKS = [
   { id: 'b38-long-sgov',     s0: 100.71, target: 101.44, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b38-long-kofr',     s0: 112233, target: 112799, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b38-stk-long-schd', s0: 34.82,  target: 36.56,  stop: 30.65,  annVol: 0.13, annDrift: 0.07, kind: 'long', model: 't' },
+  // ── 배치 2026-09-01 화요일 (v4 12회차 · 기준가 8/31 종가) — 뒤에 추가해 기존 seed 유지 ──
+  // 회고: 가중 격차 +6.1%p로 기준(±7%p) 안 복귀 — v3.5(파킹 변동성 하향)가 작동 중, 모델 무변경.
+  //   잔여 과소평가는 v3.5 이전 파킹 표본의 잔상(교훈 29). 당일 주식 구간 -1.7%p(n=28) 양호.
+  // 채점(8/31 월): 파킹 3승, DIA fail(다우 -0.7% 53,185.90 산술확인 · 환산 -0.7%), QQQ fail(사실상 보합
+  //   -0.01~-0.12% — 분류상 손실), SCHD는 월요일 시세 미확보로 pending(s0가 NAV(34.82)였고 시장 종가는
+  //   34.92였던 것도 발견 — NAV/시장가 구분 기록).
+  // 레짐: 미-이란 교전 재개(한 달 만) → 리스크오프. WTI $85 돌파, 10Y 금리 2025년 1월 이래 최고,
+  //   다우 -0.7%·S&P -0.33%·나스닥 -0.12%. 8월 월간은 상승 마감(다우 +1%·S&P +2.5%·나스닥 +3.5%).
+  //   volX: 당일·1주 1.3(리스크오프 규칙), 1개월 1.2. 이벤트: 고용보고서 9/4(금), FOMC 9/15~16.
+  // 당일 3종: XLE(유가·지정학 — 교전 재개로 방향 정렬, 8/31 +2% $63.96 직접 쿼트·산술 일치)·
+  //   DIA(구경제 — 전일 -0.7% 되돌림 베팅)·QQQ(기술 — 전일 상대 견조). SCHD는 직접 쿼트 미확보로
+  //   전 슬롯 제외(교훈 32 원칙 첫 적용) — 1주는 QQQ, 장기는 DIA로 대체.
+  { id: 'b39-day-kofr',      s0: 112240, target: 112246, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-day-sgov',      s0: 100.72, target: 100.73, stop: 100.0,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-day-bil',       s0: 91.68,  target: 91.69,  stop: 91.0,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-stk-day-xle',   s0: 63.96,  target: 64.70,  stop: 62.20,  annVol: 0.28, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-stk-day-dia',   s0: 531.30, target: 534.30, stop: 522.80, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-stk-day-qqq',   s0: 716.43, target: 722.90, stop: 700.70, annVol: 0.22, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b39-week-sgov',     s0: 100.72, target: 100.76, stop: 99.8,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b39-week-kofr',     s0: 112240, target: 112275, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b39-stk-week-qqq',  s0: 716.43, target: 730.80, stop: 680.60, annVol: 0.22, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b39-month-sgov',    s0: 100.72, target: 100.85, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b39-month-bil',     s0: 91.68,  target: 91.80,  stop: 90.5,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b39-stk-month-spy', s0: 766.41, target: 784.80, stop: 720.40, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b39-long-sgov',     s0: 100.72, target: 101.45, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b39-long-kofr',     s0: 112240, target: 112806, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b39-stk-long-dia',  s0: 531.30, target: 557.90, stop: 467.50, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
