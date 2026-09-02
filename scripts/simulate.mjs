@@ -749,6 +749,23 @@ const PICKS = [
   { id: 'b40-long-sgov',     s0: 100.42, target: 101.15, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b40-long-kofr',     s0: 112246, target: 112812, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b40-stk-long-dia',  s0: 527.11, target: 553.50, stop: 463.90, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b41 — 2026-09-03 (기준가 9/2 종가). 반등일이지만 고용보고서 전야 + 인상 확률 70% + 교전 국면 지속: volX 유지.
+  // MSFT 첫 편성(2소스 $501.02 완전 일치). XLE는 섹터 수치 상충으로 채점 보류 및 편성 제외.
+  { id: 'b41-day-kofr',      s0: 112252, target: 112258, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-day-sgov',      s0: 100.43, target: 100.44, stop: 99.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-day-bil',       s0: 91.41,  target: 91.42,  stop: 90.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-stk-day-dia',   s0: 530.06, target: 533.10, stop: 521.60, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-stk-day-ko',    s0: 88.00,  target: 88.58,  stop: 86.70,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-stk-day-msft',  s0: 501.02, target: 505.90, stop: 489.50, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b41-week-sgov',     s0: 100.43, target: 100.47, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b41-week-kofr',     s0: 112252, target: 112287, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b41-stk-week-msft', s0: 501.02, target: 511.00, stop: 476.00, annVol: 0.24, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b41-month-sgov',    s0: 100.43, target: 100.56, stop: 99.3,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b41-month-bil',     s0: 91.41,  target: 91.53,  stop: 90.2,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b41-stk-month-spy', s0: 764.47, target: 782.80, stop: 718.60, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b41-long-sgov',     s0: 100.43, target: 101.16, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b41-long-kofr',     s0: 112252, target: 112818, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b41-stk-long-dia',  s0: 530.06, target: 556.60, stop: 466.50, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
