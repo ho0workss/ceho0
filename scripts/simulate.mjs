@@ -766,6 +766,23 @@ const PICKS = [
   { id: 'b41-long-sgov',     s0: 100.43, target: 101.16, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b41-long-kofr',     s0: 112252, target: 112818, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b41-stk-long-dia',  s0: 530.06, target: 556.60, stop: 466.50, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b42 — 2026-09-04 (기준가 9/3 종가). 고용보고서 당일: 월러 발언으로 인상 확률 ~50%까지 하락했지만 이벤트 당일이라 volX 유지.
+  // NVDA 첫 편성(종가+등락률+레인지+전일 역산 정합). MSFT·NVDA는 AI 요인 중복 — 카드·요약에 공개.
+  { id: 'b42-day-kofr',      s0: 112258, target: 112264, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-day-sgov',      s0: 100.44, target: 100.45, stop: 99.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-day-bil',       s0: 91.42,  target: 91.43,  stop: 90.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-stk-day-dia',   s0: 536.30, target: 539.40, stop: 527.70, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-stk-day-msft',  s0: 510.12, target: 515.10, stop: 498.40, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-stk-day-nvda',  s0: 228.45, target: 232.70, stop: 218.60, annVol: 0.45, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b42-week-sgov',     s0: 100.44, target: 100.48, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b42-week-kofr',     s0: 112258, target: 112293, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b42-stk-week-dia',  s0: 536.30, target: 546.00, stop: 512.20, annVol: 0.14, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b42-month-sgov',    s0: 100.44, target: 100.57, stop: 99.3,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b42-month-bil',     s0: 91.42,  target: 91.54,  stop: 90.2,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b42-stk-month-spy', s0: 772.56, target: 791.10, stop: 726.20, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b42-long-sgov',     s0: 100.44, target: 101.17, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b42-long-kofr',     s0: 112258, target: 112824, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b42-stk-long-dia',  s0: 536.30, target: 563.10, stop: 471.90, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
