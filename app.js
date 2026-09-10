@@ -1,2133 +1,797 @@
-/* 주식 배움터 — vanilla JS, 외부 의존성 없음 */
+/* 마켓 인사이트 — v4.0 전면 리뉴얼
+ * 원칙: ① 모든 수치는 확률(보장 아님) ② 성적 전부 공개 ③ 처음 온 사람이 3분 안에 이해
+ * 데이터 계약: window.RECO(data.js) · window.SIM_RESULTS(data/sim.js) ·
+ *              window.STRATEGY(data/strategy.js) · window.EASY 등(content.js)
+ */
 (function () {
   'use strict';
-  const RECO = window.RECO;
-  // data/sim.js 는 JSON 문자열을 담아 둡니다(생성 스크립트가 JSON.stringify 로 감쌉니다).
-  // 파싱하지 않으면 SIM[id] 가 전부 undefined 라 확률 타일·스파크라인·팬차트가 조용히 사라지고
-  // pProfit 기준 정렬도 무력화됩니다. 객체로 들어오는 경우도 대비해 둡니다.
-  const SIM = (function () {
-    const raw = window.SIM_RESULTS;
-    if (!raw) return {};
-    if (typeof raw !== 'string') return raw;
-    try { return JSON.parse(raw); } catch (e) { return {}; }
-  })();
+
+  // ───────── 데이터 ─────────
+  const RECO = window.RECO || { batches: [], outcomes: { records: {} }, events: [] };
   const EASY = window.EASY || {};
-  const GLOSSARY = window.GLOSSARY || [];
-  const LESSONS = window.LESSONS || [];
-  const CHECKLIST = window.CHECKLIST || [];
-  const FAQ = window.FAQ || [];
-
-  const HORIZONS = {
-    day:   { label: '당일',   color: 'var(--series-1)', easy: '데이 트레이딩' },
-    week:  { label: '1주일',  color: 'var(--series-2)', easy: '스윙 (단기 보유)' },
-    month: { label: '1개월',  color: 'var(--series-5)', easy: '포지션 (중기 보유)' },
-    long:  { label: '장기',   color: 'var(--series-4)', easy: '장기 투자 (1년 이상)' },
-  };
-  const LEVELS = {
-    ok:  { label: '🟢 안정형',  cls: 'lvl-ok' },
-    mid: { label: '🟡 중립형', cls: 'lvl-mid' },
-    pro: { label: '🔴 공격형', cls: 'lvl-pro' },
-  };
-
-  // ───────── 자산 성격(파킹 vs 실제 주식) ─────────
-  // 파킹(현금성)은 구조상 원금이 거의 줄지 않아 승률이 매우 높지만 수익폭이 아주 작습니다.
-  // 실제 주식은 오르내림이 커서 승률은 낮고 손실도 실제로 날 수 있습니다. 둘을 섞어 보면
-  // "승률이 높다"는 말이 "많이 번다"는 뜻이 아님을 오해하기 쉬워 칸을 나눠서 보여 줍니다.
-  const PARKING_TICKERS = new Set(['423160.KS', 'SGOV', 'BIL', 'SHV', 'BOXX']);
-  const ASSET_CLASSES = {
-    stock:   { key: 'stock',   label: '📈 실제 주식', color: 'var(--series-1)',
-               head: '📈 실제 주식 — 진짜 오르내리는 주식',
-               desc: '승률은 파킹보다 훨씬 낮지만, 오르면 수익폭이 큽니다. 손실도 실제로 날 수 있어요.' },
-    parking: { key: 'parking', label: '🛡️ 파킹(현금성)', color: 'var(--series-4)',
-               head: '🛡️ 안정형 — 파킹(현금성) 자산',
-               desc: '국고채·초단기 국채급. 원금 방어가 목적이고 하루 수익은 아주 작습니다(+0.005~0.01%).' },
-  };
-  function assetClassOf(p) {
-    if (p.assetClass === 'stock' || p.assetClass === 'parking') return p.assetClass;
-    return PARKING_TICKERS.has(p.ticker) ? 'parking' : 'stock';
-  }
-  // 이익 확률(시뮬 2만 경로 중 이익으로 끝난 비율). 없으면 null.
-  function profitProb(p) {
-    const s = SIM[p.simId];
-    return s && s.final ? s.final.pProfit : null;
-  }
-  // 확률 배지 색: 80% 이상이면 초록, 60% 이상이면 노랑, 그 아래는 빨강.
-  // 당일 실제 주식은 구조상 50%대가 상한이라 대부분 빨강으로 뜹니다 — 그게 사실입니다.
-  function probTone(v) {
-    if (v == null) return 'var(--text-muted)';
-    if (v >= 80) return 'var(--status-good)';
-    if (v >= 60) return 'var(--status-warning)';
-    return 'var(--status-critical)';
-  }
-  const RISKS = {
-    low: { label: '리스크 낮음', color: 'var(--status-good)' },
-    mid: { label: '리스크 중간', color: 'var(--status-warning)' },
-    high: { label: '리스크 높음', color: 'var(--status-serious)' },
-    veryhigh: { label: '리스크 매우높음', color: 'var(--status-critical)' },
-  };
-  const MARKETS = { US: '🇺🇸 미국', KR: '🇰🇷 한국' };
-  const KIND_X = {
-    day:   { axis: ['개장', '장중', '마감'], tip: i => `개장 후 ${i * 30}분`, stepLabel: s => `+${s * 30}분` },
-    week:  { axis: ['D0', 'D+2', 'D+5'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
-    month: { axis: ['D0', 'D+10', 'D+21'], tip: i => `D+${i}`, stepLabel: s => `D+${s}` },
-    long:  { axis: ['0', '6개월', '12개월'], tip: i => `${Math.round(i / 21)}개월 후`, stepLabel: s => `${Math.round(s / 21)}개월` },
-  };
-  const VIEWS = ['home', 'plan', 'reco', 'sure', 'practice', 'learn', 'perf', 'history', 'tax', 'portfolio', 'journal'];
-  const MENU_DESC = {
-    home: '오늘의 시장 브리핑과 핵심 추천',
-    reco: '기간별 추천 종목과 매매 계획',
-    plan: '예산과 투자 성향만 정하면 주문서까지 자동 완성 (따라하기, 포트폴리오)',
-    sure: '원금 보전형 금리 자산과 장기 분산 적립 (확실, 안전, 보장, 안정)',
-    practice: '가상 예산으로 포트폴리오 결과 미리보기',
-    learn: '투자 기초 · 체크리스트 · 용어사전 · FAQ',
-    perf: '예측 vs 실제 — 적중/실패 전부 공개하는 채점표 (성과, 검증, 결과)',
-    history: '지난 추천 기록 보관함',
-    tax: '세금 규칙 · 평단가 · 목표가 · 복리 적립 계산기',
-    portfolio: '보유 종목 평가 · 진단 · 배당 예측 · 리밸런싱 (내 주식, 보유, 수익률)',
-    journal: '매매 기록과 복기 — 수익률을 올리는 습관 (일지, 기록)',
-  };
-  const MENU_LABEL = { home: '🏠 홈', plan: '🧭 실행 플랜', reco: '📋 추천 종목', sure: '🛡️ 안정 수익', practice: '🧮 시뮬레이터', learn: '📚 투자 가이드', perf: '📊 성과 검증', history: '🗂️ 히스토리', tax: '🧾 계산기', portfolio: '💼 내 포트폴리오', journal: '📓 매매 일지' };
-  const OUTCOME_META = {
-    success: { icon: '✅', label: '성공',   color: 'var(--status-good)' },
-    partial: { icon: '🟡', label: '부분 성공', color: 'var(--status-warning)' },
-    fail:    { icon: '❌', label: '실패(손절)', color: 'var(--status-critical)' },
-    invalid: { icon: '➖', label: '무효(미진입)', color: 'var(--text-muted)' },
-    pending: { icon: '⏳', label: '진행 중', color: 'var(--text-muted)' },
-  };
-
-  const state = {
-    view: 'home', horizon: 'all', market: 'all', level: 'all', divOnly: false, batch: 0,
-    assetClass: 'all',
-    perfHorizon: 'all',
-    easy: localStorage.getItem('easymode') === '1',
-  };
+  const STRAT = window.STRATEGY || null;
+  let SIM = {};
+  try { SIM = JSON.parse(window.SIM_RESULTS || '{}'); } catch (e) { SIM = {}; }
+  const batch = (RECO.batches && RECO.batches[0]) || { picks: [], title: '', marketSnapshot: '' };
+  const records = (RECO.outcomes && RECO.outcomes.records) || {};
 
   // ───────── 유틸 ─────────
-  const $ = sel => document.querySelector(sel);
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   function el(tag, cls, text) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
-    if (text !== undefined) n.textContent = text;
+    if (text !== undefined && text !== null) n.textContent = text;
     return n;
   }
-  function money(v, cur) {
-    if (cur === 'KRW') return v.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + '원';
-    return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function frag(...nodes) { const f = document.createDocumentFragment(); nodes.forEach(n => n && f.appendChild(n)); return f; }
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 프라이빗 모드 등 */ } },
+  };
+  const HORIZON = { day: '당일', week: '1주', month: '1개월', long: '장기(1년+)' };
+  const RISK = {
+    low: { cls: 'risk-low', label: '🛡️ 안심' },
+    mid: { cls: 'risk-mid', label: '⚖️ 중간' },
+    high: { cls: 'risk-high', label: '🔥 출렁' },
+  };
+  function riskOf(p) { return RISK[p.risk] || RISK.mid; }
+  function simOf(p) { const s = SIM[p.simId]; return s && s.final ? s.final : null; }
+  function baseName(p) { return String(p.name || p.ticker).replace(/\s*\([^)]*\)\s*$/, ''); }
+  function fmtPrice(p, v) {
+    if (v === undefined || v === null) return '-';
+    if (p.currency === 'KRW') return Math.round(v).toLocaleString('ko-KR') + '원';
+    return '$' + (+v).toFixed(2);
   }
-  function krw(v) { return Math.round(v).toLocaleString('ko-KR') + '원'; }
-  function pct(v, signed = true) { return (signed && v > 0 ? '+' : '') + v.toFixed(1) + '%'; }
-  function pctCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
-  function batchPicks() { return RECO.batches[state.batch].picks; }
-  function pickLevel(p) { return (EASY[p.id] && EASY[p.id].level) || 'mid'; }
-  // 카드 한 줄 요약. 구 배치는 rationale.summary 를 갖고 있고, 최신 배치는 없습니다.
-  // 없으면 쉬운 설명 → 첫 뉴스 근거 순으로 대체합니다(항상 문자열을 돌려줍니다).
-  function pickSummary(p) {
-    const r = p.rationale || {};
-    if (r.summary) return r.summary;
-    if (EASY[p.id] && EASY[p.id].company) return EASY[p.id].company;
-    if (Array.isArray(r.news) && r.news.length) return r.news[0];
-    return `${p.name} — ${HORIZONS[p.horizon] ? HORIZONS[p.horizon].label : ''} 전략`;
+  function pctFrom(p, v) {
+    if (!p.refPrice || v === undefined || v === null) return null;
+    return (v / p.refPrice - 1) * 100;
   }
-  // KRX 호가단위(2023 개편) / 미국 $0.01
-  function tickSize(price, currency) {
-    if (currency === 'USD') return 0.01;
-    if (price < 2000) return 1;
-    if (price < 5000) return 5;
-    if (price < 20000) return 10;
-    if (price < 50000) return 50;
-    if (price < 200000) return 100;
-    if (price < 500000) return 500;
-    return 1000;
+  function signPct(x, digits) {
+    if (x === null || x === undefined || isNaN(x)) return '-';
+    const d = digits === undefined ? 1 : digits;
+    return (x > 0 ? '+' : '') + x.toFixed(d) + '%';
   }
-  function tickRound(price, currency, dir) {
-    const t = tickSize(price, currency);
-    let v = dir === 'up' ? Math.ceil(price / t) * t : dir === 'near' ? Math.round(price / t) * t : Math.floor(price / t) * t;
-    return currency === 'USD' ? +v.toFixed(2) : v;
+  function easyOn() { return $('#easymode').checked; }
+
+  // ───────── 성적 집계 ─────────
+  function tally() {
+    const t = {
+      stock: { n: 0, win: 0, partial: 0, fail: 0, pending: 0 },
+      parking: { n: 0, win: 0, fail: 0, pending: 0 },
+    };
+    Object.keys(records).forEach(k => {
+      const st = records[k].status;
+      const g = k.includes('-stk-') ? t.stock : t.parking;
+      if (st === 'pending' || st === 'invalid') { g.pending++; return; }
+      g.n++;
+      if (st === 'success') g.win++;
+      else if (st === 'partial') { g.win++; if (g.partial !== undefined) g.partial++; }
+      else if (st === 'fail') g.fail++;
+    });
+    return t;
   }
-  function nextTradingDays(n) {
-    const out = [];
-    const d = new Date();
-    while (out.length < n) {
-      d.setDate(d.getDate() + 1);
-      const day = d.getDay();
-      if (day !== 0 && day !== 6) out.push(d.toISOString().slice(0, 10));
+  const TALLY = tally();
+
+  // ───────── 탭 라우팅 ─────────
+  const VIEWS = ['today', 'race', 'picks', 'records', 'help'];
+  const renderers = {};
+  const rendered = {};
+  function showTab(name) {
+    VIEWS.forEach(v => {
+      const sec = $('#view-' + v);
+      const on = v === name;
+      sec.hidden = !on;
+      if (on && !rendered[v]) { renderers[v](sec); rendered[v] = true; }
+    });
+    $$('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+    window.scrollTo({ top: 0 });
+  }
+  function rerenderAll() {
+    VIEWS.forEach(v => { if (rendered[v]) { const sec = $('#view-' + v); sec.textContent = ''; renderers[v](sec); } });
+  }
+
+  // ───────── 스탯 타일 ─────────
+  function tile(label, value, sub, opts) {
+    const t = el('div', 'tile');
+    const lb = el('div', 't-label');
+    if (opts && opts.swatch) { const s = el('span', 'swatch'); s.style.background = opts.swatch; lb.appendChild(s); }
+    lb.appendChild(document.createTextNode(label));
+    t.appendChild(lb);
+    const v = el('div', 't-value');
+    if (opts && opts.deltaClass) v.classList.add(opts.deltaClass);
+    v.textContent = value;
+    if (opts && opts.unit) v.appendChild(el('span', 'unit', ' ' + opts.unit));
+    t.appendChild(v);
+    if (sub) t.appendChild(el('div', 't-sub', sub));
+    return t;
+  }
+
+  // ───────── 오늘 뷰 ─────────
+  renderers.today = function (root) {
+    // 1) 처음이세요? 온보딩 (닫으면 저장)
+    if (store.get('onboardDismissed') !== '1') {
+      const ob = el('div', 'card onboard');
+      ob.appendChild(el('h2', null, '👋 처음이세요? 딱 3가지만 알면 돼요'));
+      const steps = el('div', 'steps');
+      const mk = (t, b) => { const s = el('div', 'step'); s.appendChild(el('b', null, t)); s.appendChild(document.createTextNode(b)); return s; };
+      steps.appendChild(mk('① 초록(🛡️ 안심)부터 보세요', '파킹 카드는 은행 이자처럼 거의 확실하지만 수익이 아주 작아요(하루 +0.01% 수준). 빨강(🔥)은 크게 벌 수도, 크게 잃을 수도 있어요.'));
+      steps.appendChild(mk('② 확률은 약속이 아니에요', '"이익확률 50%"는 동전 던지기라는 뜻이에요. 100%짜리 주식은 세상에 없고, 그렇다고 말하는 사람은 사기꾼이에요.'));
+      steps.appendChild(mk('③ 두 가지 절대 규칙', '잃어도 괜찮은 돈으로만 하고, 카드에 적힌 손절가(안전벨트)를 반드시 지키세요.'));
+      ob.appendChild(steps);
+      const foot = el('div', 'foot');
+      const learn = el('button', 'btn primary', '📚 5분 만에 기초 배우기');
+      learn.addEventListener('click', () => showTab('help'));
+      const dismiss = el('button', 'btn ghost', '알겠어요, 닫기');
+      dismiss.addEventListener('click', () => { store.set('onboardDismissed', '1'); ob.remove(); });
+      foot.appendChild(learn); foot.appendChild(dismiss);
+      ob.appendChild(foot);
+      root.appendChild(ob);
     }
-    return out;
-  }
-  function svgEl(tag, attrs) {
-    const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    for (const k in attrs) n.setAttribute(k, attrs[k]);
-    return n;
-  }
 
-  // ───────── 용어 팝오버 ─────────
-  const TERMS = GLOSSARY.slice().sort((a, b) => b.term.length - a.term.length);
-  const popover = $('#popover');
-  function showPopover(anchor, term, easyText) {
-    popover.textContent = '';
-    popover.appendChild(el('div', 'pt', '📖 ' + term));
-    popover.appendChild(el('div', null, easyText));
-    popover.style.display = 'block';
-    const r = anchor.getBoundingClientRect();
-    const top = r.bottom + window.scrollY + 6;
-    let left = r.left + window.scrollX;
-    popover.style.top = top + 'px';
-    popover.style.left = '0px';
-    const pw = popover.offsetWidth;
-    if (left + pw > window.scrollX + document.documentElement.clientWidth - 8)
-      left = window.scrollX + document.documentElement.clientWidth - pw - 8;
-    popover.style.left = Math.max(8, left) + 'px';
-  }
-  function hidePopover() { popover.style.display = 'none'; }
-  document.addEventListener('click', e => {
-    const t = e.target.closest('.term');
-    if (t) { showPopover(t, t.dataset.term, t.dataset.easy); e.stopPropagation(); return; }
-    if (!e.target.closest('.popover')) hidePopover();
-  });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') hidePopover();
-    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('term')) {
-      e.preventDefault();
-      const t = document.activeElement;
-      showPopover(t, t.dataset.term, t.dataset.easy);
+    // 2) 오늘의 브리핑
+    const brief = el('div', 'card banner info');
+    brief.appendChild(el('h2', null, '📌 오늘의 브리핑'));
+    brief.appendChild(el('div', null, batch.title || ''));
+    const snap = String(batch.marketSnapshot || '');
+    const firstBits = snap.split('★').filter(Boolean).slice(0, 2).map(s => s.trim());
+    if (firstBits.length) {
+      const d = el('details', 'acc'); d.style.marginTop = '0.6rem';
+      d.appendChild(el('summary', null, '자세한 시장 이야기 읽기'));
+      const body = el('div', 'acc-body');
+      snap.split('★').filter(Boolean).forEach(s => { const pgh = el('p', null, '★ ' + s.trim()); pgh.style.marginBottom = '0.5rem'; body.appendChild(pgh); });
+      d.appendChild(body);
+      brief.appendChild(d);
     }
-  });
+    root.appendChild(brief);
 
-  // 텍스트에 용어 밑줄 달기 (쉬운말 모드) — 블록당 용어별 1회
-  function linkTerms(text) {
-    if (!state.easy) return document.createTextNode(text);
-    const frag = document.createDocumentFragment();
-    const used = new Set();
-    let rest = text;
-    while (rest.length) {
-      let bestIdx = -1, bestTerm = null;
-      for (const g of TERMS) {
-        if (used.has(g.term)) continue;
-        const idx = rest.indexOf(g.term);
-        if (idx !== -1 && (bestIdx === -1 || idx < bestIdx || (idx === bestIdx && g.term.length > bestTerm.term.length))) {
-          bestIdx = idx; bestTerm = g;
-        }
-      }
-      if (bestIdx === -1) { frag.appendChild(document.createTextNode(rest)); break; }
-      if (bestIdx > 0) frag.appendChild(document.createTextNode(rest.slice(0, bestIdx)));
-      const span = el('span', 'term', bestTerm.term);
-      span.tabIndex = 0;
-      span.setAttribute('role', 'button');
-      span.dataset.term = bestTerm.term;
-      span.dataset.easy = bestTerm.easy;
-      frag.appendChild(span);
-      used.add(bestTerm.term);
-      rest = rest.slice(bestIdx + bestTerm.term.length);
+    // 3) vs S&P 500 미니 스코어보드
+    if (STRAT && STRAT.race && STRAT.race.series.length) {
+      const last = STRAT.race.series[STRAT.race.series.length - 1];
+      const gap = last.strategy - last.spy;
+      const c = el('div', 'card');
+      const h = el('h2', null, '🏁 우리 전략 vs S&P 500');
+      h.appendChild(el('span', 'hint', STRAT.race.start + ' 시작 · 매일 실측 갱신'));
+      c.appendChild(h);
+      const tiles = el('div', 'tiles');
+      const css = getComputedStyle(document.body);
+      tiles.appendChild(tile('전략 포트폴리오', last.strategy.toFixed(1), '시작=100', { swatch: css.getPropertyValue('--series-1') }));
+      tiles.appendChild(tile('S&P 500', last.spy.toFixed(1), '시작=100', { swatch: css.getPropertyValue('--series-2') }));
+      tiles.appendChild(tile('격차', signPct(gap, 1).replace('%', 'p'), gap === 0 ? '동률 — 레이스 시작!' : (gap > 0 ? '전략이 앞서는 중' : 'S&P 500이 앞서는 중'), { deltaClass: gap >= 0 ? 'delta-up' : 'delta-down' }));
+      c.appendChild(tiles);
+      const go = el('button', 'btn'); go.style.marginTop = '0.7rem'; go.textContent = '전략 자세히 보기 →';
+      go.addEventListener('click', () => showTab('race'));
+      c.appendChild(go);
+      root.appendChild(c);
     }
-    return frag;
-  }
-  function liTerms(text) { const li = el('li'); li.appendChild(linkTerms(text)); return li; }
 
-  // ───────── 카드 목록 ─────────
-  function filteredPicks() {
-    return batchPicks().filter(p =>
-      (state.horizon === 'all' || p.horizon === state.horizon) &&
-      (state.assetClass === 'all' || assetClassOf(p) === state.assetClass) &&
-      (state.market === 'all' || p.market === state.market) &&
-      (state.level === 'all' || pickLevel(p) === state.level) &&
-      (!state.divOnly || (p.dividend && p.dividend.yieldPct >= 0.3))
-    );
-  }
-  function chipDot(color) { const d = el('span', 'dot'); d.style.background = color; return d; }
-  function chip(text, color) {
-    const c = el('span', 'chip');
-    if (color) c.appendChild(chipDot(color));
-    c.appendChild(document.createTextNode(text));
-    return c;
-  }
-  function levelBadge(p) {
-    const lv = LEVELS[pickLevel(p)];
-    return el('span', 'lvl ' + lv.cls, lv.label);
-  }
+    // 4) 오늘의 추천 요약 — 안심 / 도전 구분
+    const dayPicks = batch.picks.filter(p => p.horizon === 'day');
+    const safe = dayPicks.filter(p => p.assetClass === 'parking');
+    const bold = dayPicks.filter(p => p.assetClass === 'stock');
+    const today = el('div', 'card');
+    const th = el('h2', null, '🗂️ 오늘의 추천 한눈에');
+    th.appendChild(el('span', 'hint', '카드를 누르면 매매 계획까지 자세히'));
+    today.appendChild(th);
 
-  function sparkline(sim) {
-    const W = 92, H = 30, m = 3;
-    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'spark', 'aria-hidden': 'true' });
-    if (!sim) return svg;
-    const ys = sim.bands.p50;
-    const lo = Math.min(...ys, 0), hi = Math.max(...ys, 0.01);
-    const x = i => m + (W - 2 * m) * (i / (ys.length - 1));
-    const y = v => H - m - (H - 2 * m) * ((v - lo) / (hi - lo));
-    const d = ys.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
-    svg.appendChild(svgEl('path', { d, fill: 'none', stroke: 'var(--baseline)', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-    const last = ys.length - 1;
-    svg.appendChild(svgEl('circle', { cx: x(last).toFixed(1), cy: y(ys[last]).toFixed(1), r: 3.5, fill: 'var(--series-1)', stroke: 'var(--surface-1)', 'stroke-width': 2 }));
-    return svg;
-  }
+    if (bold.length) {
+      today.appendChild(el('div', 'muted', '📈 도전 — 실제 주식 (이익확률은 원래 반반 근처가 정직한 숫자예요)'));
+      const g1 = el('div', 'grid'); g1.style.margin = '0.5rem 0 0.9rem';
+      bold.forEach(p => g1.appendChild(pickCard(p)));
+      today.appendChild(g1);
+    }
+    if (safe.length) {
+      today.appendChild(el('div', 'muted', '🛡️ 안심 — 파킹 (거의 확실하지만 수익이 아주 작아요)'));
+      const g2 = el('div', 'grid'); g2.style.marginTop = '0.5rem';
+      safe.forEach(p => g2.appendChild(pickCard(p)));
+      today.appendChild(g2);
+    }
+    const all = el('button', 'btn'); all.style.marginTop = '0.8rem';
+    all.textContent = '1주·1개월·장기 추천까지 전부 보기 →';
+    all.addEventListener('click', () => showTab('picks'));
+    today.appendChild(all);
+    root.appendChild(today);
 
+    // 5) 정직 배너
+    const hb = el('div', 'card banner');
+    hb.appendChild(el('h2', null, '🤝 정직 코너'));
+    const s = TALLY.stock, pk = TALLY.parking;
+    const ul = el('ul'); ul.style.marginLeft = '1.1rem'; ul.style.fontSize = '0.86rem';
+    const li1 = el('li'); li1.textContent = `실제 주식 당일 성적은 지금까지 ${s.n}번 중 ${s.win}번 이익 (${s.n ? Math.round(s.win / s.n * 1000) / 10 : 0}%) — 동전 던지기 수준이 하루 매매의 정직한 현실이에요.`;
+    const li2 = el('li'); li2.textContent = `파킹은 ${pk.n}전 ${pk.win}승이지만 하루 수익이 +0.005~0.01%로 아주 작아요. 이길 확률이 높다는 것과 많이 번다는 것은 완전히 다른 이야기예요.`;
+    const li3 = el('li'); li3.textContent = '확률이 높은 쪽은 1년 이상 길게 나눠 사는 쪽이에요 — 그래서 전략 포트폴리오의 중심도 장기예요.';
+    ul.appendChild(li1); ul.appendChild(li2); ul.appendChild(li3);
+    hb.appendChild(ul);
+    const rec = el('button', 'btn'); rec.style.marginTop = '0.6rem'; rec.textContent = '전체 성적표 보기 →';
+    rec.addEventListener('click', () => showTab('records'));
+    hb.appendChild(rec);
+    root.appendChild(hb);
+
+    // 6) 다가오는 일정
+    if (RECO.events && RECO.events.length) {
+      const evc = el('div', 'card');
+      evc.appendChild(el('h2', null, '📅 다가오는 일정'));
+      RECO.events.forEach(e2 => {
+        const row = el('div', 'ev');
+        row.appendChild(el('span', 'd', e2.date.slice(5).replace('-', '/')));
+        const body = el('div');
+        const t = el('div'); t.appendChild(el('b', null, e2.title + ' '));
+        t.appendChild(el('span', e2.impact === '높음' ? 'impact-high' : 'impact-mid', '영향 ' + e2.impact));
+        body.appendChild(t);
+        if (e2.note) body.appendChild(el('div', 'tiny', e2.note));
+        row.appendChild(body);
+        evc.appendChild(row);
+      });
+      root.appendChild(evc);
+    }
+  };
+
+  // ───────── 추천 카드 ─────────
   function pickCard(p) {
-    const sim = SIM[p.simId];
-    const easy = EASY[p.id];
-    const card = el('article', 'card ac-' + assetClassOf(p));
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `${p.name} 상세 보기`);
+    const f = simOf(p);
+    const card = el('button', 'pick-card');
+    card.type = 'button';
+    const top = el('div', 'pc-top');
+    const nm = el('div');
+    nm.appendChild(el('div', 'pc-name', baseName(p)));
+    nm.appendChild(el('div', 'pc-ticker', p.ticker + ' · ' + (p.market === 'KR' ? '🇰🇷 한국' : '🇺🇸 미국')));
+    top.appendChild(nm);
+    const bd = el('div', 'pc-badges');
+    bd.appendChild(el('span', 'badge h', HORIZON[p.horizon] || p.horizon));
+    const rk = riskOf(p);
+    bd.appendChild(el('span', 'badge ' + rk.cls, rk.label));
+    top.appendChild(bd);
+    card.appendChild(top);
 
-    const chips = el('div', 'chiprow');
-    chips.appendChild(chip(HORIZONS[p.horizon].label, HORIZONS[p.horizon].color));
-    const ac = ASSET_CLASSES[assetClassOf(p)];
-    chips.appendChild(chip(ac.label, ac.color));
-    chips.appendChild(levelBadge(p));
-    const pp = profitProb(p);
-    if (pp != null) {
-      const pb = el('span', 'chip', `이익확률 ${pp}%`);
-      pb.style.color = probTone(pp);
-      pb.style.fontWeight = '700';
-      chips.appendChild(pb);
-    }
-    card.appendChild(chips);
+    const prob = f ? f.pProfit : null;
+    const pr = el('div', 'probrow');
+    pr.appendChild(el('span', 'p-big', prob === null ? '-' : prob.toFixed(1) + '%'));
+    pr.appendChild(el('span', 'p-cap', p.assetClass === 'parking' ? '이익확률 (구조상 매우 높음)' : '이익확률 — 수익 크기와는 별개'));
+    card.appendChild(pr);
+    const bar = el('div', 'probbar' + (p.assetClass === 'parking' ? ' safe' : ''));
+    const fill = el('i'); fill.style.width = Math.max(2, Math.min(100, prob || 0)) + '%';
+    bar.appendChild(fill);
+    card.appendChild(bar);
 
-    const tl = el('div', 'titleline');
-    tl.appendChild(el('span', 'tk', (p.market === 'US' ? '🇺🇸 ' : '🇰🇷 ') + p.ticker));
-    tl.appendChild(el('span', 'nm', p.name));
-    tl.appendChild(el('span', 'price', money(p.refPrice, p.currency)));
-    card.appendChild(tl);
+    const tgt = el('div', 'pc-tgt');
+    const tPct = pctFrom(p, p.sell && p.sell.low);
+    const sPct = pctFrom(p, p.sell && p.sell.stop);
+    const t1 = el('span'); t1.appendChild(el('b', null, '목표 ')); t1.appendChild(document.createTextNode(signPct(tPct)));
+    const t2 = el('span'); t2.appendChild(el('b', null, '손절 ')); t2.appendChild(document.createTextNode(signPct(sPct)));
+    tgt.appendChild(t1); tgt.appendChild(t2);
+    card.appendChild(tgt);
 
-    if (state.easy && easy) card.appendChild(el('div', 'easyline', '💡 ' + easy.company));
-
-    const rec = RECO.outcomes && RECO.outcomes.records && RECO.outcomes.records[p.id];
-    if (rec && OUTCOME_META[rec.status]) {
-      const om = OUTCOME_META[rec.status];
-      const ob = el('div', 'easyline');
-      ob.style.borderLeft = '3px solid ' + om.color;
-      ob.textContent = `${om.icon} 결과: ${rec.title || om.label}`;
-      card.appendChild(ob);
-    }
-
-    const plan = el('div', 'plan');
-    const b = el('div'); b.appendChild(el('b', null, '매수 ')); b.appendChild(document.createTextNode(`${money(p.buy.low, p.currency)}–${money(p.buy.high, p.currency)} · ${p.buy.windowKst}`));
-    const s = el('div'); s.appendChild(el('b', null, '매도 ')); s.appendChild(document.createTextNode(`${money(p.sell.low, p.currency)}–${money(p.sell.high, p.currency)} · ${p.sell.windowKst}`));
-    plan.appendChild(b); plan.appendChild(s);
-    card.appendChild(plan);
-
-    const stats = el('div', 'statrow');
-    const s1 = el('div', 'stat');
-    s1.appendChild(el('span', 'lb', '기대수익률'));
-    s1.appendChild(el('span', 'vl ' + pctCls(p.expectedReturn.base), pct(p.expectedReturn.base)));
-    stats.appendChild(s1);
-    if (sim) {
-      const s2 = el('div', 'stat');
-      s2.appendChild(el('span', 'lb', '이익 확률(시뮬)'));
-      s2.appendChild(el('span', 'vl', sim.final.pProfit.toFixed(0) + '%'));
-      stats.appendChild(s2);
-    }
-    stats.appendChild(sparkline(sim));
-    card.appendChild(stats);
-
-    card.addEventListener('click', () => openModal(p));
-    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p); } });
+    const ez = EASY[p.id];
+    if (ez && easyOn()) card.appendChild(el('div', 'pc-easy', ez.company));
+    card.addEventListener('click', () => openPick(p));
     return card;
   }
 
-  function renderCards() {
-    const host = $('#cards');
-    host.textContent = '';
-    host.className = '';
-    const picks = filteredPicks();
-    const nStock = picks.filter(p => assetClassOf(p) === 'stock').length;
-    $('#count').textContent = `${picks.length}개 종목 (실제 주식 ${nStock} · 파킹 ${picks.length - nStock})`;
-    if (!picks.length) {
-      host.appendChild(el('p', 'hist-note', '조건에 맞는 종목이 없습니다. 필터를 조정해 보세요.'));
-      return;
-    }
-    // 실제 주식 칸을 먼저, 파킹 칸을 뒤에 — 성격이 완전히 다르므로 항상 나눠서 보여 줍니다.
-    ['stock', 'parking'].forEach(key => {
-      const group = picks.filter(p => assetClassOf(p) === key);
-      if (!group.length) return;
-      const meta = ASSET_CLASSES[key];
-      host.appendChild(el('h3', 'homesec', `${meta.head} (${group.length})`));
-      const note = el('p', 'hist-note');
-      note.style.borderLeft = '4px solid ' + meta.color;
-      note.appendChild(linkTerms(meta.desc));
-      host.appendChild(note);
-      // 이익확률이 높은 순으로 정렬 — "확률 높은 것 위주로" 고르려면 그 순서로 보여야 합니다.
-      const grid = el('div', 'grid');
-      group.slice().sort((a, b) => (profitProb(b) ?? -1) - (profitProb(a) ?? -1))
-        .forEach(p => grid.appendChild(pickCard(p)));
-      host.appendChild(grid);
+  // ───────── 추천 전체 뷰 ─────────
+  const pickFilter = { h: 'all', ac: 'all' };
+  renderers.picks = function (root) {
+    const intro = el('div', 'card banner info');
+    intro.appendChild(el('h2', null, '📋 추천 전체'));
+    intro.appendChild(el('div', 'muted', '기간(얼마나 들고 갈지)과 성격(안심/도전)으로 골라 보세요. 오래 들고 갈수록 이익확률이 올라가는 것이 보일 거예요.'));
+    root.appendChild(intro);
+
+    const chips = el('div', 'chips');
+    chips.appendChild(el('span', 'lbl', '기간'));
+    const hOpts = [['all', '전체'], ['day', '당일'], ['week', '1주'], ['month', '1개월'], ['long', '장기']];
+    hOpts.forEach(([v, l]) => {
+      const c = el('button', 'chip', l);
+      c.setAttribute('aria-pressed', String(pickFilter.h === v));
+      c.addEventListener('click', () => { pickFilter.h = v; refresh(); });
+      c.dataset.k = 'h'; c.dataset.v = v;
+      chips.appendChild(c);
     });
-  }
+    chips.appendChild(el('span', 'lbl', '· 성격'));
+    const aOpts = [['all', '모두'], ['stock', '📈 도전(주식)'], ['parking', '🛡️ 안심(파킹)']];
+    aOpts.forEach(([v, l]) => {
+      const c = el('button', 'chip', l);
+      c.setAttribute('aria-pressed', String(pickFilter.ac === v));
+      c.addEventListener('click', () => { pickFilter.ac = v; refresh(); });
+      c.dataset.k = 'ac'; c.dataset.v = v;
+      chips.appendChild(c);
+    });
+    root.appendChild(chips);
 
-  // ───────── 홈 ─────────
-  function renderHome() {
-    const wrap = $('#view-home');
-    wrap.textContent = '';
-    const batch = RECO.batches[0];
-
-    const hero = el('div', 'hero');
-    const stormy = /급락|쇼크|하락/.test(batch.title + batch.marketSnapshot);
-    hero.appendChild(el('div', 'weather', stormy ? '시장 브리핑 · 리스크오프 국면 🌧️ — 변동성 확대 구간' : '시장 브리핑 · 리스크온 국면 ☀️'));
-    const wd = el('p', 'wdesc');
-    wd.appendChild(linkTerms(state.easy
-      ? '어제 반도체 회사들(삼성전자 등)의 주가가 비를 맞은 것처럼 뚝 떨어졌어요. 이럴 때는 "너무 많이 떨어진 좋은 회사"를 싸게 살 기회가 생기기도 해요. 아래 추천들이 바로 그 기회를 노려요.'
-      : batch.marketSnapshot));
-    hero.appendChild(wd);
-    wrap.appendChild(hero);
-
-    wrap.appendChild(el('h2', 'homesec', '🚀 시작 가이드'));
-    const steps = el('div', 'steps');
-    const stepDefs = [
-      ['STEP 1', '📚 투자 가이드', '기초 개념을 5분 안에 정리합니다', 'learn'],
-      ['STEP 2', '🧭 실행 플랜', '예산만 입력하면 주문서까지 자동 완성', 'plan'],
-      ['STEP 3', '🧮 시뮬레이터', '가상 예산으로 결과를 미리 확인합니다', 'practice'],
-    ];
-    for (const [sn, st, sd, view] of stepDefs) {
-      const c = el('div', 'step-card');
-      c.tabIndex = 0; c.setAttribute('role', 'button');
-      c.appendChild(el('div', 'sn', sn));
-      c.appendChild(el('div', 'st', st));
-      c.appendChild(el('div', 'sd', sd));
-      const go = () => { if (view === 'reco') state.level = view === 'reco' && state.easy ? 'ok' : state.level; state.view = view; renderAll(); window.scrollTo({ top: 0 }); };
-      c.addEventListener('click', go);
-      c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-      steps.appendChild(c);
-    }
-    wrap.appendChild(steps);
-
-    wrap.appendChild(el('h2', 'homesec', '⭐ 오늘의 핵심 추천 TOP 3 (안정형 우선)'));
-    const order = { ok: 0, mid: 1, pro: 2 };
-    const seen = new Set();
-    const top3 = batchPicks().slice().sort((a, b) => {
-      const d = order[pickLevel(a)] - order[pickLevel(b)];
-      if (d) return d;
-      return (SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0);
-    }).filter(p => !seen.has(p.ticker) && seen.add(p.ticker)).slice(0, 3);
     const grid = el('div', 'grid');
-    top3.forEach(p => grid.appendChild(pickCard(p)));
-    wrap.appendChild(grid);
+    root.appendChild(grid);
+    const empty = el('p', 'muted', '조건에 맞는 추천이 없어요.');
+    empty.style.display = 'none';
+    root.appendChild(empty);
 
-    // 📈 실제 주식 칸 — 파킹(현금성)과 성격이 완전히 달라 따로 보여 줍니다.
-    const stockPicks = batchPicks().filter(p => assetClassOf(p) === 'stock');
-    if (stockPicks.length) {
-      wrap.appendChild(el('h2', 'homesec', `📈 실제 주식 (${stockPicks.length}종목) — 파킹 아님`));
-      const sn = el('p', 'hist-note');
-      sn.style.borderLeft = '4px solid ' + ASSET_CLASSES.stock.color;
-      sn.appendChild(linkTerms(state.easy
-        ? '위 안정형은 "거의 안 잃지만 아주 조금 버는" 파킹이에요. 여기 있는 건 진짜 주식이라 오르면 더 벌지만, 떨어지면 진짜로 잃어요. 성공 확률도 훨씬 낮아요.'
-        : '파킹(현금성) 자산과 달리 실제 주가 변동을 그대로 받습니다. 시뮬레이션 성공 확률이 파킹보다 크게 낮고(대략 50~70%), 손절 폭이 목표 폭보다 몇 배 큰 카드도 있습니다. 모든 수치는 확률 추정치이며 수익을 보장하지 않습니다.'));
-      wrap.appendChild(sn);
-      const sgrid = el('div', 'grid');
-      stockPicks.slice()
-        .sort((a, b) => (SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0))
-        .slice(0, 6)
-        .forEach(p => sgrid.appendChild(pickCard(p)));
-      wrap.appendChild(sgrid);
-      const sb = el('button', 'iconbtn', '📈 실제 주식만 모아 보기 →');
-      sb.type = 'button';
-      sb.style.marginTop = '0.7rem';
-      sb.addEventListener('click', () => {
-        state.view = 'reco'; state.assetClass = 'stock'; state.horizon = 'all'; state.level = 'all';
-        renderAll(); window.scrollTo({ top: 0 });
-      });
-      wrap.appendChild(sb);
+    function refresh() {
+      $$('.chip', chips).forEach(c => c.setAttribute('aria-pressed', String(pickFilter[c.dataset.k] === c.dataset.v)));
+      grid.textContent = '';
+      const list = batch.picks.filter(p =>
+        (pickFilter.h === 'all' || p.horizon === pickFilter.h) &&
+        (pickFilter.ac === 'all' || p.assetClass === pickFilter.ac));
+      list.forEach(p => grid.appendChild(pickCard(p)));
+      empty.style.display = list.length ? 'none' : '';
     }
+    refresh();
 
-    // 📅 다가오는 일정
-    const today = new Date().toISOString().slice(0, 10);
-    const future = (RECO.events || []).filter(e => e.date >= today).slice(0, 5);
-    if (future.length) {
-      wrap.appendChild(el('h2', 'homesec', '📅 다가오는 주요 일정'));
-      const evTbl = el('table', 'plain');
-      const evb = el('tbody');
-      future.forEach(ev => {
-        const dday = Math.round((new Date(ev.date) - new Date(today)) / 86400000);
-        const tr = el('tr');
-        const td1 = el('td');
-        td1.style.whiteSpace = 'nowrap';
-        td1.appendChild(el('b', null, dday === 0 ? '오늘' : `D-${dday}`));
-        td1.appendChild(el('div', 'bd', ev.date.slice(5).replace('-', '/')));
-        tr.appendChild(td1);
-        const td2 = el('td');
-        td2.appendChild(el('div', null, `${ev.kind === '실적' ? '📊' : ev.kind === '배당' ? '💰' : ev.kind === '금리' ? '🏦' : '🔔'} ${ev.title}`));
-        td2.appendChild(el('div', 'bd', ev.note));
-        tr.appendChild(td2);
-        const td3 = el('td', null, '영향 ' + ev.impact);
-        td3.style.whiteSpace = 'nowrap';
-        tr.appendChild(td3);
-        evb.appendChild(tr);
-      });
-      evTbl.appendChild(evb);
-      wrap.appendChild(evTbl);
-    }
+    const note = el('p', 'tiny');
+    note.style.marginTop = '0.8rem';
+    note.textContent = '기준: ' + (batch.pricesAsOf || '').split('.')[0] + '. 주문 전 반드시 현재 가격을 확인하세요.';
+    root.appendChild(note);
+  };
 
-    const btnRow = el('div');
-    btnRow.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.9rem';
-    const all = el('button', 'iconbtn', `추천 ${batchPicks().length}종목 전체 보기 →`);
-    all.type = 'button';
-    all.addEventListener('click', () => { state.view = 'reco'; state.level = 'all'; renderAll(); window.scrollTo({ top: 0 }); });
-    btnRow.appendChild(all);
-    const sureBtn = el('button', 'iconbtn', '🛡️ 원금 보전이 우선이라면 →');
-    sureBtn.type = 'button';
-    sureBtn.addEventListener('click', () => { state.view = 'sure'; renderAll(); window.scrollTo({ top: 0 }); });
-    btnRow.appendChild(sureBtn);
-    wrap.appendChild(btnRow);
+  // ───────── vs S&P 500 뷰 ─────────
+  renderers.race = function (root) {
+    if (!STRAT) { root.appendChild(el('p', 'muted', '전략 데이터를 불러오지 못했어요.')); return; }
+    const css = getComputedStyle(document.body);
+    const C1 = css.getPropertyValue('--series-1').trim();
+    const C2 = css.getPropertyValue('--series-2').trim();
 
-  }
+    // 목표 선언 + 정직 프레임
+    const head = el('div', 'card banner info');
+    head.appendChild(el('h2', null, '🏁 목표: S&P 500 이기기 — 그리고 그 성적을 매일 공개하기'));
+    const pgh = el('p'); pgh.style.fontSize = '0.88rem';
+    pgh.textContent = 'S&P 500은 "미국 주식을 그냥 다 사서 오래 들고 있기"라는 최강의 기본기예요. 우리는 이걸 이기는 것을 목표로 포트폴리오를 짰고, 정말 이기고 있는지 아래에서 매일 실제 지수로 확인해요. 확실한 건 하나: 이긴다는 보장은 세상 어디에도 없어요.';
+    head.appendChild(pgh);
+    root.appendChild(head);
 
-  // ───────── 팬 차트 ─────────
-  function fanChart(sim, pick) {
-    const box = el('div', 'chartbox');
-    const head = el('div', 'chead');
-    head.appendChild(el('span', 'ctitle', '미래 2만 번 실험 결과 (수익률 경로)'));
-    head.appendChild(el('span', 'csub', '몬테카를로 · 백분위 밴드'));
-    const tgl = el('button', 'tglbtn', '표로 보기');
-    tgl.type = 'button';
-    head.appendChild(tgl);
-    box.appendChild(head);
+    // 레이스 스코어보드 + 차트
+    const raceCard = el('div', 'card');
+    const rh = el('h2', null, '실시간 레이스');
+    rh.appendChild(el('span', 'hint', STRAT.race.start + ' 시작 · 둘 다 100에서 출발 · 매일 아침 실측 갱신'));
+    raceCard.appendChild(rh);
+    const series = STRAT.race.series || [];
+    const last = series[series.length - 1] || { strategy: 100, spy: 100 };
+    const gap = last.strategy - last.spy;
+    const tl = el('div', 'tiles');
+    tl.appendChild(tile('전략 포트폴리오', last.strategy.toFixed(1), null, { swatch: C1 }));
+    tl.appendChild(tile('S&P 500', last.spy.toFixed(1), null, { swatch: C2 }));
+    tl.appendChild(tile('격차', signPct(gap, 1).replace('%', 'p'), gap === 0 ? '동률' : (gap > 0 ? '전략 우세' : '벤치마크 우세'), { deltaClass: gap >= 0 ? 'delta-up' : 'delta-down' }));
+    raceCard.appendChild(tl);
 
-    const W = 640, H = 270, L = 48, R = 18, T = 16, B = 32;
-    const pw = W - L - R, ph = H - T - B;
-    const bands = sim.bands, n = bands.steps.length, maxStep = bands.steps[n - 1];
-    const yLo = Math.min(...bands.p5, 0), yHi = Math.max(...bands.p95, 0);
-    const pad = (yHi - yLo) * 0.08;
-    const y0 = yLo - pad, y1 = yHi + pad;
-    const xAt = i => L + pw * (bands.steps[i] / maxStep);
-    const yAt = v => T + ph * (1 - (v - y0) / (y1 - y0));
+    const legend = el('div', 'race-legend');
+    const l1 = el('span'); const s1 = el('span', 'swatch'); s1.style.background = C1; l1.appendChild(s1); l1.appendChild(document.createTextNode('전략 포트폴리오'));
+    const l2 = el('span'); const s2 = el('span', 'swatch'); s2.style.background = C2; l2.appendChild(s2); l2.appendChild(document.createTextNode('S&P 500'));
+    legend.appendChild(l1); legend.appendChild(l2);
+    legend.style.marginTop = '0.7rem';
+    raceCard.appendChild(legend);
 
-    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0', 'aria-label': '시뮬레이션 수익률 백분위 밴드 차트. 화살표 키로 시점 이동.' });
-    const step = niceStep((y1 - y0) / 5);
-    for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) {
-      const yy = yAt(v);
-      svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: yy, y2: yy, stroke: 'var(--grid)', 'stroke-width': 1 }));
-      const t = svgEl('text', { x: L - 7, y: yy + 3.5, 'text-anchor': 'end', fill: 'var(--text-muted)', 'font-size': 10, style: 'font-variant-numeric: tabular-nums' });
-      t.textContent = (v > 0 ? '+' : '') + v.toFixed(0) + '%';
-      svg.appendChild(t);
-    }
-    if (y0 < 0 && y1 > 0) svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: yAt(0), y2: yAt(0), stroke: 'var(--baseline)', 'stroke-width': 1 }));
-
-    const area = (loArr, hiArr) => {
-      let d = '';
-      for (let i = 0; i < n; i++) d += (i ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(hiArr[i]).toFixed(1);
-      for (let i = n - 1; i >= 0; i--) d += 'L' + xAt(i).toFixed(1) + ' ' + yAt(loArr[i]).toFixed(1);
-      return d + 'Z';
-    };
-    svg.appendChild(svgEl('path', { d: area(bands.p5, bands.p95), fill: 'var(--series-1)', 'fill-opacity': 0.08 }));
-    svg.appendChild(svgEl('path', { d: area(bands.p25, bands.p75), fill: 'var(--series-1)', 'fill-opacity': 0.16 }));
-    const med = bands.p50.map((v, i) => (i ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(v).toFixed(1)).join(' ');
-    svg.appendChild(svgEl('path', { d: med, fill: 'none', stroke: 'var(--series-1)', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-    const li = n - 1;
-    svg.appendChild(svgEl('circle', { cx: xAt(li), cy: yAt(bands.p50[li]), r: 4, fill: 'var(--series-1)', stroke: 'var(--surface-1)', 'stroke-width': 2 }));
-    const endLb = svgEl('text', { x: xAt(li) - 6, y: yAt(bands.p50[li]) - 8, 'text-anchor': 'end', fill: 'var(--text-primary)', 'font-size': 11, 'font-weight': 650 });
-    endLb.textContent = '중앙값 ' + pct(bands.p50[li]);
-    svg.appendChild(endLb);
-
-    const kx = KIND_X[pick.horizon];
-    const axisPts = [0, Math.floor((n - 1) / 2), n - 1];
-    kx.axis.forEach((lab, i) => {
-      const t = svgEl('text', { x: xAt(axisPts[i]), y: H - 8, 'text-anchor': i === 0 ? 'start' : i === 2 ? 'end' : 'middle', fill: 'var(--text-muted)', 'font-size': 10 });
-      t.textContent = lab;
-      svg.appendChild(t);
-    });
-
-    const cross = svgEl('line', { y1: T, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1, visibility: 'hidden' });
-    svg.appendChild(cross);
-    const overlay = svgEl('rect', { x: L, y: T, width: pw, height: ph, fill: 'transparent' });
-    svg.appendChild(overlay);
-    const tip = el('div', 'viztip');
-    box.appendChild(tip);
-
-    const ROWS = [['95백분위', 'p95'], ['75백분위', 'p75'], ['중앙값', 'p50'], ['25백분위', 'p25'], ['5백분위', 'p5']];
-    let curIdx = n - 1;
-    function showIdx(i) {
-      i = Math.max(0, Math.min(n - 1, i));
-      cross.setAttribute('x1', xAt(i)); cross.setAttribute('x2', xAt(i));
-      cross.setAttribute('visibility', 'visible');
-      tip.textContent = '';
-      tip.appendChild(el('div', 'tx', kx.tip(bands.steps[i])));
-      for (const [label, key] of ROWS) {
-        const row = el('div', 'row');
-        const k = el('span', 'k'); k.style.borderTopColor = 'var(--series-1)';
-        if (key !== 'p50') k.style.opacity = key === 'p25' || key === 'p75' ? 0.5 : 0.25;
-        row.appendChild(k);
-        row.appendChild(el('span', 'v', pct(bands[key][i])));
-        row.appendChild(el('span', 'l', label));
-        tip.appendChild(row);
-      }
-      tip.style.display = 'block';
-      const bw = box.clientWidth, scale = bw / W;
-      const px = xAt(i) * scale;
-      tip.style.left = Math.min(bw - tip.offsetWidth - 6, Math.max(6, px + 12)) + 'px';
-      tip.style.top = '3rem';
-      curIdx = i;
-    }
-    function hide() { cross.setAttribute('visibility', 'hidden'); tip.style.display = 'none'; }
-    overlay.addEventListener('pointermove', e => {
-      const r = svg.getBoundingClientRect();
-      const fx = (e.clientX - r.left) * (W / r.width);
-      let best = 0, bd = Infinity;
-      for (let i = 0; i < n; i++) { const d = Math.abs(xAt(i) - fx); if (d < bd) { bd = d; best = i; } }
-      showIdx(best);
-    });
-    overlay.addEventListener('pointerleave', hide);
-    svg.addEventListener('focus', () => showIdx(curIdx));
-    svg.addEventListener('blur', hide);
-    svg.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') { e.preventDefault(); showIdx(curIdx - 1); }
-      if (e.key === 'ArrowRight') { e.preventDefault(); showIdx(curIdx + 1); }
-    });
-
-    const legend = el('div', 'legend');
-    const mkLi = (kind, color, opacity, text) => {
-      const liEl = el('span', 'li');
-      const key = el('span', kind === 'line' ? 'keyline' : 'keyrect');
-      if (kind === 'line') key.style.borderTopColor = color;
-      else { key.style.background = color; key.style.opacity = opacity; }
-      liEl.appendChild(key); liEl.appendChild(document.createTextNode(text));
-      return liEl;
-    };
-    legend.appendChild(mkLi('line', 'var(--series-1)', 1, '중앙값 (가운데 결과)'));
-    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.35, '25–75 백분위 (절반이 이 안)'));
-    legend.appendChild(mkLi('rect', 'var(--series-1)', 0.15, '5–95 백분위 (거의 다 이 안)'));
-
-    const tbl = el('table', 'plain');
-    tbl.style.display = 'none';
-    const thead = el('thead'); const hr = el('tr');
-    ['시점', '5%', '25%', '중앙값', '75%', '95%'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    for (let i = 0; i < n; i++) {
-      const tr = el('tr');
-      tr.appendChild(el('td', null, kx.stepLabel(bands.steps[i])));
-      ['p5', 'p25', 'p50', 'p75', 'p95'].forEach(k => tr.appendChild(el('td', 'num', pct(bands[k][i]))));
-      tb.appendChild(tr);
-    }
-    tbl.appendChild(tb);
-    box.appendChild(svg); box.appendChild(legend); box.appendChild(tbl);
-    tgl.addEventListener('click', () => {
-      const showTbl = tbl.style.display === 'none';
-      tbl.style.display = showTbl ? '' : 'none';
-      svg.style.display = showTbl ? 'none' : '';
-      legend.style.display = showTbl ? 'none' : '';
-      tgl.textContent = showTbl ? '차트로 보기' : '표로 보기';
-      hide();
-    });
-    return box;
-  }
-
-  function niceStep(raw) {
-    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    for (const m of [1, 2, 2.5, 5, 10]) if (raw <= m * mag) return m * mag;
-    return 10 * mag;
-  }
-
-  // ───────── 히스토그램 ─────────
-  function histChart(sim) {
-    const box = el('div', 'chartbox');
-    const head = el('div', 'chead');
-    head.appendChild(el('span', 'ctitle', '끝났을 때 결과 분포'));
-    head.appendChild(el('span', 'csub', '파랑=이익 · 빨강=손실'));
-    const tgl = el('button', 'tglbtn', '표로 보기'); tgl.type = 'button';
-    head.appendChild(tgl);
-    box.appendChild(head);
-
-    const W = 640, H = 200, L = 44, R = 14, T = 12, B = 28;
-    const pw = W - L - R, ph = H - T - B;
-    const { lo, hi, counts } = sim.hist;
-    const nB = counts.length, binW = (hi - lo) / nB;
-    const total = sim.paths;
-    const maxC = Math.max(...counts);
-    const xAt = v => L + pw * ((v - lo) / (hi - lo));
-    const yAt = c => T + ph * (1 - c / maxC);
-
-    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '최종 수익률 히스토그램' });
-    const stepP = niceStep((maxC / total * 100) / 3);
-    for (let p = stepP; p <= maxC / total * 100; p += stepP) {
-      const yy = yAt(p / 100 * total);
-      svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: yy, y2: yy, stroke: 'var(--grid)', 'stroke-width': 1 }));
-      const t = svgEl('text', { x: L - 6, y: yy + 3.5, 'text-anchor': 'end', fill: 'var(--text-muted)', 'font-size': 10, style: 'font-variant-numeric: tabular-nums' });
-      t.textContent = p.toFixed(0) + '%';
-      svg.appendChild(t);
-    }
-    const tip = el('div', 'viztip');
-    box.appendChild(tip);
-    const peakIdx = counts.indexOf(maxC);
-    for (let i = 0; i < nB; i++) {
-      const b0 = lo + i * binW, b1 = b0 + binW, c = counts[i];
-      const x = xAt(b0) + 1, w = Math.max(1, xAt(b1) - xAt(b0) - 2);
-      const y = yAt(c), h = T + ph - y;
-      const fill = (b0 < 0 && b1 > 0) ? 'var(--div-neutral)' : (b1 <= 0 ? 'var(--series-6)' : 'var(--series-1)');
-      const r = Math.min(3, w / 2, h);
-      const d = h <= 0.5 ? '' :
-        `M${x} ${T + ph} V${y + r} Q${x} ${y} ${x + r} ${y} H${x + w - r} Q${x + w} ${y} ${x + w} ${y + r} V${T + ph} Z`;
-      if (d) svg.appendChild(svgEl('path', { d, fill, 'data-bar': i }));
-      const hit = svgEl('rect', { x: xAt(b0), y: T, width: xAt(b1) - xAt(b0), height: ph, fill: 'transparent', tabindex: '0', role: 'img', 'aria-label': `${b0.toFixed(1)}%부터 ${b1.toFixed(1)}% 구간, 확률 ${(c / total * 100).toFixed(1)}%` });
-      const show = () => {
-        const bar = svg.querySelector(`[data-bar="${i}"]`);
-        if (bar) bar.setAttribute('fill-opacity', '0.8');
-        tip.textContent = '';
-        tip.appendChild(el('div', 'tx', `${(c / total * 100).toFixed(1)}%`));
-        const row = el('div', 'row');
-        const k = el('span', 'k'); k.style.borderTopColor = fill;
-        row.appendChild(k);
-        row.appendChild(el('span', 'l', `${b0.toFixed(1)}% ~ ${b1.toFixed(1)}%`));
-        tip.appendChild(row);
-        tip.style.display = 'block';
-        const bw = box.clientWidth, scale = bw / W;
-        tip.style.left = Math.min(bw - tip.offsetWidth - 6, Math.max(6, xAt(b0) * scale)) + 'px';
-        tip.style.top = '2.6rem';
-      };
-      const hideT = () => {
-        const bar = svg.querySelector(`[data-bar="${i}"]`);
-        if (bar) bar.removeAttribute('fill-opacity');
-        tip.style.display = 'none';
-      };
-      hit.addEventListener('pointerenter', show);
-      hit.addEventListener('pointerleave', hideT);
-      hit.addEventListener('focus', show);
-      hit.addEventListener('blur', hideT);
-      svg.appendChild(hit);
-      if (i === peakIdx) {
-        const t = svgEl('text', { x: xAt(b0) + (xAt(b1) - xAt(b0)) / 2, y: y - 5, 'text-anchor': 'middle', fill: 'var(--text-secondary)', 'font-size': 10, 'font-weight': 650 });
-        t.textContent = (c / total * 100).toFixed(1) + '%';
-        svg.appendChild(t);
-      }
-    }
-    if (lo < 0 && hi > 0) svg.appendChild(svgEl('line', { x1: xAt(0), x2: xAt(0), y1: T, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1 }));
-    svg.appendChild(svgEl('line', { x1: L, x2: W - R, y1: T + ph, y2: T + ph, stroke: 'var(--baseline)', 'stroke-width': 1 }));
-    [lo, 0, hi].forEach((v, i) => {
-      if (i === 1 && (lo >= 0 || hi <= 0)) return;
-      const t = svgEl('text', { x: xAt(v), y: H - 6, 'text-anchor': i === 0 ? 'start' : i === 2 ? 'end' : 'middle', fill: 'var(--text-muted)', 'font-size': 10, style: 'font-variant-numeric: tabular-nums' });
-      t.textContent = (v > 0 ? '+' : '') + v.toFixed(0) + '%';
-      svg.appendChild(t);
-    });
-
-    const legend = el('div', 'legend');
-    const mkLi = (color, text) => {
-      const liEl = el('span', 'li');
-      const key = el('span', 'keyrect'); key.style.background = color;
-      liEl.appendChild(key); liEl.appendChild(document.createTextNode(text));
-      return liEl;
-    };
-    legend.appendChild(mkLi('var(--series-1)', '이익 구간'));
-    legend.appendChild(mkLi('var(--series-6)', '손실 구간'));
-
-    const tbl = el('table', 'plain'); tbl.style.display = 'none';
-    const thead = el('thead'); const hr = el('tr');
-    ['수익률 구간', '확률'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    for (let i = 0; i < nB; i++) {
-      if (!counts[i]) continue;
-      const b0 = lo + i * binW, b1 = b0 + binW;
-      const tr = el('tr');
-      tr.appendChild(el('td', null, `${b0.toFixed(1)}% ~ ${b1.toFixed(1)}%`));
-      tr.appendChild(el('td', 'num', (counts[i] / total * 100).toFixed(1) + '%'));
-      tb.appendChild(tr);
-    }
-    tbl.appendChild(tb);
-    box.appendChild(svg); box.appendChild(legend); box.appendChild(tbl);
-    tgl.addEventListener('click', () => {
-      const showTbl = tbl.style.display === 'none';
-      tbl.style.display = showTbl ? '' : 'none';
-      svg.style.display = showTbl ? 'none' : '';
-      legend.style.display = showTbl ? 'none' : '';
-      tgl.textContent = showTbl ? '차트로 보기' : '표로 보기';
-    });
-    return box;
-  }
-
-  // ───────── 세금 계산 ─────────
-  function taxCompute({ market, amountKrw, fx, buyP, sellP, divPerShareYr }) {
-    const unitKrw = market === 'US' ? buyP * fx : buyP;
-    const shares = unitKrw > 0 ? Math.floor(amountKrw / unitKrw) : 0;
-    const investedKrw = shares * unitKrw;
-    const sellKrw = market === 'US' ? shares * sellP * fx : shares * sellP;
-    const gainKrw = sellKrw - investedKrw;
-    let tax = 0, taxLabel = '';
-    if (market === 'US') {
-      tax = Math.max(0, gainKrw - 2500000) * 0.22;
-      taxLabel = '양도소득세 22% (연 250만원 공제 후)';
+    if (series.length >= 2) {
+      raceCard.appendChild(buildRaceChart(series, C1, C2));
     } else {
-      tax = sellKrw * 0.0015;
-      taxLabel = '증권거래세 0.15% (매도금액 기준)';
+      const wait = el('div', 'banner good card');
+      wait.style.marginBottom = '0';
+      wait.appendChild(el('b', null, '🚦 오늘이 레이스 첫날이에요!'));
+      wait.appendChild(el('div', 'muted', '내일 아침부터 실제 지수가 한 점씩 찍히면서 선이 그려져요. 며칠 뒤에 다시 와서 누가 앞서는지 확인해 보세요.'));
+      raceCard.appendChild(wait);
     }
-    const divGrossKrw = market === 'US' ? shares * divPerShareYr * fx : shares * divPerShareYr;
-    const divNetKrw = divGrossKrw * (market === 'US' ? 0.85 : 0.846);
-    const netKrw = sellKrw - tax;
-    return { shares, investedKrw, sellKrw, gainKrw, tax, taxLabel, divGrossKrw, divNetKrw, netKrw,
-      netRet: investedKrw ? (netKrw - investedKrw) / investedKrw * 100 : 0 };
-  }
-  function annualDividend(pick) {
-    if (!pick.dividend) return 0;
-    const d = pick.dividend;
-    return d.frequency === '분기' && d.perShare * 4 / pick.refPrice < 0.2 ? d.perShare * 4 : d.perShare;
-  }
-
-  function taxCalcBlock(pick) {
-    const box = el('div', 'calc');
-    const inrow = el('div', 'inrow');
-    const mk = (labelText, value, stepAttr) => {
-      const lab = el('label'); lab.appendChild(el('span', null, labelText));
-      const inp = el('input'); inp.type = 'number'; inp.value = value; inp.min = 0;
-      if (stepAttr) inp.step = stepAttr;
-      lab.appendChild(inp); inrow.appendChild(lab);
-      return inp;
-    };
-    const amountIn = mk('투자금액 (원)', 1000000, 100000);
-    const buyIn = mk(`매수가 (${pick.currency === 'KRW' ? '원' : '$'})`, (pick.buy.low + pick.buy.high) / 2, pick.currency === 'KRW' ? 1000 : 0.01);
-    const sellIn = mk(`매도가 (${pick.currency === 'KRW' ? '원' : '$'})`, (pick.sell.low + pick.sell.high) / 2, pick.currency === 'KRW' ? 1000 : 0.01);
-    let fxIn = null;
-    if (pick.market === 'US') fxIn = mk('환율 (원/$)', RECO.meta.fxUsdKrw, 0.1);
-    box.appendChild(inrow);
-
-    const out = el('table', 'plain');
-    box.appendChild(out);
-    box.appendChild(el('p', 'note', RECO.meta.taxNote + (pick.market === 'US' ? ' ※ 250만원 공제는 연간 해외주식 양도차익 전체 합산 기준의 단순 계산입니다.' : '')));
-
-    function row(tb, k, v, cls) {
+    // 표로 보기
+    const tblBtn = el('button', 'btn'); tblBtn.style.marginTop = '0.7rem'; tblBtn.textContent = '📄 표로 보기';
+    const tblWrap = el('div'); tblWrap.hidden = true;
+    tblBtn.addEventListener('click', () => { tblWrap.hidden = !tblWrap.hidden; tblBtn.textContent = tblWrap.hidden ? '📄 표로 보기' : '📄 표 닫기'; });
+    const tbl = el('table', 'dtable');
+    const thead = el('thead'); const trh = el('tr');
+    ['날짜', '전략', 'S&P 500', '격차'].forEach(h2 => trh.appendChild(el('th', null, h2)));
+    thead.appendChild(trh); tbl.appendChild(thead);
+    const tb = el('tbody');
+    series.forEach(pt => {
       const tr = el('tr');
-      tr.appendChild(el('td', null, k));
-      const td = el('td', 'num');
-      if (cls) td.appendChild(el('span', cls, v)); else td.textContent = v;
+      tr.appendChild(el('td', null, pt.date));
+      tr.appendChild(el('td', null, pt.strategy.toFixed(1)));
+      tr.appendChild(el('td', null, pt.spy.toFixed(1)));
+      const g = pt.strategy - pt.spy;
+      const td = el('td', null, signPct(g, 1).replace('%', 'p'));
+      td.className = g >= 0 ? 'delta-up' : 'delta-down';
       tr.appendChild(td);
       tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    tblWrap.appendChild(tbl);
+    raceCard.appendChild(tblBtn);
+    raceCard.appendChild(tblWrap);
+    root.appendChild(raceCard);
+
+    // 이길 확률 (가정 켬/끔 병기)
+    const prob = el('div', 'card');
+    prob.appendChild(el('h2', null, '🎲 이길 확률은 얼마나 될까요? (몬테카를로 20,000 경로)'));
+    const pb = el('div', 'pbeat');
+    const mk = (title, v, d) => {
+      const b = el('div', 'pb');
+      b.appendChild(el('div', 'muted', title));
+      b.appendChild(el('div', 'n', v + '%'));
+      b.appendChild(el('div', 'd', d));
+      return b;
+    };
+    const y = STRAT.sim.h1y, q = STRAT.sim.h3m;
+    pb.appendChild(mk('1년 뒤 S&P 500을 이길 확률', y.withAlpha.pBeat.toFixed(1), '팩터 프리미엄 가정을 반영한 값 — 중앙 초과수익 ' + signPct(y.withAlpha.excessMedian) + 'p'));
+    pb.appendChild(mk('같은 확률, 가정을 전부 끄면', y.noAlpha.pBeat.toFixed(1), '프리미엄이 실현되지 않으면 이 정도 — 이 차이가 "보장이 아닌 이유"예요'));
+    pb.appendChild(mk('3개월 기준', q.withAlpha.pBeat.toFixed(1), '짧을수록 운의 비중이 커져요 (가정 끄면 ' + q.noAlpha.pBeat.toFixed(1) + '%)'));
+    prob.appendChild(pb);
+    const hp = el('p', 'tiny'); hp.style.marginTop = '0.6rem';
+    hp.textContent = '읽는 법: 지수를 이기는 건 원래 어렵습니다. 51%는 "동전 던지기보다 아주 조금 유리하게 설계했다"는 뜻이고, 그 조금이 모멘텀·배당 같은 팩터 프리미엄이 앞으로도 실현된다는 가정에 걸려 있어요. 1년 예상 수익 중앙값: 전략 ' + signPct(y.withAlpha.portMedian) + ' vs S&P 500 ' + signPct(y.withAlpha.spyMedian) + ' · 나쁜 해(하위 5%)는 둘 다 ' + signPct(y.withAlpha.portP5) + ' 근처까지 빠질 수 있어요.';
+    prob.appendChild(hp);
+    root.appendChild(prob);
+
+    // 포트폴리오 구성
+    const comp = el('div', 'card');
+    comp.appendChild(el('h2', null, '🧺 무엇을 얼마나 담았나요?'));
+    (STRAT.sleeves || []).forEach(sv => {
+      const row = el('div', 'wrow');
+      const nm = el('div'); nm.appendChild(el('b', null, sv.name));
+      nm.appendChild(el('div', 'tiny', '시장 민감도 β ' + sv.beta + ' · 변동성 연 ' + sv.vol + '%' + (sv.alphaAssumption ? ' · 프리미엄 가정 +' + sv.alphaAssumption + '%p' : '')));
+      row.appendChild(nm);
+      const bar = el('div', 'wbar'); const fi = el('i'); fi.style.width = sv.weight + '%'; bar.appendChild(fi);
+      row.appendChild(bar);
+      row.appendChild(el('div', 'wpct', sv.weight + '%'));
+      comp.appendChild(row);
+    });
+    comp.appendChild(el('p', 'tiny', STRAT.rebalance + ' · 매일의 추천 카드(당일~장기)는 이 뼈대 위에서 위성 부분을 고르는 참고안이에요.'));
+    root.appendChild(comp);
+
+    // 왜 이렇게 짰나요 + 가정 공개
+    const why = el('div', 'card');
+    why.appendChild(el('h2', null, '🧠 왜 이렇게 짰나요?'));
+    const wl = el('ul'); wl.style.cssText = 'margin-left:1.1rem;font-size:0.87rem';
+    [
+      '코어 45% — 이기려는 상대(S&P 500)를 절반 가까이 그대로 담아요. 크게 뒤처질 위험부터 줄이는 것이 출발점이에요.',
+      '성장 위성 30% — AI 대형주 3~5종 분산. 시장보다 민감(β1.35)하고, 학계가 오래 관찰해 온 모멘텀 프리미엄(+2%p 가정)에 기대요.',
+      '방어 위성 15% — 배당·저변동주. 하락장에서 덜 빠져서 전체의 출렁임을 줄여 줘요.',
+      '파킹 10% — 조정장이 오면 싸게 살 실탄이자, 어떤 날에도 이자가 붙는 안전판이에요.',
+      '분기 리밸런싱 — 오른 것을 조금 팔고 내린 것을 조금 사는 것을 기계적으로 반복해요. 감정을 빼는 장치예요.',
+    ].forEach(t => wl.appendChild(el('li', null, t)));
+    why.appendChild(wl);
+    const acc = el('details', 'acc'); acc.style.marginTop = '0.6rem';
+    acc.appendChild(el('summary', null, '📜 정직한 가정 전부 보기'));
+    const ab = el('div', 'acc-body');
+    const al = el('ul'); al.style.marginLeft = '1.1rem';
+    (STRAT.assumptions || []).forEach(a => al.appendChild(el('li', null, a)));
+    ab.appendChild(al);
+    acc.appendChild(ab);
+    why.appendChild(acc);
+    root.appendChild(why);
+  };
+
+  // ───────── 레이스 차트 (SVG) ─────────
+  function buildRaceChart(series, C1, C2) {
+    const W = 720, H = 300, M = { l: 46, r: 96, t: 14, b: 28 };
+    const iw = W - M.l - M.r, ih = H - M.t - M.b;
+    const xs = i => M.l + (series.length === 1 ? iw / 2 : i / (series.length - 1) * iw);
+    let lo = Infinity, hi = -Infinity;
+    series.forEach(p => { lo = Math.min(lo, p.strategy, p.spy); hi = Math.max(hi, p.strategy, p.spy); });
+    const pad = Math.max(0.6, (hi - lo) * 0.15);
+    lo -= pad; hi += pad;
+    const ys = v => M.t + (1 - (v - lo) / (hi - lo)) * ih;
+
+    const wrap = el('div', 'race-wrap');
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('class', 'race-svg');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', '전략 포트폴리오와 S&P 500의 지수 비교 선그래프 (표로 보기 버튼으로 수치 확인 가능)');
+    const sv = (tag, attrs) => { const n = document.createElementNS(NS, tag); Object.keys(attrs).forEach(k => n.setAttribute(k, attrs[k])); return n; };
+    const css = getComputedStyle(document.body);
+    const GRID = css.getPropertyValue('--grid').trim();
+    const TXT = css.getPropertyValue('--text-muted').trim();
+
+    // 그리드 + y라벨 (4틱, 은은하게)
+    for (let k = 0; k <= 3; k++) {
+      const v = lo + (hi - lo) * k / 3;
+      const yy = ys(v);
+      svg.appendChild(sv('line', { x1: M.l, x2: W - M.r, y1: yy, y2: yy, stroke: GRID, 'stroke-width': 1 }));
+      const t = sv('text', { x: M.l - 7, y: yy + 4, 'text-anchor': 'end', 'font-size': 11, fill: TXT });
+      t.textContent = v.toFixed(1);
+      svg.appendChild(t);
     }
-    function recalc() {
-      const r = taxCompute({
-        market: pick.market,
-        amountKrw: +amountIn.value || 0,
-        fx: fxIn ? (+fxIn.value || RECO.meta.fxUsdKrw) : 1,
-        buyP: +buyIn.value || 0,
-        sellP: +sellIn.value || 0,
-        divPerShareYr: annualDividend(pick),
-      });
-      out.textContent = '';
-      const tb = el('tbody');
-      row(tb, '매수 가능 수량', r.shares.toLocaleString('ko-KR') + '주');
-      row(tb, '실제 투입금액', krw(r.investedKrw));
-      row(tb, '매도금액 (목표가 기준)', krw(r.sellKrw));
-      row(tb, '매매차익 (세전)', krw(r.gainKrw), pctCls(r.gainKrw));
-      row(tb, r.taxLabel, '-' + krw(r.tax));
-      row(tb, '연간 배당 (세전)', r.divGrossKrw > 0 ? krw(r.divGrossKrw) : '해당 없음');
-      if (r.divGrossKrw > 0) row(tb, '연간 배당 실수령 (세후)', krw(r.divNetKrw), 'pos');
-      row(tb, '매도 실수령액 (세후)', krw(r.netKrw));
-      row(tb, '세후 수익률 (배당 제외)', pct(r.netRet), pctCls(r.netRet));
-      out.appendChild(tb);
+    // x라벨 (처음/끝)
+    const xt = (i, anchor) => { const t = sv('text', { x: xs(i), y: H - 8, 'text-anchor': anchor, 'font-size': 11, fill: TXT }); t.textContent = series[i].date.slice(5); return t; };
+    svg.appendChild(xt(0, 'start'));
+    if (series.length > 1) svg.appendChild(xt(series.length - 1, 'end'));
+
+    // 100 기준선
+    if (lo < 100 && hi > 100) {
+      svg.appendChild(sv('line', { x1: M.l, x2: W - M.r, y1: ys(100), y2: ys(100), stroke: css.getPropertyValue('--baseline').trim(), 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
     }
-    [amountIn, buyIn, sellIn, fxIn].forEach(i => i && i.addEventListener('input', recalc));
-    recalc();
-    return box;
+    // 시리즈 (2px 라인 + 끝점 + 직접 라벨)
+    const mkPath = (key, color) => {
+      const d = series.map((p, i) => (i ? 'L' : 'M') + xs(i).toFixed(1) + ' ' + ys(p[key]).toFixed(1)).join(' ');
+      svg.appendChild(sv('path', { d, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      const li = series.length - 1;
+      svg.appendChild(sv('circle', { cx: xs(li), cy: ys(series[li][key]), r: 3.5, fill: color }));
+      const lab = sv('text', { x: xs(li) + 9, y: ys(series[li][key]) + 4, 'font-size': 11, 'font-weight': 700, fill: css.getPropertyValue('--text-secondary').trim() });
+      lab.textContent = (key === 'strategy' ? '전략 ' : 'S&P ') + series[li][key].toFixed(1);
+      svg.appendChild(lab);
+      const sw = sv('rect', { x: xs(li) + 9, y: ys(series[li][key]) + 8, width: 14, height: 3, rx: 1.5, fill: color });
+      svg.appendChild(sw);
+    };
+    // 라벨 충돌 회피: 값이 가까우면 한쪽을 위/아래로 — 단순화: strategy 라벨을 위로 6px 이동
+    mkPath('spy', C2);
+    mkPath('strategy', C1);
+
+    // 크로스헤어 + 툴팁
+    const cross = sv('line', { x1: 0, x2: 0, y1: M.t, y2: H - M.b, stroke: TXT, 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 });
+    svg.appendChild(cross);
+    const dot1 = sv('circle', { r: 4, fill: C1, opacity: 0 });
+    const dot2 = sv('circle', { r: 4, fill: C2, opacity: 0 });
+    svg.appendChild(dot1); svg.appendChild(dot2);
+    const hit = sv('rect', { x: M.l, y: M.t, width: iw, height: ih, fill: 'transparent' });
+    svg.appendChild(hit);
+    const tip = el('div', 'race-tip');
+    wrap.appendChild(svg);
+    wrap.appendChild(tip);
+
+    function onMove(clientX) {
+      const r = svg.getBoundingClientRect();
+      const px = (clientX - r.left) / r.width * W;
+      let idx = Math.round((px - M.l) / (iw || 1) * (series.length - 1));
+      idx = Math.max(0, Math.min(series.length - 1, idx));
+      const p = series[idx];
+      const x = xs(idx);
+      cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('opacity', 0.6);
+      dot1.setAttribute('cx', x); dot1.setAttribute('cy', ys(p.strategy)); dot1.setAttribute('opacity', 1);
+      dot2.setAttribute('cx', x); dot2.setAttribute('cy', ys(p.spy)); dot2.setAttribute('opacity', 1);
+      tip.style.display = 'block';
+      tip.textContent = '';
+      tip.appendChild(el('b', null, p.date));
+      const g = p.strategy - p.spy;
+      const lines = [
+        '전략 ' + p.strategy.toFixed(1),
+        'S&P 500 ' + p.spy.toFixed(1),
+        '격차 ' + signPct(g, 1).replace('%', 'p'),
+      ];
+      lines.forEach(t => tip.appendChild(el('div', null, t)));
+      const leftPx = x / W * r.width;
+      tip.style.left = Math.min(r.width - 130, Math.max(0, leftPx + 10)) + 'px';
+      tip.style.top = '18px';
+    }
+    function onLeave() {
+      cross.setAttribute('opacity', 0); dot1.setAttribute('opacity', 0); dot2.setAttribute('opacity', 0);
+      tip.style.display = 'none';
+    }
+    hit.addEventListener('mousemove', e => onMove(e.clientX));
+    hit.addEventListener('mouseleave', onLeave);
+    hit.addEventListener('touchstart', e => { if (e.touches[0]) onMove(e.touches[0].clientX); }, { passive: true });
+    hit.addEventListener('touchmove', e => { if (e.touches[0]) onMove(e.touches[0].clientX); }, { passive: true });
+    hit.addEventListener('touchend', onLeave);
+    return wrap;
   }
 
-  // ───────── 정밀 주문 가이드 (시가 조건부 정확 주문) ─────────
-  function precisionGuide(p, sim) {
-    const box = el('div', 'calc');
-    const cur = p.currency;
-    const isKR = p.market === 'KR';
-    const openTime = isKR ? '09:00' : '09:30 ET (한국 22:30/23:30)';
-    const fmt = v => money(v, cur);
+  // ───────── 성적표 뷰 ─────────
+  renderers.records = function (root) {
+    const s = TALLY.stock, pk = TALLY.parking;
+    const head = el('div', 'card');
+    head.appendChild(el('h2', null, '📊 성적표 — 전부 공개합니다'));
+    head.appendChild(el('p', 'muted', '틀린 것도 지우지 않아요. 왜 틀렸는지가 다음 추천을 좋게 만드는 재료거든요.'));
+    const tl = el('div', 'tiles'); tl.style.marginTop = '0.7rem';
+    const wr = s.n ? (s.win / s.n * 100) : 0;
+    tl.appendChild(tile('📈 실제 주식(당일)', s.win + '승 ' + s.fail + '패', '적중률 ' + wr.toFixed(1) + '% (부분성공 ' + s.partial + ' 포함) — 반반이 현실'));
+    tl.appendChild(tile('🛡️ 파킹', pk.win + '승 ' + pk.fail + '패', '거의 항상 이기지만 수익은 하루 +0.005~0.01%'));
+    tl.appendChild(tile('진행 중/보류', String(s.pending + pk.pending) + '건', '가격이 확정되면 채점해요'));
+    head.appendChild(tl);
+    root.appendChild(head);
 
-    if (p.horizon === 'day') {
-      const head = el('p', 'note', `사용법: 개장(${openTime}) 시가를 확인해 아래에 입력하면, 호가단위까지 정렬된 정확한 주문가가 계산됩니다. 가격은 예측이 아니라 "시가가 정해지는 순간 확정되는 규칙"입니다.`);
-      box.appendChild(head);
-      const inrow = el('div', 'inrow');
-      const lab = el('label');
-      lab.appendChild(el('span', null, `오늘 시가 (${cur === 'KRW' ? '원' : '$'})`));
-      const openIn = el('input');
-      openIn.type = 'number'; openIn.value = p.refPrice; openIn.min = 0;
-      openIn.step = tickSize(p.refPrice, cur);
-      lab.appendChild(openIn);
-      inrow.appendChild(lab);
-      box.appendChild(inrow);
-      const out = el('table', 'plain');
-      box.appendChild(out);
-      const recalc = () => {
-        const open = +openIn.value || p.refPrice;
-        const gap = (open - p.refPrice) / p.refPrice * 100;
-        const kase = gap >= 2 ? `갭업 +${gap.toFixed(1)}% — 추격 금지, 눌림 대기` : gap <= -2 ? `갭다운 ${gap.toFixed(1)}% — 안정 확인 후` : `보합권 (${gap >= 0 ? '+' : ''}${gap.toFixed(1)}%)`;
-        const buyP = gap >= 2 ? tickRound(open * 0.988, cur, 'down')
-                   : gap <= -2 ? tickRound(open * 0.997, cur, 'down')
-                   : tickRound(open * 0.995, cur, 'down');
-        const buyWin = gap <= -2 ? (isKR ? '09:30–10:00' : '10:00–10:30 ET') : (isKR ? '09:05–09:30' : '09:35–10:00 ET');
-        const t1 = tickRound(buyP * 1.01, cur, 'down');
-        const t2 = tickRound(buyP * 1.018, cur, 'down');
-        const stop = tickRound(buyP * 0.985, cur, 'down');
-        const closeT = isKR ? '14:50' : '15:50 ET';
-        out.textContent = '';
-        const tb = el('tbody');
-        const row = (k, v, sub) => {
-          const tr = el('tr');
-          const td1 = el('td');
-          td1.appendChild(el('div', null, k));
-          if (sub) td1.appendChild(el('div', 'bd', sub));
-          tr.appendChild(td1);
-          const td2 = el('td', 'num');
-          td2.appendChild(el('b', null, v));
-          tr.appendChild(td2);
-          tb.appendChild(tr);
-        };
-        row('케이스 판정', kase, '시가 vs 전일 기준가 ' + fmt(p.refPrice));
-        row('① 매수 지정가', fmt(buyP), `주문 시각 ${buyWin} · 미체결 시 ${isKR ? '10:30' : '11:00 ET'}에 주문 취소(미진입)`);
-        row('② 1차 매도 지정가 (+1.0%) — 수량 절반', fmt(t1), sim ? `매수 직후 예약 · 도달확률 참고 ${Math.min(99, Math.round(sim.final.pHitTarget * 1.4))}% 수준` : '매수 직후 예약');
-        row('③ 2차 매도 지정가 (+1.8%) — 나머지', fmt(t2), '1차 체결 시 유지, 아니면 ④로');
-        row('④ 손절 스톱 (-1.5%)', fmt(stop), '매수 직후 자동감시(스톱로스) 주문 — 반드시 설정');
-        row('⑤ 시간 청산', closeT + ' 시장가', '②③ 미체결 잔량 전부 — 당일 전략은 포지션을 넘기지 않습니다');
-        out.appendChild(tb);
-      };
-      openIn.addEventListener('input', recalc);
-      recalc();
-    } else {
-      const n = p.horizon === 'week' ? 2 : p.horizon === 'month' ? 4 : 6;
-      const days = nextTradingDays(p.horizon === 'week' ? 2 : p.horizon === 'month' ? 8 : 60);
-      const pickDays = p.horizon === 'week' ? [days[0], days[1]]
-        : p.horizon === 'month' ? [days[0], days[2], days[4], days[7]]
-        : [days[0], days[9], days[19], days[29], days[44], days[59]];
-      box.appendChild(el('p', 'note', `분할 매수 사다리: 아래 날짜에 각 지정가로 ${n}회 나눠 주문합니다 (총 예산의 1/${n}씩). 가격이 안 내려와 미체결이면 그 회차는 건너뜁니다 — 싸게 사기 위한 규칙이므로 추격하지 않습니다. 주문 시간: ${isKR ? '10:00–11:00' : '22:30–23:30 (한국시간)'}.`));
-      const tbl = el('table', 'plain');
-      const thead = el('thead'); const hr = el('tr');
-      ['회차', '날짜', '매수 지정가 (호가 정렬)', '기준가 대비'].forEach((h, i) => hr.appendChild(el('th', i >= 2 ? 'num' : null, h)));
-      thead.appendChild(hr); tbl.appendChild(thead);
-      const tb = el('tbody');
-      const steps = p.horizon === 'week' ? [0.997, 0.985] : p.horizon === 'month' ? [0.997, 0.985, 0.97, 0.955] : [0.995, 0.98, 0.96, 0.94, 0.92, 0.90];
-      steps.forEach((s, i) => {
-        const price = tickRound(p.refPrice * s, cur, 'down');
-        const tr = el('tr');
-        tr.appendChild(el('td', null, (i + 1) + '회차'));
-        tr.appendChild(el('td', null, pickDays[i] || '-'));
-        const td = el('td', 'num');
-        td.appendChild(el('b', null, fmt(price)));
-        tr.appendChild(td);
-        tr.appendChild(el('td', 'num', ((s - 1) * 100).toFixed(1) + '%'));
-        tb.appendChild(tr);
+    const list = el('div', 'card');
+    const lh = el('h2', null, '최근 채점 기록');
+    lh.appendChild(el('span', 'hint', '항목을 누르면 자세한 이유'));
+    list.appendChild(lh);
+    const STL = { success: '성공', partial: '부분', fail: '실패', pending: '보류', invalid: '무효' };
+    const keys = Object.keys(records);
+    let shown = 0;
+    const container = el('div');
+    list.appendChild(container);
+    function renderSome(n) {
+      const until = Math.min(keys.length, shown + n);
+      for (; shown < until; shown++) {
+        const k = keys[shown];
+        const r = records[k];
+        const item = el('div', 'rec-item');
+        const h2 = el('div', 'rec-head');
+        h2.appendChild(el('span', 'st ' + r.status, STL[r.status] || r.status));
+        const tt = el('div');
+        tt.appendChild(el('div', null, r.title));
+        tt.appendChild(el('div', 'tiny', k + ' · ' + (r.checkedAt || '')));
+        h2.appendChild(tt);
+        const det = el('div', 'rec-detail', r.detail || '');
+        det.hidden = true;
+        h2.addEventListener('click', () => { det.hidden = !det.hidden; });
+        item.appendChild(h2);
+        item.appendChild(det);
+        container.appendChild(item);
+      }
+      more.style.display = shown >= keys.length ? 'none' : '';
+    }
+    const more = el('button', 'btn', '더 보기');
+    more.addEventListener('click', () => renderSome(20));
+    list.appendChild(more);
+    renderSome(15);
+    root.appendChild(list);
+
+    // 배운 것들
+    if (RECO.lessons && RECO.lessons.length) {
+      const ls = el('div', 'card');
+      ls.appendChild(el('h2', null, '🧪 실패에서 배운 것 (최근 5개)'));
+      RECO.lessons.slice(0, 5).forEach(le => {
+        const d = el('details', 'acc');
+        d.appendChild(el('summary', null, (le.date ? le.date + ' — ' : '') + (le.title || '')));
+        d.appendChild(el('div', 'acc-body', le.text || ''));
+        ls.appendChild(d);
       });
-      tbl.appendChild(tb);
-      box.appendChild(tbl);
-      const sellHalf = tickRound(p.sell.low, cur, 'down');
-      const sellFull = tickRound(p.sell.high, cur, 'down');
-      const stop = tickRound(p.sell.stop, cur, 'down');
-      const outSell = el('p', 'note');
-      outSell.textContent = `매도: 1차 ${fmt(sellHalf)} 도달 시 절반 (도달확률 ${sim ? sim.final.pHitTarget.toFixed(0) : '-'}%), 2차 ${fmt(sellFull)} 도달 시 나머지 · 손절 스톱 ${fmt(stop)} (전 수량, 자동감시 주문) · 미도달 시 ${p.sell.windowKst} 시점에 재평가.`;
-      box.appendChild(outSell);
+      ls.appendChild(el('p', 'tiny', '총 ' + RECO.lessons.length + '개의 교훈이 추천 규칙에 반영되어 있어요.'));
+      root.appendChild(ls);
     }
-    return box;
-  }
+  };
 
-  // ───────── 상세 모달 ─────────
-  const back = $('#modal-back');
-  function closeModal() { back.classList.remove('open'); back.querySelector('.modal').textContent = ''; document.body.style.overflow = ''; }
-  back.addEventListener('click', e => { if (e.target === back) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && back.classList.contains('open')) closeModal(); });
-
-  function section(parent, title) { parent.appendChild(el('h3', null, title)); }
-
-  function openModal(p) {
-    const m = back.querySelector('.modal');
-    m.textContent = '';
-    const sim = SIM[p.simId];
-    const easy = EASY[p.id];
-
-    const head = el('div', 'mhead');
-    const hwrap = el('div');
-    const chips = el('div', 'chiprow');
-    chips.appendChild(chip(HORIZONS[p.horizon].label + ' · ' + HORIZONS[p.horizon].easy, HORIZONS[p.horizon].color));
-    chips.appendChild(chip(MARKETS[p.market] + ' · ' + p.exchange));
-    chips.appendChild(levelBadge(p));
-    chips.appendChild(chip(RISKS[p.risk].label, RISKS[p.risk].color));
-    hwrap.appendChild(chips);
-    const h2 = el('h2', null, `${p.name} `);
-    h2.appendChild(el('span', 'nm', p.ticker));
-    hwrap.appendChild(h2);
-    hwrap.appendChild(el('div', 'sub', `기준가 ${money(p.refPrice, p.currency)} — ${p.refPriceAsOf}`));
-    head.appendChild(hwrap);
-    const closeBtn = el('button', 'close', '✕');
-    closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', '닫기');
-    closeBtn.addEventListener('click', closeModal);
-    head.appendChild(closeBtn);
-    m.appendChild(head);
-
-    if (state.easy && easy) {
-      const eb = el('div', 'easybox');
-      eb.style.marginTop = '0.8rem';
-      eb.appendChild(el('div', 'eb-t', '💡 기업 개요'));
-      eb.appendChild(el('div', null, easy.company));
-      eb.appendChild(el('div', 'eb-t', '🎯 핵심 투자 포인트'));
-      const olw = el('ol');
-      easy.why.forEach(w => olw.appendChild(el('li', null, w)));
-      eb.appendChild(olw);
-      eb.appendChild(el('div', 'eb-t', '🗓️ 실행 전략'));
-      eb.appendChild(el('div', null, easy.plan));
-      eb.appendChild(el('div', 'eb-t', LEVELS[pickLevel(p)].label + ' — 적합성 판단'));
-      eb.appendChild(el('div', null, easy.levelWhy));
-      const tts = ['eb-t'];
-      m.appendChild(eb);
-      void tts;
+  // ───────── 배우기 뷰 ─────────
+  renderers.help = function (root) {
+    const L = window.LESSONS || [], G = window.GLOSSARY || [], C = window.CHECKLIST || [], F = window.FAQ || [];
+    if (L.length) {
+      const c = el('div', 'card');
+      c.appendChild(el('h2', null, '📚 5분 기초'));
+      L.forEach(le => {
+        const row = el('div', 'lesson'); row.style.marginBottom = '0.8rem';
+        row.appendChild(el('div', 'ic', le.icon || '📘'));
+        const b = el('div');
+        b.appendChild(el('b', null, le.title));
+        b.appendChild(el('div', 'muted', le.body));
+        row.appendChild(b);
+        c.appendChild(row);
+      });
+      root.appendChild(c);
     }
-
-    // rationale.summary 는 구 배치에만 있습니다. 최신 배치에는 없어서 그대로 읽으면
-    // 쉬운 설명 모드에서 linkTerms 가 undefined 를 받아 모달이 열리지 않습니다.
-    const summaryText = pickSummary(p);
-    if (summaryText) {
-      const sm = el('p', 'summary');
-      sm.appendChild(linkTerms(summaryText));
-      m.appendChild(sm);
+    if (C.length) {
+      const c = el('div', 'card banner');
+      c.appendChild(el('h2', null, '✅ 사기 전 체크리스트'));
+      const ul = el('ul', 'check');
+      C.forEach(t => ul.appendChild(el('li', null, t)));
+      c.appendChild(ul);
+      root.appendChild(c);
     }
-
-    const tiles = el('div', 'tiles');
-    const tile = (lb, vl, cls, note) => {
-      const t = el('div', 'tile');
-      t.appendChild(el('div', 'lb', lb));
-      t.appendChild(el('div', 'vl ' + (cls || ''), vl));
-      if (note) t.appendChild(el('div', 'note', note));
-      return t;
-    };
-    tiles.appendChild(tile('기대수익률 (기본 시나리오)', pct(p.expectedReturn.base), pctCls(p.expectedReturn.base), '목표가 도달 시'));
-    if (sim) {
-      tiles.appendChild(tile('이익 확률', sim.final.pProfit.toFixed(0) + '%', '', '시뮬레이션 2만 경로'));
-      tiles.appendChild(tile('목표가 도달확률', sim.final.pHitTarget.toFixed(0) + '%', '', '기간 내 1회 이상'));
-      tiles.appendChild(tile('손절가 도달확률', sim.final.pHitStop.toFixed(0) + '%', '', '기간 내 1회 이상'));
+    if (F.length) {
+      const c = el('div', 'card');
+      c.appendChild(el('h2', null, '❓ 자주 묻는 질문'));
+      F.forEach(f => {
+        const d = el('details', 'acc');
+        d.appendChild(el('summary', null, f.q));
+        d.appendChild(el('div', 'acc-body', f.a));
+        c.appendChild(d);
+      });
+      root.appendChild(c);
     }
-    m.appendChild(tiles);
-
-    section(m, '🗓️ 매매 계획 (시점 · 가격)');
-    const plan = el('table', 'plain');
-    {
-      const thead = el('thead'); const hr = el('tr');
-      ['구분', '시기 (현지시간)', '한국시간', '가격'].forEach(h => hr.appendChild(el('th', null, h)));
-      thead.appendChild(hr); plan.appendChild(thead);
-      const tb = el('tbody');
-      const tr1 = el('tr');
-      tr1.appendChild(el('td', null, '매수'));
-      tr1.appendChild(el('td', null, p.buy.window));
-      tr1.appendChild(el('td', null, p.buy.windowKst));
-      tr1.appendChild(el('td', 'num', `${money(p.buy.low, p.currency)} ~ ${money(p.buy.high, p.currency)}`));
-      tb.appendChild(tr1);
-      const tr2 = el('tr');
-      const sellLbl = el('td');
-      sellLbl.appendChild(el('div', null, '매도 목표 (도달 시)'));
-      if (sim) sellLbl.appendChild(el('div', 'bd', `도달확률 ${sim.final.pHitTarget.toFixed(0)}% — 예측이 아닌 조건`));
-      tr2.appendChild(sellLbl);
-      tr2.appendChild(el('td', null, p.sell.window));
-      tr2.appendChild(el('td', null, p.sell.windowKst));
-      tr2.appendChild(el('td', 'num', `${money(p.sell.low, p.currency)} ~ ${money(p.sell.high, p.currency)}`));
-      tb.appendChild(tr2);
-      const trM = el('tr');
-      trM.appendChild(el('td', null, '미도달 시'));
-      const mc = el('td', null, p.horizon === 'day'
-        ? '장 마감 전 시장가 청산 (당일 전략은 포지션을 넘기지 않음)'
-        : '기간 종료 시점에 재평가 — 논리 유효하면 연장, 훼손 시 정리');
-      mc.colSpan = 2;
-      trM.appendChild(mc);
-      trM.appendChild(el('td', 'num', p.horizon === 'day' ? '마감가' : '재평가'));
-      tb.appendChild(trM);
-      const tr3 = el('tr');
-      tr3.appendChild(el('td', null, '손절'));
-      const scd = el('td', null, '도달 즉시 (자동 주문 권장)');
-      scd.colSpan = 2;
-      tr3.appendChild(scd);
-      tr3.appendChild(el('td', 'num', money(p.sell.stop, p.currency)));
-      tb.appendChild(tr3);
-      plan.appendChild(tb);
+    if (G.length) {
+      const c = el('div', 'card');
+      c.appendChild(el('h2', null, '📖 용어 사전 (쉬운 말)'));
+      const dl = el('dl', 'gloss');
+      G.forEach(g => { dl.appendChild(el('dt', null, g.term)); dl.appendChild(el('dd', null, g.easy)); });
+      c.appendChild(dl);
+      root.appendChild(c);
     }
-    m.appendChild(plan);
-    const planNotes = el('ul', 'pts');
-    planNotes.appendChild(liTerms('매수: ' + p.buy.note));
-    planNotes.appendChild(liTerms('매도: ' + p.sell.note));
-    planNotes.style.marginTop = '0.5rem';
-    m.appendChild(planNotes);
+  };
 
-    section(m, '🎯 정밀 주문 가이드 (호가단위 정렬 · 분 단위 실행)');
-    m.appendChild(precisionGuide(p, sim));
-
-    section(m, '🔮 시나리오 분석');
-    const sc = el('table', 'plain');
-    {
-      const thead = el('thead'); const hr = el('tr');
-      ['시나리오', '확률', '예상가', '수익률', '설명'].forEach((h, i) => hr.appendChild(el('th', i >= 1 && i <= 3 ? 'num' : null, h)));
-      thead.appendChild(hr); sc.appendChild(thead);
-      const tb = el('tbody');
-      for (const s of p.scenarios) {
-        const tr = el('tr');
-        tr.appendChild(el('td', null, s.name));
-        tr.appendChild(el('td', 'num', s.prob + '%'));
-        tr.appendChild(el('td', 'num', money(s.price, p.currency)));
-        const td = el('td', 'num'); td.appendChild(el('span', pctCls(s.ret), pct(s.ret))); tr.appendChild(td);
-        tr.appendChild(el('td', null, s.desc));
-        tb.appendChild(tr);
-      }
-      sc.appendChild(tb);
-    }
-    m.appendChild(sc);
-
-    if (sim) {
-      section(m, '🎲 몬테카를로 시뮬레이션 (20,000 경로)');
-      if (state.easy) {
-        const ep = el('p', 'summary');
-        ep.appendChild(linkTerms('컴퓨터로 이 주식의 미래를 2만 번 미리 살아 봤어요. 아래 차트의 파란 띠가 넓을수록 결과가 들쑥날쑥하다는 뜻이에요. 이익확률이 51%라면 100번 중 49번은 잃는다는 뜻 — 절대 "확실히 번다"가 아니에요!'));
-        m.appendChild(ep);
-      }
-      m.appendChild(fanChart(sim, p));
-      const spacer = el('div'); spacer.style.height = '0.6rem'; m.appendChild(spacer);
-      m.appendChild(histChart(sim));
-      const simNote = el('p', 'summary', `경로 ${sim.paths.toLocaleString()}개 · 중앙값 ${pct(sim.final.median)} · 90% 신뢰구간 ${pct(sim.final.p5)} ~ ${pct(sim.final.p95)}.`);
-      m.appendChild(simNote);
-    }
-
-    // 상세 정보는 접이식으로 — 핵심(계획·시나리오·시뮬레이션)만 항상 표시
-    const fold = (title, build, open) => {
-      const d = el('details', 'lesson');
-      d.style.marginTop = '0.9rem';
-      if (open) d.open = true;
-      d.appendChild(el('summary', null, title));
-      const body = el('div', 'lb');
-      build(body);
-      d.appendChild(body);
-      m.appendChild(d);
-    };
-
-    fold('📚 투자 근거 (뉴스 · 차트 · 여론 · 재무)', body => {
-      const sub = (t, arr) => {
-        if (!arr || !arr.length) return;
-        body.appendChild(el('div', 'eb-t', t));
-        const ul = el('ul', 'pts');
-        arr.forEach(x => ul.appendChild(liTerms(x)));
-        body.appendChild(ul);
-      };
-      sub('📰 뉴스·이벤트', p.rationale.news);
-      sub('📉 차트·기술적 분석', p.rationale.technical);
-      sub('🗣️ 여론·센티먼트', p.rationale.sentiment);
-      sub('🏢 펀더멘털', p.rationale.fundamental);
-      sub('🧾 재무제표 스냅샷', p.rationale.financials);
-      if (p.rationale.sourcedAt) body.appendChild(el('p', 'hist-note', '자료 수집 시점: ' + p.rationale.sourcedAt));
-    });
-
-    fold('⚠️ 리스크 요인 (예측 변수)', body => {
-      const ul = el('ul', 'pts');
-      p.riskFactors.forEach(t => ul.appendChild(liTerms(t)));
-      body.appendChild(ul);
-    });
-
-    fold('💰 배당 정보', body => {
-      if (p.dividend) {
-        const d = p.dividend;
-        const dt = el('table', 'plain');
-        const tb = el('tbody');
-        const row = (k, v) => { const tr = el('tr'); tr.appendChild(el('td', null, k)); tr.appendChild(el('td', 'num', v)); tb.appendChild(tr); };
-        row('1주당 배당금', money(d.perShare, d.currency) + ` (${d.frequency})`);
-        row('배당 일정', d.schedule);
-        row('배당수익률 (연)', d.yieldPct + '%');
-        row('다음 배당', d.next);
-        dt.appendChild(tb);
-        body.appendChild(dt);
-        const dn = el('p', 'summary');
-        dn.appendChild(linkTerms(d.note + (p.market === 'US' ? ' — 미국 배당은 15% 원천징수 후 입금됩니다.' : ' — 국내 배당은 15.4% 원천징수 후 입금됩니다.')));
-        body.appendChild(dn);
-      } else {
-        body.appendChild(el('p', 'summary', '무배당 종목입니다 — 수익은 시세차익으로만 발생합니다.'));
-      }
-    });
-
-    fold('🧾 세후 실수령 계산기 (한국 세법 기준)', body => {
-      body.appendChild(taxCalcBlock(p));
-    });
-
-    m.appendChild(el('p', 'summary', '⚠️ ' + RECO.meta.disclaimer));
-
-    back.classList.add('open');
+  // ───────── 모달 공통 ─────────
+  const back = $('#backdrop');
+  function openModal() {
+    back.hidden = false;
     document.body.style.overflow = 'hidden';
     back.scrollTop = 0;
   }
-
-  // ───────── 실행 플랜 (따라하기 마법사) ─────────
-  const PLAN_STYLES = {
-    safe:     { label: '🟢 안정 우선', desc: '원금 보전이 최우선 — 대부분을 무위험 금리 자산에', alloc: { kofr: 0.5, sgov: 0.2, voo: 0.2, k200: 0.1, picks: 0 } },
-    balanced: { label: '🟡 균형', desc: '안정 자산을 바탕에 깔고 성장 자산을 절반 가까이', alloc: { kofr: 0.3, sgov: 0.1, voo: 0.25, k200: 0.15, picks: 0.2 } },
-    growth:   { label: '🔴 성장 추구', desc: '변동을 감수하고 기대수익을 높게 — 장기 전제', alloc: { kofr: 0.1, sgov: 0, voo: 0.3, k200: 0.2, picks: 0.4 } },
-  };
-  function loadPlan() {
-    try { return JSON.parse(localStorage.getItem('plan-v1')) || { budget: 3000000, style: 'safe', checks: {} }; }
-    catch { return { budget: 3000000, style: 'safe', checks: {} }; }
+  function closeModal() {
+    back.hidden = true;
+    document.body.style.overflow = '';
   }
-  function savePlan(p) { localStorage.setItem('plan-v1', JSON.stringify(p)); }
-  function sureById(id) { return RECO.sureItems.find(s => s.id === id); }
-
-  function renderPlan() {
-    const wrap = $('#view-plan');
-    wrap.textContent = '';
-    const plan = loadPlan();
-    const fx = RECO.meta.fxUsdKrw;
-
-    const hero = el('div', 'hero');
-    hero.appendChild(el('div', 'weather', '🧭 실행 플랜 — 예산과 성향만 정하면 주문서까지 완성됩니다'));
-    const wd = el('p', 'wdesc');
-    wd.appendChild(linkTerms('절차: ① 투자 가능 금액 입력 → ② 투자 성향 선택 → ③ 자동 생성된 주문서를 증권사 앱에 그대로 입력. 무위험 금리 자산 비중은 사실상 확정 수익이며, 주식 비중은 확률적 수익입니다 — 구성비로 그 균형을 조절합니다.'));
-    hero.appendChild(wd);
-    wrap.appendChild(hero);
-
-    // ① 예산
-    wrap.appendChild(el('h2', 'homesec', '① 투자 가능 금액'));
-    const budBox = el('div', 'calc');
-    const inrow = el('div', 'inrow');
-    const lab = el('label');
-    lab.appendChild(el('span', null, '금액 (원) — 잃어도 생활에 지장 없는 돈만'));
-    const budIn = el('input');
-    budIn.type = 'number'; budIn.value = plan.budget; budIn.min = 100000; budIn.step = 100000;
-    lab.appendChild(budIn);
-    inrow.appendChild(lab);
-    budBox.appendChild(inrow);
-    wrap.appendChild(budBox);
-
-    // ② 성향
-    wrap.appendChild(el('h2', 'homesec', '② 투자 성향'));
-    const styleRow = el('div', 'steps');
-    Object.entries(PLAN_STYLES).forEach(([key, s]) => {
-      const c = el('div', 'step-card');
-      c.tabIndex = 0; c.setAttribute('role', 'button');
-      if (plan.style === key) { c.style.borderColor = 'var(--accent)'; c.style.borderWidth = '2px'; }
-      c.appendChild(el('div', 'sn', plan.style === key ? '✓ 선택됨' : '선택'));
-      c.appendChild(el('div', 'st', s.label));
-      c.appendChild(el('div', 'sd', s.desc));
-      const go = () => { plan.style = key; savePlan(plan); renderPlan(); };
-      c.addEventListener('click', go);
-      c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-      styleRow.appendChild(c);
-    });
-    wrap.appendChild(styleRow);
-
-    // ③ 주문서 생성
-    wrap.appendChild(el('h2', 'homesec', '③ 주문서 (증권사 앱에 이대로 입력)'));
-    const budget = Math.max(0, +budIn.value || plan.budget);
-    const alloc = PLAN_STYLES[plan.style].alloc;
-
-    const rows = [];
-    const addSure = (id, weight, note) => {
-      if (!weight) return;
-      const s = sureById(id);
-      if (!s) return;
-      const amt = budget * weight;
-      const unit = s.currency === 'USD' ? s.refPrice * fx : s.refPrice;
-      const qty = s.currency === 'USD' ? Math.floor(amt / unit * 100) / 100 : Math.floor(amt / unit);
-      rows.push({
-        key: id, name: s.name, ticker: s.ticker, weight, amt, qty,
-        how: `지정가 ${money(s.buy.low, s.currency)}~${money(s.buy.high, s.currency)}`,
-        when: note || s.buy.windowKst,
-        expect: SIM[s.simId] ? `연 ${pct(SIM[s.simId].final.median)} (중앙값)` : '-',
-        sure: s.tier === 1,
-        obj: s,
-      });
-    };
-    addSure('sure-kofr', alloc.kofr, '아무 때나 (한국 장중)');
-    addSure('sure-sgov', alloc.sgov, '아무 때나 (미국 장중)');
-    addSure('sure-voo', alloc.voo, '매달 같은 날 정액 적립 권장');
-    addSure('sure-k200', alloc.k200, '매달 같은 날 정액 적립 권장');
-
-    if (alloc.picks > 0) {
-      const order = { ok: 0, mid: 1, pro: 2 };
-      // 이 슬롯은 "성장" 몫입니다. 파킹(현금성)은 이미 kofr·sgov 슬롯에 별도 배분되므로
-      // 여기서까지 파킹을 뽑으면 성장 배분이 사실상 현금이 됩니다 — 실제 주식만 대상으로 합니다.
-      const eligible = batchPicks()
-        .filter(p => (p.horizon === 'long' || p.horizon === 'month') && pickLevel(p) !== 'pro');
-      const stockOnly = eligible.filter(p => assetClassOf(p) === 'stock');
-      const cands = (stockOnly.length ? stockOnly : eligible)
-        .sort((a, b) => (order[pickLevel(a)] - order[pickLevel(b)]) || ((SIM[b.simId]?.final.pProfit || 0) - (SIM[a.simId]?.final.pProfit || 0)))
-        .slice(0, 2);
-      const each = alloc.picks / Math.max(1, cands.length);
-      cands.forEach(p => {
-        const amt = budget * each;
-        const buyP = (p.buy.low + p.buy.high) / 2;
-        const unit = p.currency === 'USD' ? buyP * fx : buyP;
-        const qty = p.currency === 'USD' ? Math.floor(amt / unit * 100) / 100 : Math.floor(amt / unit);
-        rows.push({
-          key: p.id, name: p.name, ticker: p.ticker, weight: each, amt, qty,
-          how: `지정가 ${money(p.buy.low, p.currency)}~${money(p.buy.high, p.currency)} 분할 매수`,
-          when: p.buy.windowKst,
-          expect: SIM[p.simId] ? `이익 확률 ${SIM[p.simId].final.pProfit.toFixed(0)}% · 기대 ${pct(p.expectedReturn.base)}` : '-',
-          sure: false,
-          obj: p,
-        });
-      });
-    }
-
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr2 = el('tr');
-    ['완료', '자산', '배분', '금액', '수량', '주문 방법 · 시점', '예상'].forEach((h, i) => hr2.appendChild(el('th', i >= 2 && i <= 4 ? 'num' : null, h)));
-    thead.appendChild(hr2); tbl.appendChild(thead);
-    const tb = el('tbody');
-    rows.forEach(r => {
-      const tr = el('tr');
-      const tdC = el('td');
-      const chk = el('input');
-      chk.type = 'checkbox';
-      chk.checked = !!plan.checks[plan.style + ':' + r.key];
-      chk.setAttribute('aria-label', r.name + ' 주문 완료');
-      chk.addEventListener('change', () => { plan.checks[plan.style + ':' + r.key] = chk.checked; savePlan(plan); });
-      tdC.appendChild(chk);
-      tr.appendChild(tdC);
-      const tdN = el('td');
-      const nameBtn = el('button', 'bopen', r.name);
-      nameBtn.type = 'button';
-      nameBtn.style.fontSize = '0.86rem';
-      nameBtn.addEventListener('click', () => openModal(r.obj));
-      tdN.appendChild(nameBtn);
-      tdN.appendChild(el('div', 'bd', r.ticker + (r.sure ? ' · 🛡️ 원금 보전형' : ' · 확률형')));
-      tr.appendChild(tdN);
-      tr.appendChild(el('td', 'num', Math.round(r.weight * 100) + '%'));
-      tr.appendChild(el('td', 'num', krw(r.amt)));
-      tr.appendChild(el('td', 'num', r.qty.toLocaleString('ko-KR') + '주'));
-      const tdH = el('td');
-      tdH.appendChild(el('div', null, r.how));
-      tdH.appendChild(el('div', 'bd', r.when));
-      tr.appendChild(tdH);
-      tr.appendChild(el('td', null, r.expect));
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    const tblScroll = el('div');
-    tblScroll.style.overflowX = 'auto';
-    tblScroll.appendChild(tbl);
-    wrap.appendChild(tblScroll);
-
-    // 요약: 확정 vs 확률
-    const surePart = rows.filter(r => r.sure).reduce((s, r) => s + r.weight, 0);
-    const summ = el('div', 'easybox');
-    summ.style.marginTop = '0.9rem';
-    summ.appendChild(el('div', 'eb-t', '이 플랜의 정직한 요약'));
-    summ.appendChild(el('div', null, `전체의 ${Math.round(surePart * 100)}%는 원금 보전형 금리 자산(사실상 확정, 연 2~4%)이고, 나머지 ${Math.round((1 - surePart) * 100)}%는 확률적 수익 자산입니다. 확정 비중이 높을수록 잃을 가능성은 낮아지고 기대수익도 낮아집니다 — 이 균형은 위의 투자 성향으로 조절하세요.`));
-    wrap.appendChild(summ);
-
-    // 실행 체크리스트
-    wrap.appendChild(el('h2', 'homesec', '④ 실행 순서 (증권사 앱)'));
-    const steps = [
-      '증권사 앱을 열고 로그인합니다 (미성년자는 보호자 동반 계좌).',
-      '위 표의 티커(예: 423160)를 검색합니다.',
-      '"지정가" 주문을 선택하고, 표의 가격 범위 안의 값과 수량을 입력합니다.',
-      '주문 후 위 표의 완료 체크박스에 표시합니다 (이 브라우저에 저장됩니다).',
-      '적립 권장 자산(VOO·KODEX 200)은 매달 같은 날 같은 금액으로 반복합니다 — 자동 적립 설정이 있으면 활용하세요.',
-      '📊 성과 검증 탭에서 추천의 실제 결과가 매일 채점되는 것을 확인하세요.',
-    ];
-    const ol = el('ol', 'pts');
-    ol.style.paddingLeft = '1.3rem';
-    steps.forEach(s => ol.appendChild(liTerms(s)));
-    wrap.appendChild(ol);
-
-    wrap.appendChild(el('p', 'hist-note', '⚠️ 이 플랜은 손실 가능성을 구조적으로 낮춘 구성이지 수익 보장이 아닙니다. 주식 비중은 단기적으로 마이너스가 될 수 있으며, "따라만 하면 반드시 번다"고 말하는 서비스는 신뢰하지 마세요. 확정에 가까운 것은 금리 자산뿐이고, 그 수익률은 연 2~4%입니다.'));
-
-    budIn.addEventListener('change', () => { plan.budget = +budIn.value || 0; savePlan(plan); renderPlan(); });
+  back.addEventListener('click', e => { if (e.target === back) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !back.hidden) closeModal(); });
+  function modalHead(m, title, sub) {
+    const head = el('div', 'mhead');
+    const w = el('div');
+    w.appendChild(el('h2', null, title));
+    if (sub) w.appendChild(el('div', 'sub', sub));
+    head.appendChild(w);
+    const x = el('button', 'mclose', '✕');
+    x.type = 'button'; x.setAttribute('aria-label', '닫기');
+    x.addEventListener('click', closeModal);
+    head.appendChild(x);
+    m.appendChild(head);
   }
 
-  // ───────── 확실 수익 ─────────
-  function renderSure() {
-    const wrap = $('#view-sure');
-    wrap.textContent = '';
+  // ───────── 픽 상세 모달 ─────────
+  function openPick(p) {
+    const m = $('.modal', back);
+    m.textContent = '';
+    const rk = riskOf(p);
+    modalHead(m, (p.assetClass === 'parking' ? '🛡️ ' : '📈 ') + baseName(p),
+      p.ticker + ' · ' + (p.market === 'KR' ? '🇰🇷 한국' : '🇺🇸 미국') + ' · ' + (HORIZON[p.horizon] || '') + ' · ' + rk.label);
 
-    const hero = el('div', 'hero');
-    hero.appendChild(el('div', 'weather', '🛡️ 안정 수익 — "확실함"의 실제 시세부터'));
-    const wd = el('p', 'wdesc');
-    wd.appendChild(linkTerms('금융의 기본 원리: 확실성과 수익률은 반비례합니다. 이 원리를 깨는 "확실한 고수익"은 존재하지 않으며, 그렇게 광고하는 상품은 예외 없이 사기입니다. 이 페이지는 확실성이 높은 순서로 자산을 정리합니다.'));
-    hero.appendChild(wd);
-    wrap.appendChild(hero);
-
-    const tierNote = {
-      1: '시뮬레이션 20,000 경로 전부 이익 — 미국·한국 정부 신용에 기반한, 확실성이 가장 높은 자산군입니다. 기대수익률은 연 2~4% 수준입니다.',
-      2: '1년 단위 승률은 60~80%지만, 역사상 15~20년 이상 보유 시 손실 사례가 없습니다. 보유 기간이 확실성을 만듭니다 — 매월 정액 적립(DCA)이 표준 전략입니다.',
-    };
-    [1, 2].forEach(tier => {
-      wrap.appendChild(el('h2', 'homesec', tier === 1 ? 'Tier 1 · 원금 보전형 (시뮬 이익 확률 100%)' : 'Tier 2 · 장기 분산 적립 (시간 분산)'));
-      const note = el('p', 'viewdesc');
-      note.appendChild(linkTerms(tierNote[tier]));
-      wrap.appendChild(note);
-      const grid = el('div', 'grid');
-      RECO.sureItems.filter(s => s.tier === tier).forEach(s => grid.appendChild(pickCard(s)));
-      wrap.appendChild(grid);
-    });
-
-    // S&P 500 역사 승률 표
-    wrap.appendChild(el('h2', 'homesec', '📜 근거: S&P 500 보유 기간별 역사 통계 (1928년~)'));
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr = el('tr');
-    ['보유 기간', '플러스 비율', '최악의 사례', '해석'].forEach(h => hr.appendChild(el('th', null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    RECO.sureStats.forEach(s => {
-      const tr = el('tr');
-      tr.appendChild(el('td', null, s.period));
-      const wr = el('td', 'num');
-      wr.appendChild(el('span', s.winRate === '100%' ? 'pos' : '', s.winRate));
-      tr.appendChild(wr);
-      tr.appendChild(el('td', 'num', s.worst));
-      tr.appendChild(el('td', null, s.note));
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    wrap.appendChild(tbl);
-
-    const warn = el('div', 'easybox');
-    warn.style.marginTop = '1rem';
-    warn.appendChild(el('div', 'eb-t', '🚨 유의사항'));
-    warn.appendChild(el('div', null, '과거 통계이지 미래 보장이 아닙니다. 또한 이 표는 지수(분산 포트폴리오)에만 해당하며, 개별 종목에는 적용되지 않습니다 — 개별 기업은 파산할 수 있습니다. 더 높은 기대수익을 추구하는 확률 기반 전략은 📋 추천 종목 탭을 참고하세요.'));
-    wrap.appendChild(warn);
-
-    const cta = el('button', 'iconbtn', '📋 확률 기반 추천 보기 →');
-    cta.type = 'button';
-    cta.style.marginTop = '0.8rem';
-    cta.addEventListener('click', () => { state.view = 'reco'; renderAll(); window.scrollTo({ top: 0 }); });
-    wrap.appendChild(cta);
-  }
-
-  // ───────── 연습하기 (가상 계획) ─────────
-  function loadBasket() {
-    try { return JSON.parse(localStorage.getItem('basket-v1')) || { budget: 3000000, items: [] }; }
-    catch { return { budget: 3000000, items: [] }; }
-  }
-  function saveBasket(b) { localStorage.setItem('basket-v1', JSON.stringify(b)); }
-
-  function renderPractice() {
-    const wrap = $('#view-practice');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '가상 예산으로 포트폴리오를 구성하면 시나리오별(낙관·기본·보수) 평가금액을 미리 확인할 수 있습니다. 데이터는 이 브라우저에만 저장됩니다.'));
-    const basket = loadBasket();
-    const fx = RECO.meta.fxUsdKrw;
-    const picks = RECO.sureItems.concat(batchPicks());
-
-    const grid = el('div', 'pgrid');
-
-    // 왼쪽: 장바구니
-    const left = el('div', 'basket');
-    left.appendChild(el('h3', null, '🧺 포트폴리오 구성'));
-    const budRow = el('div', 'brow');
-    budRow.appendChild(el('span', 'bnm', '가상 예산'));
-    const budIn = el('input'); budIn.type = 'number'; budIn.value = basket.budget; budIn.min = 10000; budIn.step = 100000;
-    budRow.appendChild(budIn);
-    budRow.appendChild(el('span', null, '원'));
-    left.appendChild(budRow);
-
-    const itemsBox = el('div');
-    left.appendChild(itemsBox);
-
-    const addRow = el('div', 'addrow');
-    const sel = el('select');
-    picks.forEach(p => {
-      const o = el('option', null, `${LEVELS[pickLevel(p)].label.slice(0, 2)} ${p.name} (${p.ticker})`);
-      o.value = p.id;
-      sel.appendChild(o);
-    });
-    const addBtn = el('button', null, '+ 추가');
-    addBtn.type = 'button';
-    addRow.appendChild(sel); addRow.appendChild(addBtn);
-    left.appendChild(addRow);
-
-    // 오른쪽: 결과
-    const right = el('div', 'basket');
-    right.appendChild(el('h3', null, '🔭 시나리오별 예상 평가금액'));
-    const outBox = el('div');
-    right.appendChild(outBox);
-
-    function findPick(id) { return picks.find(p => p.id === id); }
-
-    function computeRow(item) {
-      const p = findPick(item.pickId);
-      if (!p) return null;
-      const buyP = (p.buy.low + p.buy.high) / 2;
-      const unit = p.currency === 'USD' ? buyP * fx : buyP;
-      // 미국주식은 소수점(0.01주) 매매 기준, 한국주식은 1주 단위
-      const shares = unit > 0
-        ? (p.currency === 'USD' ? Math.floor(item.amount / unit * 100) / 100 : Math.floor(item.amount / unit))
-        : 0;
-      const invested = shares * unit;
-      const val = ret => invested * (1 + ret / 100);
-      const bull = p.scenarios[0], base = p.scenarios[1], bear = p.scenarios[2];
-      return { p, unit, shares, invested, bull: val(bull.ret), base: val(base.ret), bear: val(bear.ret) };
-    }
-
-    function renderItems() {
-      itemsBox.textContent = '';
-      basket.items.forEach((item, idx) => {
-        const p = findPick(item.pickId);
-        if (!p) return;
-        const row = el('div', 'brow');
-        row.appendChild(el('span', 'bnm', `${p.name}`));
-        const amt = el('input'); amt.type = 'number'; amt.value = item.amount; amt.min = 0; amt.step = 50000;
-        amt.addEventListener('input', () => { item.amount = +amt.value || 0; saveBasket(basket); renderOut(); });
-        row.appendChild(amt);
-        row.appendChild(el('span', null, '원'));
-        const rm = el('button', 'brm', '제거');
-        rm.type = 'button';
-        rm.addEventListener('click', () => { basket.items.splice(idx, 1); saveBasket(basket); renderItems(); renderOut(); });
-        row.appendChild(rm);
-        itemsBox.appendChild(row);
-      });
-      if (!basket.items.length) itemsBox.appendChild(el('p', 'viewdesc', '아직 비어 있습니다. 아래에서 종목을 추가해 보세요.'));
-    }
-
-    function renderOut() {
-      outBox.textContent = '';
-      const rows = basket.items.map(computeRow).filter(Boolean);
-      const totalAmt = basket.items.reduce((s, i) => s + (+i.amount || 0), 0);
-      const over = totalAmt > (+budIn.value || 0);
-      if (over) {
-        const warn = el('p', 'viewdesc', `⚠️ 예산(${krw(+budIn.value || 0)})보다 ${krw(totalAmt - (+budIn.value || 0))} 더 담았어요! 금액을 줄여 보세요.`);
-        warn.style.color = 'var(--status-critical)';
-        outBox.appendChild(warn);
+    const ez = EASY[p.id];
+    if (ez) {
+      const box = el('div', 'easybox'); box.style.marginTop = '0.8rem';
+      box.appendChild(el('div', 'eb-t', '🧒 쉬운 설명'));
+      box.appendChild(el('div', null, ez.company));
+      if (ez.why && ez.why.length) {
+        const ul = el('ul');
+        ez.why.forEach(w => ul.appendChild(el('li', null, w)));
+        box.appendChild(ul);
       }
-      if (!rows.length) { outBox.appendChild(el('p', 'viewdesc', '종목을 추가하면 결과가 표시됩니다.')); return; }
-      const tbl = el('table', 'plain');
-      const thead = el('thead'); const hr = el('tr');
-      ['종목', '수량', '낙관', '기본', '보수'].forEach((h, i) => hr.appendChild(el('th', i ? 'num' : null, h)));
-      thead.appendChild(hr); tbl.appendChild(thead);
-      const tb = el('tbody');
-      let tInv = 0, tBull = 0, tBase = 0, tBear = 0;
-      for (const r of rows) {
-        tInv += r.invested; tBull += r.bull; tBase += r.base; tBear += r.bear;
-        const tr = el('tr');
-        if (r.shares === 0) {
-          tr.appendChild(el('td', null, r.p.name));
-          const td = el('td', null, `이 돈으론 1주를 못 사요 (1주 ≈ ${krw(r.unit)}) — 금액을 올려 보세요`);
-          td.colSpan = 4;
-          td.style.color = 'var(--text-muted)';
-          tr.appendChild(td);
-          tb.appendChild(tr);
-          continue;
-        }
-        tr.appendChild(el('td', 'num', r.shares.toLocaleString('ko-KR') + '주'));
-        tr.insertBefore(el('td', null, r.p.name), tr.firstChild);
-        [['bull', r.bull], ['base', r.base], ['bear', r.bear]].forEach(([, v]) => {
-          const td = el('td', 'num');
-          td.appendChild(el('span', pctCls(v - r.invested), krw(v)));
-          tr.appendChild(td);
-        });
-        tb.appendChild(tr);
+      if (ez.plan) { const d = el('div'); d.style.marginTop = '0.3rem'; d.appendChild(el('b', null, '작전: ')); d.appendChild(document.createTextNode(ez.plan)); box.appendChild(d); }
+      if (ez.levelWhy) box.appendChild(el('div', 'tiny', '난이도 이유: ' + ez.levelWhy));
+      m.appendChild(box);
+    }
+
+    const f = simOf(p);
+    if (f) {
+      const sec = el('div', 'msec');
+      sec.appendChild(el('h3', null, '🎲 시뮬레이션 확률 (20,000 경로)'));
+      const tl = el('div', 'tiles');
+      tl.appendChild(tile('이익확률', f.pProfit.toFixed(1) + '%', '수익 크기와는 별개예요'));
+      tl.appendChild(tile('목표 도달', f.pHitTarget.toFixed(1) + '%', '목표가를 건드릴 확률'));
+      tl.appendChild(tile('손절 확률', f.pHitStop.toFixed(1) + '%', '안전벨트가 작동할 확률'));
+      sec.appendChild(tl);
+      m.appendChild(sec);
+    }
+
+    const plan = el('div', 'msec');
+    plan.appendChild(el('h3', null, '🗺️ 매매 계획'));
+    const kv = el('div', 'kv');
+    const add = (k, v) => { kv.appendChild(el('div', 'k', k)); kv.appendChild(el('div', null, v)); };
+    add('기준가', fmtPrice(p, p.refPrice) + ' (' + (p.refPriceAsOf || '').split('—')[0].trim() + ')');
+    if (p.buy) {
+      add('언제·어떻게 사나', (p.buy.windowKst || p.buy.window || '') + (p.buy.note ? ' — ' + p.buy.note : ''));
+    }
+    if (p.sell) {
+      const tPct = pctFrom(p, p.sell.low);
+      add('팔 목표', fmtPrice(p, p.sell.low) + ' (' + signPct(tPct) + ')' + (p.sell.high ? ' ~ ' + fmtPrice(p, p.sell.high) : ''));
+      const sPct = pctFrom(p, p.sell.stop);
+      add('손절(안전벨트)', fmtPrice(p, p.sell.stop) + ' (' + signPct(sPct) + ') — 여기 오면 꼭 팔기');
+      if (p.sell.note) add('참고', p.sell.note);
+    }
+    plan.appendChild(kv);
+    m.appendChild(plan);
+
+    if (p.scenarios && p.scenarios.length) {
+      const sec = el('div', 'msec');
+      sec.appendChild(el('h3', null, '🔮 일어날 수 있는 일들'));
+      p.scenarios.forEach(sc => {
+        const row = el('div', 'scen');
+        row.appendChild(el('div', 'nm', sc.name + ' ' + sc.prob + '%'));
+        const bar = el('div', 'probbar'); const fi = el('i'); fi.style.width = Math.min(100, sc.prob) + '%';
+        if (sc.name.includes('손절')) fi.style.background = 'var(--series-6)';
+        bar.appendChild(fi);
+        row.appendChild(bar);
+        row.appendChild(el('div', 'tiny', signPct(sc.ret) ));
+        sec.appendChild(row);
+        if (sc.desc) { const d = el('div', 'tiny', '· ' + sc.desc); d.style.margin = '-0.2rem 0 0.35rem'; sec.appendChild(d); }
+      });
+      m.appendChild(sec);
+    }
+
+    if (p.rationale) {
+      const sec = el('div', 'msec');
+      sec.appendChild(el('h3', null, '💡 왜 추천했나요'));
+      if (p.rationale.summary) sec.appendChild(el('p', 'muted', p.rationale.summary));
+      if (p.rationale.news && p.rationale.news.length) {
+        const ul = el('ul', 'risk-list');
+        p.rationale.news.forEach(nw => ul.appendChild(el('li', null, nw)));
+        sec.appendChild(ul);
       }
-      const trT = el('tr');
-      trT.appendChild(el('td', null, '합계 (넣은 돈 ' + krw(tInv) + ')'));
-      trT.appendChild(el('td', 'num', ''));
-      [tBull, tBase, tBear].forEach(v => {
-        const td = el('td', 'num');
-        const diff = v - tInv;
-        td.appendChild(el('span', pctCls(diff), krw(v) + ' (' + (diff >= 0 ? '+' : '') + krw(diff).replace('원', '') + '원)'));
-        trT.appendChild(td);
-      });
-      tb.appendChild(trT);
-      tbl.appendChild(tb);
-      outBox.appendChild(tbl);
-      outBox.appendChild(el('p', 'note', '시나리오 수익률(낙관/기본/비관)을 그대로 적용한 단순 계산이에요. 미국주식은 소수점(0.01주) 매매 기준. 세금·수수료·환율 변화는 뺐어요. 진짜 미래는 아무도 몰라요!'));
+      m.appendChild(sec);
     }
 
-    budIn.addEventListener('input', () => { basket.budget = +budIn.value || 0; saveBasket(basket); renderOut(); });
-    addBtn.addEventListener('click', () => {
-      basket.items.push({ pickId: sel.value, amount: 500000 });
-      saveBasket(basket);
-      renderItems(); renderOut();
-    });
-
-    renderItems(); renderOut();
-    grid.appendChild(left); grid.appendChild(right);
-    wrap.appendChild(grid);
-  }
-
-  // ───────── 배우기 ─────────
-  function renderLearn() {
-    const wrap = $('#view-learn');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '5분이면 충분해요. 위에서부터 차례로 읽어 보세요!'));
-
-    wrap.appendChild(el('h2', 'homesec', '📖 주식 기초 8강'));
-    LESSONS.forEach((ls, i) => {
-      const d = el('details', 'lesson');
-      d.id = 'lesson-' + i;
-      const s = el('summary', null, `${ls.icon} ${i + 1}강. ${ls.title}`);
-      d.appendChild(s);
-      const body = el('div', 'lb');
-      body.appendChild(linkTerms(ls.body));
-      d.appendChild(body);
-      wrap.appendChild(d);
-    });
-
-    wrap.appendChild(el('h2', 'homesec', '✅ 사기 전 체크리스트 (7가지)'));
-    const ol = el('ol', 'pts');
-    ol.style.paddingLeft = '1.3rem';
-    CHECKLIST.forEach(t => ol.appendChild(liTerms(t)));
-    wrap.appendChild(ol);
-
-    wrap.appendChild(el('h2', 'homesec', '❓ 자주 묻는 질문'));
-    FAQ.forEach((f, i) => {
-      const d = el('details', 'lesson');
-      d.id = 'faq-' + i;
-      d.appendChild(el('summary', null, 'Q. ' + f.q));
-      const body = el('div', 'lb');
-      body.appendChild(linkTerms('A. ' + f.a));
-      d.appendChild(body);
-      wrap.appendChild(d);
-    });
-
-    wrap.appendChild(el('h2', 'homesec', '📚 용어사전 (누르지 않아도 다 보여요)'));
-    const gg = el('div', 'gloss-grid');
-    GLOSSARY.forEach((g, i) => {
-      const c = el('div', 'gloss');
-      c.id = 'gloss-' + i;
-      c.appendChild(el('b', null, g.term));
-      c.appendChild(el('span', null, g.easy));
-      gg.appendChild(c);
-    });
-    wrap.appendChild(gg);
-  }
-
-  // ───────── 성과 검증 ─────────
-  function findPickAnywhere(id) {
-    for (const b of RECO.batches) {
-      const p = b.picks.find(x => x.id === id);
-      if (p) return { pick: p, batch: b };
-    }
-    return null;
-  }
-  function renderPerf() {
-    const wrap = $('#view-perf');
-    wrap.textContent = '';
-    const oc = RECO.outcomes || { records: {} };
-
-    const hero = el('div', 'hero');
-    hero.appendChild(el('div', 'weather', '📊 예측 채점표 — 맞은 것도, 틀린 것도 전부 공개해요'));
-    const wd = el('p', 'wdesc');
-    wd.appendChild(linkTerms('세상에 예측을 다 맞히는 사람은 없어요. 중요한 건 ① 결과를 숨기지 않고 기록하고, ② 틀린 이유를 분석해서, ③ 다음 모델을 고치는 거예요. 이 페이지가 그 작업의 기록입니다. "실패 없음"을 자랑하는 서비스는 기록을 지우고 있는 거예요.'));
-    hero.appendChild(wd);
-    wrap.appendChild(hero);
-
-    // ── 기간별 분리: 각 기록의 투자 기간(당일/1주/1개월/장기)을 종목 데이터에서 조회 ──
-    const recsAll = Object.entries(oc.records || {}).map(([id, r]) => {
-      const found = findPickAnywhere(id);
-      return found ? { id, r, pick: found.pick, batch: found.batch, horizon: found.pick.horizon } : null;
-    }).filter(Boolean);
-
-    const statsFor = list => {
-      const closed = list.filter(x => ['success', 'partial', 'fail'].includes(x.r.status));
-      const s = list.filter(x => x.r.status === 'success').length;
-      const p = list.filter(x => x.r.status === 'partial').length;
-      const f = list.filter(x => x.r.status === 'fail').length;
-      const inv = list.filter(x => x.r.status === 'invalid').length;
-      const pend = list.filter(x => x.r.status === 'pending').length;
-      const rate = closed.length ? Math.round((s + p) / closed.length * 100) : null;
-      return { s, p, f, inv, pend, judged: closed.length, rate };
-    };
-
-    // 기간 선택 세그먼트 (전체/당일/1주일/1개월/장기)
-    const HKEYS = ['all', 'day', 'week', 'month', 'long'];
-    const seg = el('div', 'seg');
-    seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', '기간별 보기');
-    seg.style.marginBottom = '0.9rem';
-    HKEYS.forEach(hk => {
-      const cnt = hk === 'all' ? recsAll.length : recsAll.filter(x => x.horizon === hk).length;
-      const b = el('button', null, (hk === 'all' ? '전체' : HORIZONS[hk].label) + (cnt ? ` (${cnt})` : ''));
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String((state.perfHorizon || 'all') === hk));
-      b.addEventListener('click', () => { state.perfHorizon = hk; renderPerf(); });
-      seg.appendChild(b);
-    });
-    wrap.appendChild(seg);
-
-    // 기간별 성공률 한눈에 보기 (승률 = 성공+부분 / 판정완료. 무효(미진입)·진행중 제외)
-    const glance = el('table', 'plain');
-    const gh = el('thead'); const ghr = el('tr');
-    ['기간', '판정 완료', '✅ 성공', '🟡 부분', '❌ 실패', '➖ 무효', '⏳ 진행', '성공률*'].forEach(h => ghr.appendChild(el('th', null, h)));
-    gh.appendChild(ghr); glance.appendChild(gh);
-    const gb = el('tbody');
-    HKEYS.slice(1).forEach(hk => {
-      const st = statsFor(recsAll.filter(x => x.horizon === hk));
-      const tr = el('tr');
-      if ((state.perfHorizon || 'all') === hk) tr.style.background = 'color-mix(in srgb, var(--status-good) 8%, transparent)';
-      tr.appendChild(el('td', null, HORIZONS[hk].label));
-      tr.appendChild(el('td', null, st.judged + '건'));
-      tr.appendChild(el('td', null, String(st.s)));
-      tr.appendChild(el('td', null, String(st.p)));
-      tr.appendChild(el('td', null, String(st.f)));
-      tr.appendChild(el('td', null, String(st.inv)));
-      tr.appendChild(el('td', null, String(st.pend)));
-      const rateTd = el('td', null, st.rate === null ? '—' : st.rate + '%');
-      rateTd.style.fontWeight = '700';
-      if (st.rate !== null) rateTd.style.color = st.rate >= 60 ? 'var(--status-good)' : st.rate >= 40 ? 'var(--status-warning)' : 'var(--status-critical)';
-      tr.appendChild(rateTd);
-      gb.appendChild(tr);
-    });
-    glance.appendChild(gb);
-    wrap.appendChild(el('h2', 'homesec', '📐 기간별 성적표'));
-    wrap.appendChild(glance);
-    const rateNote = el('p', 'hist-note', '* 성공률 = (성공+부분성공) ÷ 판정완료(성공·부분·실패). 무효(미진입)와 진행 중은 분모에서 제외합니다. 당일 매매의 성공률이 낮은 것은 구조적인 것으로, v3.0부터 고확률 설계(작은 목표 + 긴 기간 + 파킹형)로 성공률을 끌어올립니다 — 단, 승률이 높다고 수익률이 높은 것은 아닙니다.');
-    wrap.appendChild(rateNote);
-
-    // 선택된 기간의 요약 타일
-    const cur = (state.perfHorizon || 'all');
-    const curList = cur === 'all' ? recsAll : recsAll.filter(x => x.horizon === cur);
-    const st = statsFor(curList);
-    const tiles = el('div', 'tiles');
-    const tile = (lb, vl, note) => {
-      const t = el('div', 'tile');
-      t.appendChild(el('div', 'lb', lb));
-      t.appendChild(el('div', 'vl', vl));
-      if (note) t.appendChild(el('div', 'note', note));
-      return t;
-    };
-    tiles.appendChild(tile('판정 완료', st.judged + '건', cur === 'all' ? '전체 기간' : HORIZONS[cur].label + ' 전략'));
-    tiles.appendChild(tile('성공·부분성공', (st.s + st.p) + '건', '목표 방향 적중'));
-    tiles.appendChild(tile('실패(손절·손실)', st.f + '건', '숨기지 않아요'));
-    tiles.appendChild(tile('성공률', st.rate === null ? '—' : st.rate + '%', '무효·진행중 제외'));
-    wrap.appendChild(tiles);
-
-    // 채점표 (선택된 기간만)
-    wrap.appendChild(el('h2', 'homesec', '📋 예측 vs 실제' + (cur === 'all' ? '' : ' — ' + HORIZONS[cur].label)));
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr = el('tr');
-    ['종목 (배치)', '계획', '실제 결과', '판정'].forEach(h => hr.appendChild(el('th', null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    const recs = curList.map(x => [x.id, x.r]);
-    for (const x of curList) {
-      const { id, r, pick: p, batch: b } = x;
-      const om = OUTCOME_META[r.status] || OUTCOME_META.pending;
-      const tr = el('tr');
-      const tdN = el('td');
-      tdN.appendChild(el('div', null, `${p.name}`));
-      tdN.appendChild(el('div', 'bd', `${p.ticker} · ${HORIZONS[p.horizon].label} · ${b.id.replace('batch-', '')}`));
-      tr.appendChild(tdN);
-      tr.appendChild(el('td', null, `${money(p.buy.low, p.currency)}~${money(p.buy.high, p.currency)} 매수 → ${money(p.sell.low, p.currency)}~${money(p.sell.high, p.currency)} 목표 (손절 ${money(p.sell.stop, p.currency)})`));
-      const tdA = el('td');
-      tdA.appendChild(linkTerms(r.detail || '-'));
-      tr.appendChild(tdA);
-      const tdJ = el('td');
-      const jb = el('span', null, `${om.icon} ${r.title || om.label}`);
-      jb.style.cssText = 'font-weight:700;color:' + om.color;
-      tdJ.appendChild(jb);
-      tr.appendChild(tdJ);
-      tb.appendChild(tr);
-    }
-    if (!recs.length) {
-      const tr = el('tr');
-      const td = el('td', null, '아직 채점된 예측이 없어요. 각 배치의 보유 기간이 끝나면 자동으로 기록돼요.');
-      td.colSpan = 4;
-      tr.appendChild(td);
-      tb.appendChild(tr);
-    }
-    tbl.appendChild(tb);
-    wrap.appendChild(tbl);
-
-    // 교훈
-    if (RECO.lessons && RECO.lessons.length) {
-      wrap.appendChild(el('h2', 'homesec', '🧠 실패에서 배운 것 (교훈 → 모델 반영)'));
-      RECO.lessons.forEach(ls => {
-        const box = el('div', 'batch');
-        box.appendChild(el('div', 'bt', ls.title));
-        box.appendChild(el('div', 'bd', ls.date));
-        const bs = el('div', 'bs');
-        bs.appendChild(linkTerms(ls.text));
-        box.appendChild(bs);
-        wrap.appendChild(box);
-      });
+    if (p.riskFactors && p.riskFactors.length) {
+      const sec = el('div', 'msec');
+      sec.appendChild(el('h3', null, '⚠️ 조심할 점'));
+      const ul = el('ul', 'risk-list');
+      p.riskFactors.forEach(r => ul.appendChild(el('li', null, r)));
+      sec.appendChild(ul);
+      m.appendChild(sec);
     }
 
-    // 모델 개선 이력
-    if (RECO.modelChangelog && RECO.modelChangelog.length) {
-      wrap.appendChild(el('h2', 'homesec', '🔧 예측 모델 개선 이력'));
-      const ct = el('table', 'plain');
-      const cth = el('thead'); const chr = el('tr');
-      ['버전', '날짜', '바뀐 것'].forEach(h => chr.appendChild(el('th', null, h)));
-      cth.appendChild(chr); ct.appendChild(cth);
-      const ctb = el('tbody');
-      RECO.modelChangelog.forEach(c => {
-        const tr = el('tr');
-        tr.appendChild(el('td', null, c.version));
-        tr.appendChild(el('td', null, c.date));
-        const td = el('td');
-        const ul = el('ul', 'pts');
-        c.changes.forEach(ch => ul.appendChild(liTerms(ch)));
-        td.appendChild(ul);
-        tr.appendChild(td);
-        ctb.appendChild(tr);
-      });
-      ct.appendChild(ctb);
-      wrap.appendChild(ct);
-    }
-
-    wrap.appendChild(el('p', 'hist-note', '판정 기준: ✅ 성공 = 목표가 도달 · 🟡 부분 성공 = 이익 실현했으나 목표 미달 · ❌ 실패 = 손절가 도달 · ➖ 무효 = 갭 등으로 매수 범위 자체가 성립 안 함(포지션 없음) · ⏳ 진행 중 = 보유 기간 미종료. 채점은 매일 아침 자동 갱신 때 함께 업데이트돼요.'));
-  }
-
-  // ───────── 내 포트폴리오 ─────────
-  function knownAssets() {
-    const map = {};
-    RECO.sureItems.forEach(s => {
-      map[s.ticker] = { ticker: s.ticker, name: s.name, price: s.refPrice, currency: s.currency, sure: s.tier === 1, divYr: annualDividend(s), market: s.market };
-    });
-    batchPicks().forEach(p => {
-      if (!map[p.ticker]) map[p.ticker] = { ticker: p.ticker, name: p.name.replace(/ \(.*\)$/, ''), price: p.refPrice, currency: p.currency, sure: false, divYr: annualDividend(p), market: p.market };
-    });
-    return map;
-  }
-  function loadPf() {
-    try { return JSON.parse(localStorage.getItem('pf-v1')) || []; }
-    catch { return []; }
-  }
-  function savePf(rows) { localStorage.setItem('pf-v1', JSON.stringify(rows)); }
-
-  function renderPortfolio() {
-    const wrap = $('#view-portfolio');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '보유 종목을 입력하면 평가금액 · 손익 · 비중 · 진단 · 예상 배당을 계산합니다. 기준가는 최신 배치 기준이며(실시간 아님), 데이터는 이 브라우저에만 저장됩니다.'));
-    const assets = knownAssets();
-    const fx = RECO.meta.fxUsdKrw;
-    const rows = loadPf();
-
-    // 입력 폼
-    const form = el('div', 'calc');
-    const inrow = el('div', 'inrow');
-    const sel = el('select');
-    sel.style.cssText = 'font:inherit;font-size:0.84rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:8px;background:var(--surface-1);color:var(--text-primary);max-width:240px';
-    Object.values(assets).forEach(a => {
-      const o = el('option', null, `${a.name} (${a.ticker})`);
-      o.value = a.ticker;
-      sel.appendChild(o);
-    });
-    const oCustom = el('option', null, '직접 입력 (목록에 없는 종목)');
-    oCustom.value = '__custom__';
-    sel.appendChild(oCustom);
-    const mk = (ph, step) => {
-      const i = el('input');
-      i.type = 'number'; i.placeholder = ph; i.min = 0; if (step) i.step = step;
-      i.style.width = '110px';
-      return i;
-    };
-    const qtyIn = mk('수량', 0.01);
-    const avgIn = mk('평단가', 0.01);
-    const nameIn = el('input');
-    nameIn.type = 'text'; nameIn.placeholder = '종목명 (직접 입력)'; nameIn.style.width = '150px'; nameIn.style.display = 'none';
-    const priceIn = mk('현재가', 0.01); priceIn.style.display = 'none';
-    const curSel = el('select');
-    curSel.style.cssText = sel.style.cssText; curSel.style.display = 'none';
-    ['KRW', 'USD'].forEach(c => { const o = el('option', null, c); o.value = c; curSel.appendChild(o); });
-    sel.addEventListener('change', () => {
-      const custom = sel.value === '__custom__';
-      nameIn.style.display = priceIn.style.display = curSel.style.display = custom ? '' : 'none';
-    });
-    const addBtn = el('button', 'iconbtn', '+ 보유 종목 추가');
-    addBtn.type = 'button';
-    addBtn.addEventListener('click', () => {
-      const qty = +qtyIn.value, avg = +avgIn.value;
-      if (!qty || !avg) { alert('수량과 평단가를 입력하세요.'); return; }
-      if (sel.value === '__custom__') {
-        if (!nameIn.value || !+priceIn.value) { alert('종목명과 현재가를 입력하세요.'); return; }
-        rows.push({ ticker: 'custom-' + Date.now(), name: nameIn.value.slice(0, 40), qty, avg, price: +priceIn.value, currency: curSel.value, custom: true });
-      } else {
-        rows.push({ ticker: sel.value, qty, avg });
-      }
-      savePf(rows); renderPortfolio();
-    });
-    [sel, qtyIn, avgIn, nameIn, priceIn, curSel, addBtn].forEach(x => inrow.appendChild(x));
-    form.appendChild(inrow);
-    form.appendChild(el('p', 'note', '수량 소수점 입력 가능 (미국주식 소수점 매매). 평단가·현재가는 해당 통화 기준.'));
-    wrap.appendChild(form);
-
-    if (!rows.length) {
-      wrap.appendChild(el('p', 'hist-note', '아직 입력된 보유 종목이 없습니다. 위에서 추가해 보세요.'));
-      return;
-    }
-
-    // 평가 계산
-    const evald = rows.map((r, idx) => {
-      const a = r.custom ? r : assets[r.ticker];
-      if (!a) return null;
-      const price = r.custom ? r.price : a.price;
-      const currency = r.custom ? r.currency : a.currency;
-      const toKrw = v => currency === 'USD' ? v * fx : v;
-      const value = toKrw(price * r.qty);
-      const cost = toKrw(r.avg * r.qty);
-      return {
-        idx, name: r.custom ? r.name : a.name, ticker: r.custom ? '직접 입력' : r.ticker,
-        qty: r.qty, avg: r.avg, price, currency, value, cost,
-        pnl: cost ? (value - cost) / cost * 100 : 0,
-        sure: !r.custom && a.sure,
-        divKrw: r.custom ? 0 : toKrw((a.divYr || 0) * r.qty) * (a.market === 'US' ? 0.85 : 0.846),
-      };
-    }).filter(Boolean);
-    const total = evald.reduce((s, e) => s + e.value, 0);
-    const totalCost = evald.reduce((s, e) => s + e.cost, 0);
-    const totalDiv = evald.reduce((s, e) => s + e.divKrw, 0);
-    const sureW = total ? evald.filter(e => e.sure).reduce((s, e) => s + e.value, 0) / total : 0;
-
-    // 요약 타일
-    const tiles = el('div', 'tiles');
-    const tile = (lb, vl, cls, note) => {
-      const t = el('div', 'tile');
-      t.appendChild(el('div', 'lb', lb));
-      t.appendChild(el('div', 'vl ' + (cls || ''), vl));
-      if (note) t.appendChild(el('div', 'note', note));
-      return t;
-    };
-    const totPnl = totalCost ? (total - totalCost) / totalCost * 100 : 0;
-    tiles.appendChild(tile('총 평가금액', krw(total), '', '기준가 기준 (실시간 아님)'));
-    tiles.appendChild(tile('총 손익', pct(totPnl), pctCls(totPnl), krw(total - totalCost)));
-    tiles.appendChild(tile('예상 연 배당 (세후)', krw(totalDiv), totalDiv > 0 ? 'pos' : '', '월평균 ' + krw(totalDiv / 12)));
-    tiles.appendChild(tile('원금 보전형 비중', Math.round(sureW * 100) + '%', '', '금리형 자산 기준'));
-    wrap.appendChild(tiles);
-
-    // 보유 목록
-    wrap.appendChild(el('h2', 'homesec', '보유 종목'));
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr = el('tr');
-    ['종목', '수량', '평단가', '기준가', '평가액', '손익', '비중', ''].forEach((h, i) => hr.appendChild(el('th', i >= 1 && i <= 6 ? 'num' : null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    evald.forEach(e => {
-      const tr = el('tr');
-      const tdN = el('td');
-      tdN.appendChild(el('div', null, e.name));
-      tdN.appendChild(el('div', 'bd', e.ticker));
-      tr.appendChild(tdN);
-      tr.appendChild(el('td', 'num', e.qty.toLocaleString('ko-KR') + '주'));
-      tr.appendChild(el('td', 'num', money(e.avg, e.currency)));
-      tr.appendChild(el('td', 'num', money(e.price, e.currency)));
-      tr.appendChild(el('td', 'num', krw(e.value)));
-      const tdP = el('td', 'num');
-      tdP.appendChild(el('span', pctCls(e.pnl), pct(e.pnl)));
-      if (Math.abs(e.pnl) > 80) tdP.appendChild(el('div', 'bd', '⚠️ 평단가 통화 확인'));
-      tr.appendChild(tdP);
-      const w = total ? e.value / total * 100 : 0;
-      const tdW = el('td', 'num');
-      tdW.appendChild(el('div', null, w.toFixed(0) + '%'));
-      const bar = el('div');
-      bar.style.cssText = 'height:6px;border-radius:3px;background:var(--series-1);margin-top:3px;width:' + Math.max(3, Math.min(100, w)) + '%';
-      tdW.appendChild(bar);
-      tr.appendChild(tdW);
-      const tdD = el('td');
-      const del = el('button', 'brm', '삭제');
-      del.type = 'button';
-      del.addEventListener('click', () => { rows.splice(e.idx, 1); savePf(rows); renderPortfolio(); });
-      tdD.appendChild(del);
-      tr.appendChild(tdD);
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    const scroll = el('div'); scroll.style.overflowX = 'auto'; scroll.appendChild(tbl);
-    wrap.appendChild(scroll);
-
-    // 진단
-    wrap.appendChild(el('h2', 'homesec', '🩺 포트폴리오 진단'));
-    const diags = [];
-    const maxW = Math.max(...evald.map(e => total ? e.value / total : 0));
-    const maxE = evald.find(e => total && e.value / total === maxW);
-    if (maxW > 0.3) diags.push(`⚠️ 집중 위험: ${maxE.name} 비중이 ${Math.round(maxW * 100)}%입니다 — 한 종목 30% 이하를 권장합니다 (분산투자).`);
-    else diags.push('✅ 종목 분산: 단일 종목 30% 초과 없음.');
-    const usdW = total ? evald.filter(e => e.currency === 'USD').reduce((s, e) => s + e.value, 0) / total : 0;
-    if (usdW > 0.85 || usdW < 0.15) diags.push(`⚠️ 통화 편중: 달러 자산 ${Math.round(usdW * 100)}% — 원화/달러 분산을 고려하세요 (환율 리스크).`);
-    else diags.push(`✅ 통화 분산: 달러 ${Math.round(usdW * 100)}% / 원화 ${Math.round((1 - usdW) * 100)}%.`);
-    const styleTargets = { safe: 0.7, balanced: 0.4, growth: 0.1 };
-    const planStyle = loadPlan().style || 'safe';
-    const target = styleTargets[planStyle];
-    const gap = (target - sureW) * total;
-    if (Math.abs(gap) > total * 0.1 && total > 0) {
-      diags.push(gap > 0
-        ? `🧭 리밸런싱 제안: 실행 플랜 성향(${PLAN_STYLES[planStyle].label})의 원금 보전형 목표 ${Math.round(target * 100)}% 대비 부족 — 약 ${krw(gap)}를 금리형 자산(KOFR·SGOV)으로 옮기는 것을 검토하세요.`
-        : `🧭 리밸런싱 제안: 원금 보전형 비중이 목표(${Math.round(target * 100)}%)보다 높습니다 — 계획적이라면 문제 없습니다.`);
-    } else if (total > 0) {
-      diags.push(`✅ 배분 일치: 원금 보전형 비중이 실행 플랜 성향(${PLAN_STYLES[planStyle].label}) 목표와 ±10% 이내입니다.`);
-    }
-    const ulD = el('ul', 'pts');
-    diags.forEach(d => ulD.appendChild(liTerms(d)));
-    wrap.appendChild(ulD);
-    wrap.appendChild(el('p', 'hist-note', '기준가는 추천 배치 생성 시점 가격입니다. 정확한 평가는 증권사 앱에서 확인하세요. 직접 입력 종목은 배당 계산에서 제외됩니다.'));
-  }
-
-  // ───────── 매매 일지 ─────────
-  function loadJournal() {
-    try { return JSON.parse(localStorage.getItem('journal-v1')) || []; }
-    catch { return []; }
-  }
-  function saveJournal(rows) { localStorage.setItem('journal-v1', JSON.stringify(rows)); }
-
-  function renderJournal() {
-    const wrap = $('#view-journal');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '매매를 기록하고 복기하는 습관은 수익률을 올리는 가장 검증된 방법입니다. "왜 샀는지"를 적어 두면, 팔 때 감정이 아니라 기록이 판단합니다. 데이터는 이 브라우저에만 저장됩니다.'));
-    const rows = loadJournal();
-
-    const form = el('div', 'calc');
-    const inrow = el('div', 'inrow');
-    const dateIn = el('input'); dateIn.type = 'date'; dateIn.value = new Date().toISOString().slice(0, 10);
-    dateIn.style.cssText = 'font:inherit;font-size:0.86rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:8px;background:var(--page);color:var(--text-primary)';
-    const tickIn = el('input'); tickIn.type = 'text'; tickIn.placeholder = '종목/티커'; tickIn.style.width = '120px';
-    const sideSel = el('select');
-    sideSel.style.cssText = dateIn.style.cssText;
-    ['매수', '매도'].forEach(s => { const o = el('option', null, s); o.value = s; sideSel.appendChild(o); });
-    const priceIn = el('input'); priceIn.type = 'number'; priceIn.placeholder = '가격'; priceIn.style.width = '110px';
-    const qtyIn = el('input'); qtyIn.type = 'number'; qtyIn.placeholder = '수량'; qtyIn.style.width = '90px';
-    const reasonIn = el('input'); reasonIn.type = 'text'; reasonIn.placeholder = '이유 (예: 실적 D-7 런업, 손절 규칙)'; reasonIn.style.cssText = 'flex:1;min-width:200px';
-    const addBtn = el('button', 'iconbtn', '+ 기록');
-    addBtn.type = 'button';
-    addBtn.addEventListener('click', () => {
-      if (!tickIn.value) { alert('종목을 입력하세요.'); return; }
-      rows.unshift({ date: dateIn.value, ticker: tickIn.value.slice(0, 20), side: sideSel.value, price: +priceIn.value || 0, qty: +qtyIn.value || 0, reason: reasonIn.value.slice(0, 200) });
-      saveJournal(rows); renderJournal();
-    });
-    [dateIn, tickIn, sideSel, priceIn, qtyIn, reasonIn, addBtn].forEach(x => inrow.appendChild(x));
-    form.appendChild(inrow);
-    wrap.appendChild(form);
-
-    if (!rows.length) {
-      wrap.appendChild(el('p', 'hist-note', '아직 기록이 없습니다. 첫 매매(또는 시뮬레이터 연습)를 기록해 보세요.'));
-      return;
-    }
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr = el('tr');
-    ['날짜', '종목', '구분', '가격', '수량', '이유', ''].forEach((h, i) => hr.appendChild(el('th', i === 3 || i === 4 ? 'num' : null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    rows.forEach((r, i) => {
-      const tr = el('tr');
-      tr.appendChild(el('td', null, r.date));
-      tr.appendChild(el('td', null, r.ticker));
-      const tdS = el('td');
-      tdS.appendChild(el('span', r.side === '매수' ? 'pos' : 'neg', r.side));
-      tr.appendChild(tdS);
-      tr.appendChild(el('td', 'num', r.price ? r.price.toLocaleString('ko-KR') : '-'));
-      tr.appendChild(el('td', 'num', r.qty ? r.qty.toLocaleString('ko-KR') : '-'));
-      const tdR = el('td');
-      tdR.appendChild(document.createTextNode(r.reason || '-'));
-      tr.appendChild(tdR);
-      const tdD = el('td');
-      const del = el('button', 'brm', '삭제');
-      del.type = 'button';
-      del.addEventListener('click', () => { rows.splice(i, 1); saveJournal(rows); renderJournal(); });
-      tdD.appendChild(del);
-      tr.appendChild(tdD);
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    const scroll = el('div'); scroll.style.overflowX = 'auto'; scroll.appendChild(tbl);
-    wrap.appendChild(scroll);
-  }
-
-  // ───────── 히스토리 ─────────
-  function renderHistory() {
-    const wrap = $('#view-history');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'hist-note',
-      '추천이 생성될 때마다 배치 단위로 자동 기록됩니다. 과거 기록은 수정되지 않으며, 📊 성과 검증 탭에서 실제 결과와 대조됩니다.'));
-    RECO.batches.forEach((b, i) => {
-      const box = el('div', 'batch');
-      box.appendChild(el('div', 'bt', b.title));
-      box.appendChild(el('div', 'bd', `생성 시각 ${b.generatedAt} · ${b.picks.length}개 종목`));
-      box.appendChild(el('div', 'bs', b.marketSnapshot));
-      const summary = el('div', 'bs');
-      summary.textContent = '종목: ' + b.picks.map(p => `${p.name}(${p.ticker})`).join(', ');
-      box.appendChild(summary);
-      const openBtn = el('button', 'bopen', '이 배치의 추천 열람 →');
-      openBtn.type = 'button';
-      openBtn.addEventListener('click', () => {
-        state.batch = i; state.view = 'reco';
-        state.horizon = 'all'; state.market = 'all'; state.level = 'all'; state.divOnly = false; state.assetClass = 'all';
-        renderAll();
-        window.scrollTo({ top: 0 });
-      });
-      box.appendChild(openBtn);
-      wrap.appendChild(box);
-    });
-  }
-
-  // ───────── 세금 가이드 ─────────
-  function renderTax() {
-    const wrap = $('#view-tax');
-    wrap.textContent = '';
-    wrap.appendChild(el('p', 'viewdesc', '한국 거주 개인투자자 기준 과세 규칙입니다. 규칙을 알면 실수령액을 정확히 계산할 수 있습니다.'));
-    const rules = [
-      ['미국주식 양도소득세', '연간 양도차익 합산 250만원 공제 후 22% (지방소득세 포함). 다음 해 5월 자진 신고·납부.'],
-      ['미국주식 배당', '미국에서 15% 원천징수. 금융소득 2,000만원 이하면 국내 추가 과세 없음.'],
-      ['국내주식 양도 (소액주주 장내)', '양도소득세 없음. 매도 시 증권거래세 0.15%.'],
-      ['국내 배당', '15.4% (소득세 14% + 지방소득세 1.4%) 원천징수.'],
-      ['금융소득 종합과세', '이자+배당 연 2,000만원 초과분은 종합소득에 합산 과세 — 초과 시 세무 전문가 상담 권장.'],
-    ];
-    const tbl = el('table', 'plain');
-    const thead = el('thead'); const hr = el('tr');
-    ['구분', '내용'].forEach(h => hr.appendChild(el('th', null, h)));
-    thead.appendChild(hr); tbl.appendChild(thead);
-    const tb = el('tbody');
-    rules.forEach(([k, v]) => {
-      const tr = el('tr');
-      tr.appendChild(el('td', null, k));
-      const td = el('td'); td.appendChild(linkTerms(v)); tr.appendChild(td);
-      tb.appendChild(tr);
-    });
-    tbl.appendChild(tb);
-    wrap.appendChild(tbl);
-    wrap.appendChild(el('p', 'hist-note', '각 종목 카드를 열면 해당 종목 가격이 미리 입력된 세후 계산기를 사용할 수 있습니다. 세법은 개정될 수 있으므로 실제 신고 시 세무 전문가와 상담하세요.'));
-
-    // ── 실전 계산기 3종 ──
-    const mkCalc = (title, inputs, compute) => {
-      wrap.appendChild(el('h2', 'homesec', title));
-      const box = el('div', 'calc');
-      const inrow = el('div', 'inrow');
-      const els = inputs.map(([label, val, step]) => {
-        const lab = el('label');
-        lab.appendChild(el('span', null, label));
-        const i = el('input');
-        i.type = 'number'; i.value = val; i.min = 0; if (step) i.step = step;
-        lab.appendChild(i);
-        inrow.appendChild(lab);
-        return i;
-      });
-      box.appendChild(inrow);
-      const out = el('table', 'plain');
-      box.appendChild(out);
-      const recalc = () => {
-        out.textContent = '';
-        const tb = el('tbody');
-        compute(els.map(i => +i.value || 0)).forEach(([k, v, cls]) => {
-          const tr = el('tr');
-          tr.appendChild(el('td', null, k));
-          const td = el('td', 'num');
-          if (cls) td.appendChild(el('span', cls, v)); else td.textContent = v;
-          tr.appendChild(td);
-          tb.appendChild(tr);
-        });
-        out.appendChild(tb);
-      };
-      els.forEach(i => i.addEventListener('input', recalc));
-      recalc();
-      wrap.appendChild(box);
-    };
-
-    mkCalc('🧮 평단가 계산기 (추가 매수 시)', [
-      ['보유 수량', 10, 1], ['현재 평단가', 100000, 100], ['추가 수량', 10, 1], ['추가 매수가', 90000, 100],
-    ], ([q1, a1, q2, a2]) => {
-      const tq = q1 + q2;
-      const avg = tq ? (q1 * a1 + q2 * a2) / tq : 0;
-      return [
-        ['새 평단가', Math.round(avg).toLocaleString('ko-KR')],
-        ['총 수량', tq.toLocaleString('ko-KR') + '주'],
-        ['총 투입금액', Math.round(q1 * a1 + q2 * a2).toLocaleString('ko-KR')],
-        ['평단 변화', (avg - a1 >= 0 ? '+' : '') + Math.round(avg - a1).toLocaleString('ko-KR'), avg <= a1 ? 'pos' : 'neg'],
-      ];
-    });
-
-    mkCalc('🎯 목표 매도가 계산기 (원하는 수익률 → 필요한 가격)', [
-      ['평단가', 100000, 100], ['목표 수익률 (%)', 10, 0.5], ['수량', 10, 1],
-    ], ([avg, tgt, qty]) => {
-      const sellP = avg * (1 + tgt / 100);
-      return [
-        ['필요 매도가', Math.round(sellP).toLocaleString('ko-KR')],
-        ['세전 차익', Math.round((sellP - avg) * qty).toLocaleString('ko-KR'), 'pos'],
-        ['참고', '해외주식은 연 250만원 초과 차익에 22% 양도세'],
-      ];
-    });
-
-    mkCalc('🌱 복리 적립 계산기 (매달 얼마씩 → n년 뒤)', [
-      ['월 적립액 (원)', 300000, 10000], ['연 수익률 가정 (%)', 7, 0.5], ['기간 (년)', 10, 1],
-    ], ([pm, ratePct, years]) => {
-      const r = ratePct / 100 / 12;
-      const n = Math.round(years * 12);
-      const fv = r > 0 ? pm * ((Math.pow(1 + r, n) - 1) / r) : pm * n;
-      const principal = pm * n;
-      return [
-        ['예상 평가금액', krw(fv)],
-        ['총 납입 원금', krw(principal)],
-        ['복리 수익', krw(fv - principal), 'pos'],
-        ['참고', 'S&P 500 장기 연평균은 약 7~10%였으나 보장 아님'],
-      ];
-    });
+    m.appendChild(el('p', 'tiny', '모든 수치는 확률 추정치이며 수익을 보장하지 않아요. 주문 전 현재 가격을 꼭 확인하세요.'));
+    openModal();
   }
 
   // ───────── 새 추천 받기 ─────────
   const SUPA_URL = 'https://ztjivtiuhxwazsajukto.supabase.co/rest/v1/rpc';
   const SUPA_KEY = 'sb_publishable_3xmYkBmX60wVPDjdmns1Ng_LyvLThQH';
   function supaRpc(fn, body) {
-    return fetch(`${SUPA_URL}/${fn}`, {
+    return fetch(SUPA_URL + '/' + fn, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY },
       body: JSON.stringify(body || {}),
@@ -2138,310 +802,90 @@
     try {
       const d = new Date(iso);
       const kst = new Date(d.getTime() + 9 * 3600000);
-      const p = n => String(n).padStart(2, '0');
-      return `${kst.getUTCFullYear()}-${p(kst.getUTCMonth() + 1)}-${p(kst.getUTCDate())} ${p(kst.getUTCHours())}:${p(kst.getUTCMinutes())} KST`;
-    } catch { return String(iso); }
+      const pd = n => String(n).padStart(2, '0');
+      return kst.getUTCFullYear() + '-' + pd(kst.getUTCMonth() + 1) + '-' + pd(kst.getUTCDate()) + ' ' + pd(kst.getUTCHours()) + ':' + pd(kst.getUTCMinutes()) + ' KST';
+    } catch (e) { return String(iso); }
   }
-  function ago(iso) {
-    if (!iso) return '';
-    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (mins < 1) return '방금 전';
-    if (mins < 60) return `${mins}분 전`;
-    const h = Math.round(mins / 60);
-    if (h < 24) return `${h}시간 전`;
-    return `${Math.round(h / 24)}일 전`;
-  }
-  const REQ_STATUS_META = {
-    pending: { icon: '⏳', label: '접수됨 (대기 중)', color: 'var(--status-warning)' },
-    processing: { icon: '⚙️', label: '처리 중', color: 'var(--accent)' },
-    done: { icon: '✅', label: '갱신 완료', color: 'var(--delta-good)' },
-    rejected: { icon: '⛔', label: '반려됨', color: 'var(--status-critical)' },
+  const REQ_META = {
+    pending: '⏳ 접수됨 (대기 중)',
+    processing: '⚙️ 처리 중',
+    done: '✅ 갱신 완료',
+    rejected: '⛔ 반려됨',
   };
-
-  function openRefreshModal() {
-    const m = back.querySelector('.modal');
+  function openRefresh() {
+    const m = $('.modal', back);
     m.textContent = '';
-    const head = el('div', 'mhead');
-    const hwrap = el('div');
-    hwrap.appendChild(el('h2', null, '🔄 새 추천 받기'));
-    hwrap.appendChild(el('div', 'sub', '최신 뉴스와 가격으로 추천 종목을 다시 만들어 드려요. 이전 추천은 히스토리에 그대로 보관돼요.'));
-    head.appendChild(hwrap);
-    const closeBtn = el('button', 'close', '✕');
-    closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', '닫기');
-    closeBtn.addEventListener('click', closeModal);
-    head.appendChild(closeBtn);
-    m.appendChild(head);
+    modalHead(m, '🔄 새 추천 받기', '최신 뉴스와 가격으로 추천을 다시 만들어 드려요. 이전 추천은 히스토리에 그대로 남아요.');
 
-    // ── 갱신 상태판 (마지막 갱신 + 내 요청 진행 상황) ──
-    const statusPanel = el('div', 'easybox');
-    statusPanel.style.marginTop = '0.9rem';
-    statusPanel.appendChild(el('div', 'eb-t', '📡 갱신 상태'));
-    const lastLine = el('div');
-    lastLine.textContent = '불러오는 중…';
-    statusPanel.appendChild(lastLine);
-    const myLine = el('div');
-    myLine.style.marginTop = '0.35rem';
-    statusPanel.appendChild(myLine);
-    m.appendChild(statusPanel);
+    const statusBox = el('div', 'easybox'); statusBox.style.marginTop = '0.8rem';
+    statusBox.appendChild(el('div', 'eb-t', '📡 갱신 상태'));
+    const line1 = el('div', null, '불러오는 중…');
+    const line2 = el('div'); line2.style.marginTop = '0.3rem';
+    statusBox.appendChild(line1); statusBox.appendChild(line2);
+    m.appendChild(statusBox);
 
-    function paintStatus(data) {
-      const siteWhen = RECO.lastUpdated || (RECO.batches[0] && RECO.batches[0].generatedAt);
-      lastLine.textContent = '';
-      lastLine.appendChild(el('b', null, '사이트 최신 추천: '));
-      lastLine.appendChild(document.createTextNode(siteWhen ? siteWhen.replace(/ \(.*\)$/, '') : '-'));
-      if (data && data.lastDoneAt) {
-        lastLine.appendChild(el('div', 'bd', `마지막 요청 처리 완료: ${fmtWhen(data.lastDoneAt)} (${ago(data.lastDoneAt)})`));
-      }
-      const myId = +localStorage.getItem('lastReqId') || null;
-      myLine.textContent = '';
+    function paint(data) {
+      line1.textContent = '사이트 최신 추천: ' + String(RECO.lastUpdated || '').split(' (')[0];
+      line2.textContent = '';
+      const myId = +(store.get('lastReqId') || 0) || null;
       if (myId && data && data.mine && data.mine.id === myId) {
-        const meta = REQ_STATUS_META[data.mine.status] || REQ_STATUS_META.pending;
-        const badge = el('div');
-        badge.style.cssText = 'font-weight:700;color:' + meta.color;
-        badge.textContent = `내 요청 #${myId}: ${meta.icon} ${meta.label}`;
-        myLine.appendChild(badge);
-        if (data.mine.status === 'done') {
-          myLine.appendChild(el('div', 'bd', `완료 시각 ${fmtWhen(data.mine.processed_at)} — 페이지를 새로고침하면 반영된 추천을 볼 수 있어요.`));
-        } else if (data.mine.status === 'processing') {
-          myLine.appendChild(el('div', 'bd', '지금 새 추천을 만들고 있어요. 잠시 후 완료됩니다.'));
-        } else {
-          myLine.appendChild(el('div', 'bd', '접수됐어요. 매시 30분 자동 확인 때 처리됩니다 (보통 1시간 이내).'));
-        }
-      } else if (myId) {
-        myLine.appendChild(el('div', 'bd', `내 지난 요청 #${myId}은 처리 완료되었습니다.`));
+        line2.appendChild(el('b', null, '내 요청 #' + myId + ': ' + (REQ_META[data.mine.status] || data.mine.status)));
+        if (data.mine.status === 'done') line2.appendChild(el('div', 'tiny', '완료 ' + fmtWhen(data.mine.processed_at) + ' — 새로고침하면 반영된 추천이 보여요.'));
+        else line2.appendChild(el('div', 'tiny', '매시 30분 자동 확인 때 처리돼요 (보통 1시간 이내).'));
       } else {
-        myLine.appendChild(el('div', 'bd', '아직 보낸 요청이 없어요. 아래에서 갱신을 요청해 보세요.'));
+        line2.appendChild(el('div', 'tiny', myId ? '지난 요청은 처리 완료되었습니다.' : '아직 보낸 요청이 없어요.'));
       }
     }
-    paintStatus(null);
-    supaRpc('refresh_status', { p_id: +localStorage.getItem('lastReqId') || null }).then(paintStatus).catch(() => {
-      lastLine.textContent = '';
-      const siteWhen = RECO.lastUpdated || (RECO.batches[0] && RECO.batches[0].generatedAt);
-      lastLine.appendChild(el('b', null, '사이트 최신 추천: '));
-      lastLine.appendChild(document.createTextNode(siteWhen ? siteWhen.replace(/ \(.*\)$/, '') : '-'));
-      myLine.textContent = '(상태 서버에 연결하지 못했습니다)';
-      myLine.className = 'bd';
+    paint(null);
+    supaRpc('refresh_status', { p_id: +(store.get('lastReqId') || 0) || null }).then(paint).catch(() => {
+      line2.textContent = '(상태 서버에 연결하지 못했어요)';
     });
 
-    const mkCard = (title, lines, action) => {
-      const c = el('div', 'easybox');
-      c.style.marginTop = '0.9rem';
-      c.appendChild(el('div', 'eb-t', title));
-      lines.forEach(t => c.appendChild(el('div', null, t)));
-      if (action) c.appendChild(action);
-      return c;
-    };
-
-    // 방법 1: 버튼 한 번으로 바로 접수 (로그인 불필요)
-    const form = el('div');
-    form.style.marginTop = '0.55rem';
-    const ta = el('textarea');
-    ta.placeholder = '원하는 조건이 있으면 적어 주세요 (선택) — 예: 배당주 위주로, 미국 주식만, 안전한 것만';
-    ta.maxLength = 500;
-    ta.rows = 2;
-    ta.style.cssText = 'width:100%;font:inherit;font-size:0.86rem;padding:0.5rem 0.6rem;border:1px solid var(--border);border-radius:9px;background:var(--page);color:var(--text-primary);resize:vertical';
-    form.appendChild(ta);
-    const sendBtn = el('button', 'iconbtn', '🚀 지금 요청 보내기 (클릭 한 번이면 끝)');
-    sendBtn.type = 'button';
-    sendBtn.style.marginTop = '0.45rem';
-    const status = el('p');
-    status.style.cssText = 'margin-top:0.45rem;font-size:0.82rem;font-weight:600';
-    form.appendChild(sendBtn);
-    form.appendChild(status);
-    sendBtn.addEventListener('click', async () => {
-      sendBtn.disabled = true;
-      status.style.color = 'var(--text-secondary)';
-      status.textContent = '보내는 중…';
+    const sec = el('div', 'msec');
+    sec.appendChild(el('h3', null, '🖱️ 버튼 한 번이면 끝 (로그인 불필요)'));
+    const ta = el('textarea', 'req');
+    ta.placeholder = '원하는 조건이 있으면 적어 주세요 (선택) — 예: 배당주 위주로, 안전한 것만';
+    ta.maxLength = 500; ta.rows = 2;
+    sec.appendChild(ta);
+    const send = el('button', 'btn primary', '🚀 지금 요청 보내기');
+    send.style.marginTop = '0.45rem';
+    const st = el('p', 'tiny'); st.style.marginTop = '0.4rem';
+    sec.appendChild(send); sec.appendChild(st);
+    send.addEventListener('click', async () => {
+      send.disabled = true;
+      st.textContent = '보내는 중…';
       try {
         const r = await supaRpc('request_refresh', { p_note: ta.value || '' });
         if (r && r.ok) {
-          status.style.color = 'var(--delta-good)';
-          status.textContent = `✅ 접수 완료 (요청 #${r.id})! 위 "갱신 상태"에서 진행 상황을 확인할 수 있어요 — 보통 1시간 안에 반영돼요.`;
+          st.textContent = '✅ 접수 완료 (요청 #' + r.id + ') — 보통 1시간 안에 반영돼요.';
+          store.set('lastReqId', String(r.id));
           ta.value = '';
-          localStorage.setItem('lastReqId', String(r.id));
-          supaRpc('refresh_status', { p_id: r.id }).then(paintStatus).catch(() => {});
+          supaRpc('refresh_status', { p_id: r.id }).then(paint).catch(() => {});
         } else if (r && r.reason === 'too_many_recent') {
-          status.style.color = 'var(--status-critical)';
-          status.textContent = '⏳ 방금 요청이 몰렸어요. 10분 뒤에 다시 눌러 주세요.';
-          sendBtn.disabled = false;
+          st.textContent = '⏳ 방금 요청이 몰렸어요. 10분 뒤 다시 시도해 주세요.';
+          send.disabled = false;
         } else if (r && r.reason === 'queue_full') {
-          status.style.color = 'var(--status-critical)';
-          status.textContent = '⏳ 대기 중인 요청이 이미 많아요. 다음 처리 후 다시 시도해 주세요.';
-          sendBtn.disabled = false;
-        } else {
-          throw new Error('unexpected');
-        }
-      } catch {
-        status.style.color = 'var(--status-critical)';
-        status.textContent = '⚠️ 전송에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
-        sendBtn.disabled = false;
+          st.textContent = '⏳ 대기 요청이 많아요. 다음 처리 후 다시 시도해 주세요.';
+          send.disabled = false;
+        } else { throw new Error('unexpected'); }
+      } catch (e) {
+        st.textContent = '⚠️ 전송 실패 — 인터넷 연결을 확인하고 다시 시도해 주세요.';
+        send.disabled = false;
       }
     });
-    m.appendChild(mkCard('🖱️ 버튼 한 번으로 바로 요청 (로그인 필요 없음)', [
-      '아래 버튼만 누르면 요청이 바로 접수돼요. 회원가입도 로그인도 필요 없어요.',
-    ], form));
+    m.appendChild(sec);
 
-    // 방법 2: 자동
-    m.appendChild(mkCard('🤖 가만히 있어도 자동으로', [
-      '평일 아침 8시(한국시간)마다 자동으로 새 추천이 만들어져요.',
-      '미국장이 끝나고 한국장이 열리기 전이라, 아침에 보면 항상 최신이에요.',
-    ]));
-
-    // 방법 3: 채팅
-    m.appendChild(mkCard('💬 가장 빠른 방법', [
-      '이 사이트를 만든 Claude 세션에 "추천 갱신해줘"라고 보내면 몇 분 안에 반영돼요.',
-    ]));
-
-    m.appendChild(el('p', 'summary', '⚠️ 어떤 방법이든 이전 추천은 지워지지 않고 히스토리에 남아요.'));
-
-    back.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    back.scrollTop = 0;
-  }
-  $('#refreshbtn').addEventListener('click', openRefreshModal);
-
-  // ───────── 검색 ─────────
-  const searchBack = $('#search-back');
-  const searchInput = $('#searchinput');
-  const searchResults = $('#searchresults');
-  function openSearch() { searchBack.classList.add('open'); searchInput.value = ''; runSearch(''); searchInput.focus(); document.body.style.overflow = 'hidden'; }
-  function closeSearch() { searchBack.classList.remove('open'); document.body.style.overflow = ''; }
-  $('#searchbtn').addEventListener('click', openSearch);
-  searchBack.addEventListener('click', e => { if (e.target === searchBack) closeSearch(); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && searchBack.classList.contains('open')) closeSearch();
-    if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch(); }
-  });
-
-  function searchIndex() {
-    const idx = [];
-    VIEWS.forEach(v => idx.push({ kind: '메뉴', label: MENU_LABEL[v], desc: MENU_DESC[v], go: () => { state.view = v; renderAll(); } }));
-    idx.push({ kind: '기능', label: '🔄 새 추천 받기', desc: '최신 데이터로 추천 다시 만들기 (갱신, 새로고침)', go: openRefreshModal });
-    batchPicks().concat(RECO.sureItems).forEach(p => idx.push({
-      kind: '종목', label: `${p.name} ${p.ticker}`, desc: String(pickSummary(p)).slice(0, 40),
-      go: () => openModal(p),
-    }));
-    GLOSSARY.forEach((g, i) => idx.push({
-      kind: '용어', label: g.term, desc: g.easy.slice(0, 40),
-      go: () => {
-        state.view = 'learn'; renderAll();
-        const t = document.getElementById('gloss-' + i);
-        if (t) { t.scrollIntoView({ block: 'center' }); t.style.outline = '2px solid var(--accent)'; setTimeout(() => { t.style.outline = ''; }, 1600); }
-      },
-    }));
-    LESSONS.forEach((ls, i) => idx.push({
-      kind: '배우기', label: `${ls.icon} ${ls.title}`, desc: ls.body.slice(0, 40),
-      go: () => {
-        state.view = 'learn'; renderAll();
-        const d = document.getElementById('lesson-' + i);
-        if (d) { d.open = true; d.scrollIntoView({ block: 'center' }); }
-      },
-    }));
-    FAQ.forEach((f, i) => idx.push({
-      kind: 'FAQ', label: f.q, desc: f.a.slice(0, 40),
-      go: () => {
-        state.view = 'learn'; renderAll();
-        const d = document.getElementById('faq-' + i);
-        if (d) { d.open = true; d.scrollIntoView({ block: 'center' }); }
-      },
-    }));
-    return idx;
-  }
-  function runSearch(q) {
-    searchResults.textContent = '';
-    const idx = searchIndex();
-    const qq = q.trim().toLowerCase();
-    const hits = qq
-      ? idx.filter(e => (e.label + ' ' + e.desc + ' ' + e.kind).toLowerCase().includes(qq))
-      : idx.filter(e => e.kind === '메뉴');
-    hits.slice(0, 20).forEach(e => {
-      const btn = el('button', 'sres');
-      btn.type = 'button';
-      btn.appendChild(el('span', 'sk', e.kind));
-      btn.appendChild(el('span', null, e.label));
-      btn.appendChild(el('span', 'sd', e.desc));
-      btn.addEventListener('click', () => { closeSearch(); e.go(); window.scrollTo({ top: 0 }); });
-      searchResults.appendChild(btn);
-    });
-    if (!hits.length) searchResults.appendChild(el('p', 'viewdesc', '검색 결과가 없습니다. 다른 키워드로 시도해 보세요.'));
-  }
-  searchInput.addEventListener('input', () => runSearch(searchInput.value));
-
-  // ───────── 뷰 전환 ─────────
-  const NAV_GROUPS = {
-    home: ['home'],
-    plan: ['plan'],
-    reco: ['reco', 'sure'],
-    records: ['perf', 'history', 'journal'],
-    more: ['portfolio', 'practice', 'tax', 'learn'],
-  };
-  function navOf(view) {
-    return Object.keys(NAV_GROUPS).find(k => NAV_GROUPS[k].includes(view)) || 'home';
-  }
-  function renderSubtabs() {
-    const box = $('#subtabs');
-    box.textContent = '';
-    const group = NAV_GROUPS[navOf(state.view)];
-    if (group.length < 2) return;
-    const seg = el('div', 'seg');
-    seg.style.cssText = 'display:inline-flex;margin-bottom:0.9rem;background:var(--surface-1);border:1px solid var(--border);border-radius:9px;padding:2px';
-    group.forEach(v => {
-      const b = el('button', null, MENU_LABEL[v]);
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(state.view === v));
-      b.addEventListener('click', () => { state.view = v; renderAll(); });
-      seg.appendChild(b);
-    });
-    box.appendChild(seg);
-  }
-  function renderAll() {
-    document.querySelectorAll('.viewtabs button').forEach(b =>
-      b.setAttribute('aria-selected', String(b.dataset.nav === navOf(state.view))));
-    renderSubtabs();
-    VIEWS.forEach(v => { $('#view-' + v).style.display = state.view === v ? '' : 'none'; });
-    if (state.view === 'home') renderHome();
-    if (state.view === 'plan') renderPlan();
-    if (state.view === 'sure') renderSure();
-    if (state.view === 'reco') {
-      document.querySelectorAll('#hseg button').forEach(b =>
-        b.setAttribute('aria-pressed', String(b.dataset.h === state.horizon)));
-      document.querySelectorAll('#acseg button').forEach(b =>
-        b.setAttribute('aria-pressed', String(b.dataset.ac === state.assetClass)));
-      $('#market').value = state.market;
-      $('#level').value = state.level;
-      $('#batchchip').textContent = RECO.batches[state.batch].title;
-      renderCards();
-    }
-    if (state.view === 'practice') renderPractice();
-    if (state.view === 'portfolio') renderPortfolio();
-    if (state.view === 'journal') renderJournal();
-    if (state.view === 'learn') renderLearn();
-    if (state.view === 'perf') renderPerf();
-    if (state.view === 'history') renderHistory();
-    if (state.view === 'tax') renderTax();
+    const auto = el('div', 'msec');
+    auto.appendChild(el('h3', null, '🤖 가만히 있어도'));
+    auto.appendChild(el('p', 'muted', '평일 아침 8시(한국시간)마다 자동으로 새 추천이 만들어지고, vs S&P 500 레이스도 실측으로 갱신돼요.'));
+    m.appendChild(auto);
+    openModal();
   }
 
-  document.querySelectorAll('.viewtabs button').forEach(b =>
-    b.addEventListener('click', () => { state.view = NAV_GROUPS[b.dataset.nav][0]; renderAll(); }));
-  document.querySelectorAll('#hseg button').forEach(b =>
-    b.addEventListener('click', () => { state.horizon = b.dataset.h; renderAll(); }));
-  document.querySelectorAll('#acseg button').forEach(b =>
-    b.addEventListener('click', () => { state.assetClass = b.dataset.ac; renderAll(); }));
-  $('#market').addEventListener('change', e => { state.market = e.target.value; renderAll(); });
-  $('#level').addEventListener('change', e => { state.level = e.target.value; renderAll(); });
-  $('#divonly').addEventListener('change', e => { state.divOnly = e.target.checked; renderAll(); });
-
-  const easyChk = $('#easymode');
-  easyChk.checked = state.easy;
-  easyChk.addEventListener('change', () => {
-    state.easy = easyChk.checked;
-    localStorage.setItem('easymode', state.easy ? '1' : '0');
-    renderAll();
-  });
-
-  $('#asof').textContent = `🔄 최신 갱신: ${(RECO.lastUpdated || RECO.batches[0].generatedAt).replace(/ \(.*\)$/, '')}` +
-    (RECO.batches[0].pricesAsOf ? ` · ${RECO.batches[0].pricesAsOf}` : '');
-  $('#disclaimer').textContent = '⚠️ 본 서비스는 투자 자문이 아닌 정보 제공 도구이며, 모든 수치는 시뮬레이션 기반 확률 추정치로 수익을 보장하지 않습니다. 원금 손실이 가능하며 투자 판단과 책임은 본인에게 있습니다.';
-
-  renderAll();
+  // ───────── 초기화 ─────────
+  $('#asof').textContent = '🔄 최신 갱신: ' + String(RECO.lastUpdated || '').split(' (')[0];
+  $('#refreshbtn').addEventListener('click', openRefresh);
+  $('#easymode').addEventListener('change', rerenderAll);
+  $$('#tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  showTab('today');
 })();
