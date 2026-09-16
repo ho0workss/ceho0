@@ -886,6 +886,20 @@ const PICKS = [
   { id: 'b49-long-sgov',     s0: 100.52, target: 101.25, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b49-long-kofr',     s0: 112328, target: 112894, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b49-stk-long-dia',  s0: 520.32, target: 546.30, stop: 457.90, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b50 — 2026-09-17 (목, FOMC 인상 다음 날 · 기준가: 수 9/16 종가 · 당일 DIA 쿨다운 해제 단독 + 공석 2(개별 종목 수요일 종가 전부 미확보))
+  { id: 'b50-day-kofr',      s0: 112334, target: 112340, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b50-day-sgov',      s0: 100.53, target: 100.54, stop: 99.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b50-day-bil',       s0: 91.50,  target: 91.51,  stop: 90.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b50-stk-day-dia',   s0: 514.01, target: 516.90, stop: 505.80, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b50-week-sgov',     s0: 100.53, target: 100.57, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b50-week-kofr',     s0: 112334, target: 112369, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b50-stk-week-dia',  s0: 514.01, target: 523.40, stop: 490.90, annVol: 0.14, annDrift: 0.07, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b50-month-sgov',    s0: 100.53, target: 100.66, stop: 99.3,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b50-month-bil',     s0: 91.50,  target: 91.62,  stop: 90.2,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b50-stk-month-spy', s0: 753.06, target: 771.10, stop: 707.90, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b50-long-sgov',     s0: 100.53, target: 101.26, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b50-long-kofr',     s0: 112334, target: 112900, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b50-stk-long-dia',  s0: 514.01, target: 539.70, stop: 452.30, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
