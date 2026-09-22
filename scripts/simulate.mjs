@@ -950,6 +950,20 @@ const PICKS = [
   { id: 'b53-long-sgov',     s0: 100.57, target: 101.30, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b53-long-kofr',     s0: 112362, target: 112928, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b53-stk-long-dia',  s0: 519.87, target: 545.90, stop: 457.50, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+
+  // b54 — 2026-09-23 (수, 나스닥 4연속·다우 소폭 하락 다음 날 · 기준가: 화 9/22 종가 · 당일 DIA 단독 + 공석 2, 1주 주식 첫 공석(시세 가뭄))
+  { id: 'b54-day-kofr',      s0: 112368, target: 112374, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b54-day-sgov',      s0: 100.58, target: 100.59, stop: 99.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b54-day-bil',       s0: 91.55,  target: 91.56,  stop: 90.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b54-stk-day-dia',   s0: 518.02, target: 520.90, stop: 509.70, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b54-week-sgov',     s0: 100.58, target: 100.62, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b54-week-kofr',     s0: 112368, target: 112403, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b54-month-sgov',    s0: 100.58, target: 100.71, stop: 99.3,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b54-month-bil',     s0: 91.55,  target: 91.67,  stop: 90.2,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b54-stk-month-spy', s0: 773.38, target: 791.90, stop: 727.00, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b54-long-sgov',     s0: 100.58, target: 101.31, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b54-long-kofr',     s0: 112368, target: 112934, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b54-stk-long-dia',  s0: 518.02, target: 543.90, stop: 455.90, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
