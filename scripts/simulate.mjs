@@ -980,6 +980,19 @@ const PICKS = [
   { id: 'b55-long-sgov',     s0: 100.59, target: 101.32, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b55-long-kofr',     s0: 112374, target: 112940, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b55-stk-long-dia',  s0: 514.50, target: 540.20, stop: 452.80, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+
+  // b56 — 2026-09-25 (금, 혼조 소강일 다음 날 · 기준가: 목 9/24 종가 · 검증 체인 다우뿐 — 당일 DIA 단독+공석2 · 1주 주식 공석 · ★1개월 주식 첫 공석(S&P 정밀 종가 미확보))
+  { id: 'b56-day-kofr',      s0: 112380, target: 112386, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b56-day-sgov',      s0: 100.60, target: 100.61, stop: 99.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b56-day-bil',       s0: 91.57,  target: 91.58,  stop: 90.7,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b56-stk-day-dia',   s0: 512.89, target: 515.70, stop: 504.60, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b56-week-sgov',     s0: 100.60, target: 100.64, stop: 99.5,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b56-week-kofr',     s0: 112380, target: 112415, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b56-month-sgov',    s0: 100.60, target: 100.73, stop: 99.3,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b56-month-bil',     s0: 91.57,  target: 91.69,  stop: 90.2,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b56-long-sgov',     s0: 100.60, target: 101.33, stop: 98.8,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b56-long-kofr',     s0: 112380, target: 112946, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b56-stk-long-dia',  s0: 512.89, target: 538.50, stop: 451.30, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
