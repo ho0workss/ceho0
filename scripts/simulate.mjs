@@ -1203,6 +1203,22 @@ const PICKS = [
   { id: 'b69-long-sgov',     s0: 100.41, target: 101.14, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b69-long-kofr',     s0: 112458, target: 113020, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b69-stk-long-dia',  s0: 516.09, target: 541.89, stop: 454.16, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b70 — 2026-10-15 (목, ★수요일은 핫 CPI 쇼크일: 헤드라인 3.7% y/y(예상 3.6%)·코어 2.6% 상회 → 금리 인상 베팅 재점화, S&P -1.11% 7,718.94·나스닥 -1.88%·다우 -0.09% 51,621.48(장중 급락 후 회복), 반도체 7일째 약세 SOXX·NVDA -3.16% 221.30(저가 219.64 — 손절 218.69 직전)·MSFT -1.80% 533.69, ★KO만 +1.85% 91.78 방어주 역상관 — 기준가: 수 10/14 종가 · ★목 10/15 = PPI+소매판매 동시 발표 → 당일 주식 volX 1.4 유지 · 1주 슬롯: b69 MSFT 진행 중(만기 10/20, 겹침 원칙) → 파킹 3종)
+  { id: 'b70-day-kofr',      s0: 112464, target: 112470, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b70-day-sgov',      s0: 100.42, target: 100.43, stop: 99.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b70-day-bil',       s0: 91.42,  target: 91.43,  stop: 90.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b70-stk-day-nvda',  s0: 221.30, target: 225.39, stop: 211.78, annVol: 0.45, annDrift: 0.0, kind: 'day', model: 't', volX: 1.4 },
+  { id: 'b70-stk-day-msft',  s0: 533.69, target: 538.92, stop: 521.42, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.4 },
+  { id: 'b70-stk-day-ko',    s0: 91.78,  target: 92.38,  stop: 90.47,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.4 },
+  { id: 'b70-week-sgov',     s0: 100.42, target: 100.46, stop: 99.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b70-week-kofr',     s0: 112464, target: 112499, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b70-week-bil',      s0: 91.42,  target: 91.46,  stop: 90.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b70-month-sgov',    s0: 100.42, target: 100.55, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b70-month-bil',     s0: 91.42,  target: 91.54,  stop: 89.9,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b70-stk-month-spy', s0: 768.83, target: 787.28, stop: 722.70, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b70-long-sgov',     s0: 100.42, target: 101.15, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b70-long-kofr',     s0: 112464, target: 113026, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b70-stk-long-dia',  s0: 515.60, target: 541.38, stop: 453.73, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
