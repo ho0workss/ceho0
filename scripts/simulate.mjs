@@ -1219,6 +1219,22 @@ const PICKS = [
   { id: 'b70-long-sgov',     s0: 100.42, target: 101.15, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b70-long-kofr',     s0: 112464, target: 113026, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b70-stk-long-dia',  s0: 515.60, target: 541.38, stop: 453.73, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b71 — 2026-10-16 (금, ★목요일은 PPI 더블 쇼크(1.3% m/m, 예상 0.6%·6.3% y/y)에도 소매판매 +0.8% 호조·10년물 -9bp로 반등한 날: 다우 +1.08% 52,177.69·S&P +0.33% 7,744.06·나스닥 +0.08% 26,713.03 — 기술 약세(XLK -0.65%)·헬스케어/소재/금융 강세 로테이션, NVDA -1.84% 217.23·MSFT +1.08% 539.44·★KO 장중 94.10 사상 최고 후 종가 ≈92.00 되밀림 · 기준가: 목 10/15 종가 · 금 10/16 = 월간 옵션 만기(OpEx) — 지표 공백일이라 당일 volX 1.3 복귀, OpEx 경고 · 1주 슬롯: b69 MSFT 진행 중(만기 10/20) → 파킹 3종)
+  { id: 'b71-day-kofr',      s0: 112470, target: 112476, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-day-sgov',      s0: 100.43, target: 100.44, stop: 99.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-day-bil',       s0: 91.43,  target: 91.44,  stop: 90.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-stk-day-nvda',  s0: 217.23, target: 221.25, stop: 207.89, annVol: 0.45, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-stk-day-msft',  s0: 539.44, target: 544.73, stop: 527.03, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-stk-day-ko',    s0: 92.00,  target: 92.60,  stop: 90.68,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b71-week-sgov',     s0: 100.43, target: 100.47, stop: 99.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b71-week-kofr',     s0: 112470, target: 112505, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b71-week-bil',      s0: 91.43,  target: 91.47,  stop: 90.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b71-month-sgov',    s0: 100.43, target: 100.56, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b71-month-bil',     s0: 91.43,  target: 91.55,  stop: 89.9,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b71-stk-month-spy', s0: 771.33, target: 789.84, stop: 725.05, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b71-long-sgov',     s0: 100.43, target: 101.16, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b71-long-kofr',     s0: 112470, target: 113032, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b71-stk-long-dia',  s0: 521.16, target: 547.22, stop: 458.62, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
