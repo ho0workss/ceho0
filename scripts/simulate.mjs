@@ -1235,6 +1235,22 @@ const PICKS = [
   { id: 'b71-long-sgov',     s0: 100.43, target: 101.16, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b71-long-kofr',     s0: 112470, target: 113032, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b71-stk-long-dia',  s0: 521.16, target: 547.22, stop: 458.62, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // b72 — 2026-10-19 (월, ★금요일은 AI 셀오프 심화: 나스닥 -2.1% 26,140.03·S&P -1.09% 7,659.44·다우 -0.34% 52,002.41 — 주간으로 나스닥 -4.5%(6월 이후 최악) vs 다우 +0.7%, 로테이션 지속 · NVDA -1.43% 214.13(3연패)·MSFT -1.93% 529.05(저가 524.43, b71 손절 527.03 장중 발동)·★KO +2.07% 93.90(KFC 미국 음료 파트너십 — 7연승) · 기준가: 금 10/16 종가 · 월 10/19 = 지표 공백일, volX 1.3 복귀 유지 · 1주 슬롯: b69 MSFT 진행 중(만기 10/20) → 파킹 3종)
+  { id: 'b72-day-kofr',      s0: 112476, target: 112482, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-day-sgov',      s0: 100.44, target: 100.45, stop: 99.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-day-bil',       s0: 91.44,  target: 91.45,  stop: 90.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-stk-day-nvda',  s0: 214.13, target: 218.09, stop: 204.92, annVol: 0.45, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-stk-day-msft',  s0: 529.05, target: 534.23, stop: 516.88, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-stk-day-ko',    s0: 93.90,  target: 94.51,  stop: 92.56,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b72-week-sgov',     s0: 100.44, target: 100.48, stop: 99.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b72-week-kofr',     s0: 112476, target: 112511, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b72-week-bil',      s0: 91.44,  target: 91.48,  stop: 90.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b72-month-sgov',    s0: 100.44, target: 100.57, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b72-month-bil',     s0: 91.44,  target: 91.56,  stop: 89.9,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b72-stk-month-spy', s0: 762.90, target: 781.21, stop: 717.13, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b72-long-sgov',     s0: 100.44, target: 101.17, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b72-long-kofr',     s0: 112476, target: 113038, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b72-stk-long-dia',  s0: 519.41, target: 545.38, stop: 457.08, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
