@@ -1281,6 +1281,21 @@ const PICKS = [
   { id: 'b74-long-sgov',     s0: 100.46, target: 101.19, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b74-long-kofr',     s0: 112488, target: 113050, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b74-stk-long-dia',  s0: 524.34, target: 550.56, stop: 461.42, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  { id: 'b75-day-kofr',      s0: 112494, target: 112500, stop: 111500, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-day-sgov',      s0: 100.47, target: 100.48, stop: 99.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-day-bil',       s0: 91.47,  target: 91.48,  stop: 90.6,   annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-stk-day-nvda',  s0: 221.97, target: 226.08, stop: 212.43, annVol: 0.45, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-stk-day-msft',  s0: 532.95, target: 538.17, stop: 520.69, annVol: 0.24, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-stk-day-spy',   s0: 772.63, target: 777.27, stop: 762.59, annVol: 0.15, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b75-week-sgov',     s0: 100.47, target: 100.51, stop: 99.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b75-week-kofr',     s0: 112494, target: 112529, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b75-week-bil',      s0: 91.47,  target: 91.51,  stop: 90.4,   annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b75-month-sgov',    s0: 100.47, target: 100.60, stop: 99.0,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b75-month-bil',     s0: 91.47,  target: 91.59,  stop: 89.9,   annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b75-stk-month-spy', s0: 772.63, target: 791.17, stop: 726.27, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b75-long-sgov',     s0: 100.47, target: 101.20, stop: 98.5,   annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b75-long-kofr',     s0: 112494, target: 113056, stop: 111000, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b75-stk-long-dia',  s0: 527.94, target: 554.34, stop: 464.59, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
