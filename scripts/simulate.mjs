@@ -1527,6 +1527,22 @@ const PICKS = [
   { id: 'b90-long-sgov',     s0: 100.62, target: 101.35, stop: 98.52,  annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b90-long-kofr',     s0: 112584, target: 113147, stop: 111012, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b90-stk-long-dia',  s0: 524.23, target: 550.44, stop: 461.32, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // batch 2026-11-13 (b91) — NVDA CEO 사임 쇼크 흡수(-0.35%)·10년물 5.10%·SPY ATH -3.13%로 월 SPY 복귀(교훈 48 하한 직상): volX 당일 1.3/1주 1.3/1개월 1.2, 11/17 NVDA 실적 D-2(거래일)
+  { id: 'b91-day-kofr',      s0: 112590, target: 112596, stop: 111598, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-day-sgov',      s0: 100.63, target: 100.64, stop: 99.63,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-day-bil',       s0: 91.63,  target: 91.64,  stop: 90.63,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-stk-day-msft',  s0: 523.00, target: 529.28, stop: 508.36, annVol: 0.28, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-stk-day-spy',   s0: 757.12, target: 762.04, stop: 745.76, annVol: 0.15, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-stk-day-ko',    s0: 97.68,  target: 98.32,  stop: 96.31,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b91-week-sgov',     s0: 100.63, target: 100.67, stop: 99.43,  annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b91-week-kofr',     s0: 112590, target: 112625, stop: 111018, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b91-week-bil',      s0: 91.63,  target: 91.67,  stop: 90.43,  annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b91-month-sgov',    s0: 100.63, target: 100.76, stop: 99.03,  annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b91-month-bil',     s0: 91.63,  target: 91.75,  stop: 89.93,  annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b91-stk-month-spy', s0: 757.12, target: 775.29, stop: 711.69, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b91-long-sgov',     s0: 100.63, target: 101.36, stop: 98.53,  annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b91-long-kofr',     s0: 112590, target: 113153, stop: 111018, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b91-stk-long-dia',  s0: 522.35, target: 548.47, stop: 459.67, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
