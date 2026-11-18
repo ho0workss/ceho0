@@ -356,7 +356,7 @@ window.STRATEGY = {
    },
    {
     "date": "2026-11-17",
-    "strategy": 95.57,
+    "strategy": 95.54,
     "spy": 96.24
    }
   ],
