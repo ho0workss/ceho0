@@ -1607,6 +1607,22 @@ const PICKS = [
   { id: 'b95-long-sgov',     s0: 100.67, target: 101.40, stop: 98.57,  annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
   { id: 'b95-long-kofr',     s0: 112614, target: 113177, stop: 111042, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
   { id: 'b95-stk-long-dia',  s0: 501.38, target: 526.45, stop: 441.21, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
+  // batch 2026-11-20 (b96) — 급락 6일째: S&P -2.02% 7,175.83(6일 연속·ATH -8.4%), 다우 -1,101pt, 12월 인상 92~96%; KO 데이터 복귀 — 당일 MSFT·KO 복원 + DIA 임시 유지(PG·SCHD 미수렴)
+  { id: 'b96-day-kofr',      s0: 112620, target: 112626, stop: 111628, annVol: 0.0003, annDrift: 0.025, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-day-sgov',      s0: 100.68, target: 100.69, stop: 99.68,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-day-bil',       s0: 91.68,  target: 91.69,  stop: 90.68,  annVol: 0.0004, annDrift: 0.036, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-stk-day-msft',  s0: 498.30, target: 504.28, stop: 484.35, annVol: 0.28, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-stk-day-ko',    s0: 96.09,  target: 96.71,  stop: 94.74,  annVol: 0.16, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-stk-day-dia',   s0: 490.79, target: 493.24, stop: 484.90, annVol: 0.14, annDrift: 0.0, kind: 'day', model: 't', volX: 1.3 },
+  { id: 'b96-week-sgov',     s0: 100.68, target: 100.72, stop: 99.48,  annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b96-week-kofr',     s0: 112620, target: 112655, stop: 111048, annVol: 0.0003, annDrift: 0.025, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b96-week-bil',      s0: 91.68,  target: 91.72,  stop: 90.48,  annVol: 0.0004, annDrift: 0.036, kind: 'week', model: 't', volX: 1.3 },
+  { id: 'b96-month-sgov',    s0: 100.68, target: 100.81, stop: 99.08,  annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b96-month-bil',     s0: 91.68,  target: 91.80,  stop: 89.98,  annVol: 0.0004, annDrift: 0.036, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b96-stk-month-spy', s0: 715.87, target: 733.05, stop: 672.92, annVol: 0.15, annDrift: 0.08, kind: 'month', model: 't', volX: 1.2 },
+  { id: 'b96-long-sgov',     s0: 100.68, target: 101.41, stop: 98.58,  annVol: 0.0004, annDrift: 0.036, kind: 'long', model: 't' },
+  { id: 'b96-long-kofr',     s0: 112620, target: 113183, stop: 111048, annVol: 0.0003, annDrift: 0.025, kind: 'long', model: 't' },
+  { id: 'b96-stk-long-dia',  s0: 490.79, target: 515.33, stop: 431.90, annVol: 0.14, annDrift: 0.07, kind: 'long', model: 't' },
 ];
 
 const KIND_STEPS = {
